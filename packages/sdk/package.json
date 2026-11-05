@@ -1,0 +1,55 @@
+{
+  "name": "@lastlook/sdk",
+  "version": "0.1.0",
+  "description": "Client for the last-look competitive-fee AMM: quote (optionally via Anon-RPC), encode and submit swaps as EIP-8141 frame transactions.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./anon": {
+      "types": "./dist/anon.d.ts",
+      "default": "./dist/anon.js"
+    },
+    "./frame": {
+      "types": "./dist/frame.d.ts",
+      "default": "./dist/frame.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "peerDependencies": {
+    "@anon-rpc/browser-harness": "0.4.0",
+    "@forshtat/hegota-support": "0.0.1",
+    "viem": "^2.57.0"
+  },
+  "peerDependenciesMeta": {
+    "@anon-rpc/browser-harness": {
+      "optional": true
+    },
+    "@forshtat/hegota-support": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@anon-rpc/browser-harness": "^0.4.0",
+    "@forshtat/hegota-support": "^0.0.1",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "viem": "^2.57.16",
+    "vitest": "^5.1.0"
+  }
+}
