@@ -62,12 +62,25 @@ Saish's CRE workflow must ABI-encode exactly this payload before `writeReport`.
 - Between updates, our own pool state changes with every swap but the competitor curve doesn't. That's acceptable: competitors' prices are what goes stale, and arbitrage moves them toward ours anyway. Call this out in the pitch as a known limitation.
 - Stretch: event-triggered updates (on large swaps on competitor pools, via EVM log trigger) in addition to cron.
 
+## Package status (`packages/cre-workflow`)
+
+| Piece | Status |
+|---|---|
+| Curve builder + `abi.encode(CurveUpdate[])` | Done (`src/`) — matches `QuoteOracle` |
+| Mock + Uni v2/v3 venue quoters | Done; mock is default for deterministic demo |
+| Local Node simulate (`npm run simulate:local`) | Done; `--write` → `applyReport` escape hatch |
+| CRE TS workflow (`workflow/main.ts`) | Scaffolded for `@chainlink/cre-sdk` + cron → `writeReport` |
+| `cre workflow simulate` / live DON deploy | Pending Saish (CRE CLI login + booth access) |
+| `QuoteOracle.sol` + tests | Done (`packages/oracle`) |
+
+**Fynd note (Nov 2026):** [Fynd quickstart](https://docs.fynd.xyz/get-started/quickstart) is a local `fynd serve` + Tycho-indexed swap client (exact-in quotes). Same *problem* (price against competing liquidity); we do **not** use Fynd code or their client — our aggregator is CRE → `QuoteOracle`.
+
 ## Deliverables
 
-- [ ] CRE workflow project (TS or Go SDK, whichever the team is fastest in), config per chain/pair
-- [ ] Local simulation run (CRE CLI simulate) with logs for the demo video
-- [ ] `QuoteOracle.sol` + tests (forwarder auth, stale rejection, interpolation)
-- [ ] Deployed workflow writing to testnet oracle (if CRE deploy access is available at the event; otherwise simulation + manual relay, stated honestly)
+- [x] CRE workflow project (TS), config per chain/pair (`packages/cre-workflow`)
+- [ ] Local CRE CLI simulate with logs for the demo video (`cre workflow simulate`)
+- [x] `QuoteOracle.sol` + tests (forwarder auth, stale rejection, interpolation)
+- [ ] Deployed workflow writing to testnet oracle (if CRE deploy access is available at the event; otherwise simulation + `applyReport` relay, stated honestly)
 
 ## Judging angle
 
