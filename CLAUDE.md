@@ -31,8 +31,9 @@ Read `docs/02-fee-algorithm.md` before touching any fee code. It is the spec.
 ## Layout
 
 ```
-packages/fee-core      packages/oracle      packages/swapvm-opcode
-packages/private-quoting packages/cre-workflow apps/demo   docs/
+packages/fee-core packages/oracle packages/swapvm-opcode
+packages/private-quoting packages/cre-workflow packages/sdk
+apps/demo docs/
 ```
 
 ## Specialist subagents (`.claude/agents/`)
@@ -41,7 +42,7 @@ packages/private-quoting packages/cre-workflow apps/demo   docs/
 |---|---|
 | `fee-math` | `packages/fee-core`: formula, rounding, property tests |
 | `swapvm-aqua` | `packages/swapvm-opcode`: SwapVM instruction, Aqua strategy |
-| `private-quoting` | `packages/private-quoting`: Anon-RPC quoter, Frame mempool submitter, searcher-bot demo |
+| `private-quoting` | `packages/private-quoting` + `packages/sdk` (`@lastlook/sdk` client): Anon-RPC quoter, Frame mempool submitter, integrator SDK |
 | `cre-oracle` | `packages/cre-workflow` + `packages/oracle` |
 | `demo-integration` | `apps/demo`, mock venues, end-to-end scripts, submission materials |
 

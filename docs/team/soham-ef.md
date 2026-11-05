@@ -44,6 +44,24 @@ FRAME_EXPLORER=https://explorer.altmempool.wtf/
 - Submit the **swap** (or fee-setting path that needs flexible validation) via Frame alt-mempool when public mempool would leak/sandwich
 - Demo must show: quote path anonymized + at least one admitted frame tx on the explorer
 
+## Your new assignment — client SDK (`packages/sdk`)
+
+Arnab scaffolded `@lastlook/sdk` so others can integrate without reading Solidity:
+
+```ts
+import { CompetitiveFeeClient } from "@lastlook/sdk";
+const q = await client.quote({ tokenIn, amountIn });
+```
+
+**You own finishing it** (tasklist S1–S3 in `docs/10-tasklist.md`):
+
+1. **S1** — Anon-RPC `request` transport; default `private` for the EF demo
+2. **S2** — `client.setFrameSubmitter(...)` → your EIP-8141 frame-tx path; `submit({ mode: "frame" })`
+3. **S3** — Polish README + a copy-paste example judges can run
+4. **S4** (optional) — help Ishika import the SDK in `apps/demo`
+
+Do **not** copy Fynd’s client; keep our API thin (`quote` / `encodeSwap` / `submit`).
+
 ## Qualification reminders
 - Anon-RPC: app routes RPC reads through Anon-RPC by default
 - Frame: show admitted tx on devnet explorer OR code that submits one; explain design/trade-offs
