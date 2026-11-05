@@ -1,0 +1,34 @@
+{
+  "name": "private-quoting",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "EF track: Anon-RPC quoting + EIP-8141 frame-tx swaps through the alt-mempool (chain 1337 devnet).",
+  "scripts": {
+    "build:contracts": "forge build --root contracts",
+    "test:contracts": "forge test --root contracts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "fund": "tsx src/cli/fund.ts",
+    "deploy": "tsx src/cli/deploy.ts",
+    "swap": "tsx src/cli/swap.ts",
+    "web": "vite web",
+    "web:build": "vite build web",
+    "curve": "tsx src/cli/curve.ts"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "dependencies": {
+    "@anon-rpc/browser-harness": "^0.4.0",
+    "@forshtat/hegota-support": "0.0.1",
+    "viem": "^2.57.16"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

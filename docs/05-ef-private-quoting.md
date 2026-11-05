@@ -2,7 +2,11 @@
 
 > Replaces the earlier Uniswap v4 hook surface. The fee engine is unchanged; this track is about **how quotes are requested and how swaps reach the chain** without leaking the trader's intent.
 
-> ⚠️ **Verify at kickoff.** We target the EF prize through its privacy tooling, referred to here as **Anon-RPC** and the **Frame mempool**. Their exact definitions, APIs, supported networks and the EF prize wording are not confirmed in these docs. Read the EF prize brief and the tools' docs first, then rewrite the "Integration" section below with the real interfaces. If "Frame mempool" refers to the frame-transaction proposal (EIP-8141), confirm which client/devnet supports it.
+> ✅ **Verified 2026-11-06 (Soham), from source.** Built in `packages/private-quoting` (see its README). Corrections to this doc:
+> - **Prizes** (ethglobal.com/events/mumbai/prizes/ethereum-foundation): *Best Use of Anon-RPC* ($5k; "app routes its RPC reads through Anon-RPC by default") and *Best use of the Frame Transaction Alternative Mempool* ($5k; "link to your admitted transaction on the devnet explorer, or code that submits one"). **One EF prize per project**; the judges choose which.
+> - **"Frame mempool" = the ERC-8421 standard alt-mempool for EIP-8141 frame txs** on devnet chain 1337. It is **public**: pending txs and their calldata stream to anyone via `skandha_subscribe`. **It does not stop sandwiches**, so the "public path sandwiched vs private path safe" demo below is **dropped**. What we use instead: a `minOut` guard inside an EIP-8141 **atomic batch** (mint → approve → swap), so a front-run reverts the whole batch.
+> - **Anon-RPC is browser-only** (`@anon-rpc/browser-harness`), so the private quote path is a web page (`packages/private-quoting/web`), not a CLI.
+> - SwapVM/Aqua is not on chain 1337. The EF demo swaps against `DevnetCompetitivePool` (same `fee-core` library, same `IQuoteOracle`).
 
 ## Why this belongs in the project
 
