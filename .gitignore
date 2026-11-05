@@ -19,3 +19,6 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# private-quoting: throwaway devnet key + deployed addresses
+.devnet-state.json
