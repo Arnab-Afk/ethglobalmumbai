@@ -22,6 +22,7 @@ Inspired by PropellerHeads' Fynd AMM. **All code in this repo is written fresh d
 6. [Chainlink CRE workflow](docs/06-chainlink-cre.md)
 7. [Prize strategy & build plan](docs/07-prize-strategy-and-plan.md)
 8. [Risks & open questions](docs/08-risks-and-open-questions.md)
+9. [Team assignments](docs/09-team-assignments.md) — who owns what (Arnab, Soham, Saish, Ishika)
 
 ## Agent files
 

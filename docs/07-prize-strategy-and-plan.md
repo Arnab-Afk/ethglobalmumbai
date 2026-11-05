@@ -16,12 +16,22 @@
 
 The interfaces in [03-architecture.md](03-architecture.md) let everyone build against mocks immediately.
 
-| Person | Workstream | Starts with |
-|---|---|---|
-| A | fee-core + oracle contract | Library + tests; `MockQuoteOracle` published in hour 1 |
-| B | SwapVM / Aqua | Read SwapVM source, write the instruction against `MockQuoteOracle` |
-| C | v4 hook | Hook scaffold from v4 template, against `MockQuoteOracle` |
-| D | CRE + demo | CRE workflow in simulation; mock competitor pools; dashboard |
+| Person | Workstream | Agent | Starts with |
+|---|---|---|---|
+| **Arnab** (contracts lead) | fee-core, `IQuoteOracle` / `MockQuoteOracle` / `QuoteOracle`, SwapVM `CompetitiveFee` instruction + Aqua strategy | `fee-math`, `swapvm-aqua`, oracle half of `cre-oracle` | Freeze interfaces + ship `MockQuoteOracle` in hour 1; fee lib + tests; then SwapVM instruction |
+| **Soham** | Uniswap v4 hook | `v4-hook` | v4 template, hook scaffold against `MockQuoteOracle`, full-range pool + tests |
+| **Saish** | Chainlink CRE workflow | workflow half of `cre-oracle` | CRE CLI setup, venue quoting in simulation, report encoding matching `QuoteOracle` |
+| **Ishika** | Frontend, integration, demo, submission | `demo-integration` | Mock competitor pools + price-mover script, deploy-all script, dashboard frontend, video, per-track READMEs |
+
+**Handoffs:**
+- Arnab → everyone (hour 1): `IQuoteOracle`, `MockQuoteOracle`, `CompetitiveFee.Config`. Freeze after this.
+- Arnab ↔ Saish: CRE report ABI encoding (`docs/03`) and the forwarder/receiver interface on the target chain.
+- Arnab → Soham: `CompetitiveFee.compute` once its tests pass. Soham can stub it until then.
+- Ishika ← all: deployed addresses into `deployments/<chain>.json` and events for the dashboard.
+
+Full per-person breakdown: [09-team-assignments.md](09-team-assignments.md).
+
+**Kickoff research split (hour 0–1):** Arnab: SwapVM/Aqua source. Soham: v4-periphery `BaseHook` + dynamic fee API. Saish: CRE SDK, triggers, EVM read/write, receiver interface, supported chains. Ishika: prize requirements, which venues exist on candidate chains, frontend stack choice.
 
 ## Timeline (~36h)
 
