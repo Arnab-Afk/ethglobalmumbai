@@ -50,4 +50,4 @@ Delegate to the owning agent for work inside its package; keep cross-package cha
 
 ## Git
 
-Commit per workstream with a scope prefix: `fee-core:`, `swapvm:`, `private:`, `cre:`, `oracle:`, `demo:`, `docs:`.
+Commit per workstream with a scope prefix: `fee-core:`, `swapvm:`, `private:`, `sdk:`, `cre:`, `oracle:`, `demo:`, `docs:`.
