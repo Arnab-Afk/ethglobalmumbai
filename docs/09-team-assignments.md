@@ -5,7 +5,7 @@ Work is ordered by difficulty: Arnab owns the hardest and most central pieces, S
 | # | Person | Area | Agent(s) | Difficulty |
 |---|---|---|---|---|
 | 1 | **Arnab** | Contracts lead: fee-core, oracle contracts, SwapVM instruction + Aqua | `fee-math`, `swapvm-aqua`, oracle half of `cre-oracle` | Hardest |
-| 2 | **Soham** | Uniswap v4 hook | `v4-hook` | Second |
+| 2 | **Soham** | EF private & competitive quoting | `private-quoting` | Second |
 | 3 | **Saish** | Chainlink CRE workflow | workflow half of `cre-oracle` | Third |
 | 4 | **Ishika** | Frontend, integration, demo, submission | `demo-integration` | Breadth over depth |
 
@@ -25,25 +25,24 @@ Work is ordered by difficulty: Arnab owns the hardest and most central pieces, S
 5. Example maker program + Aqua allocation script; flat-fee vs competitive LP revenue comparison.
 
 **Stretch (also Arnab's, after SwapVM works):**
-- Multi-tick fee math for concentrated v4 liquidity
 - Competitive pricing for exact-output swaps
 
 **Deliverables:** `packages/fee-core`, `packages/oracle`, `packages/swapvm-opcode`.
 
 ---
 
-## Soham: Uniswap v4 hook
+## Soham: EF private & competitive quoting
 
-**Kickoff research:** v4-periphery `BaseHook` signatures, `SwapParams` and `amountSpecified` sign, dynamic fee + `OVERRIDE_FEE_FLAG`, `StateLibrary`, `HookMiner`. Update `docs/05`.
+**Kickoff research:** EF prize brief; Anon-RPC and Frame mempool docs (endpoints/SDKs, supported methods, tx format, networks/devnets). Confirm both are usable at the event within hour 1 and update `docs/05`.
 
 **Tasks:**
-1. Hook scaffold against `MockQuoteOracle`, stubbing `CompetitiveFee.compute` until Arnab's version passes tests.
-2. Dynamic-fee pool, full-range liquidity, virtual reserves from `sqrtPriceX96` + `L`.
-3. `beforeSwap` override: exact-in → competitive, exact-out → fallback; event `(fee, bestOut, ourOutAtZeroFee)`.
-4. Hook address mining + deploy script.
-5. Foundry tests vs a static-fee pool; fuzz `amountIn`; report gas.
+1. Quoter client: quote our SwapVM program via Anon-RPC (`--mode public|private`), using calldata from Arnab's package.
+2. Submitter: send the swap via the Frame mempool / private route; public mode uses the normal mempool.
+3. Searcher bot on a local fork/devnet that sandwiches public-path swaps against our own pool.
+4. Side-by-side script: trader output and LP fee, public vs private, over N trades → JSON for Ishika's dashboard.
+5. Stretch: sealed RFQ with signed firm quotes (fee-core TS reference); any on-chain check agreed with Arnab first.
 
-**Deliverables:** `packages/v4-hook`.
+**Deliverables:** `packages/private-quoting`.
 
 ---
 
@@ -53,7 +52,7 @@ Work is ordered by difficulty: Arnab owns the hardest and most central pieces, S
 
 **Tasks:**
 1. Workflow project + config (pairs, size buckets, venues, chain).
-2. Venue quoting via EVM reads (Uniswap v3 quoter, v2-style `getAmountsOut`, Ishika's mock pools); exclude our own pools/Aqua liquidity.
+2. Venue quoting via EVM reads (Uniswap v3/v4 quoters, v2-style `getAmountsOut`, Ishika's mock pools); exclude our own pools/Aqua liquidity.
 3. Build the curve (max across venues per size bucket), median across nodes.
 4. Encode the report exactly as `docs/03` (agree with Arnab) and write to `QuoteOracle`.
 5. Simulation logs for the demo; deploy if access is available, and state the status honestly in the submission.
@@ -83,10 +82,10 @@ Work is ordered by difficulty: Arnab owns the hardest and most central pieces, S
 |---|---|---|
 | Arnab → all | `IQuoteOracle`, `MockQuoteOracle`, `CompetitiveFee.Config` | Hour 1 |
 | Arnab ↔ Saish | CRE report ABI encoding, receiver/forwarder interface | Hours 1–4 |
-| Arnab → Soham | `CompetitiveFee.compute` with passing tests | Hours ~6–10 |
+| Arnab → Soham | SwapVM quote entrypoint + calldata, fee-core TS reference | Hours ~6–10 |
 | Ishika → Saish | Mock competitor pool addresses | Hours ~4–8 |
 | All → Ishika | Deployed addresses, event signatures | As deployed |
 
 ## If time runs short
 
-Cut in this order: v4 hook stretch → CRE live deploy (keep simulation) → v4 hook (Soham joins Arnab on SwapVM). The SwapVM instruction and fee library are never cut.
+Cut in this order: sealed RFQ stretch → CRE live deploy (keep simulation) → EF private path (Soham joins Arnab on SwapVM). The SwapVM instruction and fee library are never cut.

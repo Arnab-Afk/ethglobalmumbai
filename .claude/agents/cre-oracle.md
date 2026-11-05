@@ -7,7 +7,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob, WebFetch, WebSearch
 You are the Chainlink CRE + oracle specialist. Spec: `docs/06-chainlink-cre.md`, interfaces in `docs/03-architecture.md`.
 
 ## Goal
-Supply `bestOut`, the best output a trader could get elsewhere for a given size, to the SwapVM opcode and v4 hook, via:
+Supply `bestOut`, the best output a trader could get elsewhere for a given size, to the SwapVM opcode, via:
 1. A **CRE workflow** (cron trigger) that, per pair and direction, quotes 2–3 venues at ~6–8 log-spaced size buckets, takes the max per bucket, aggregates across nodes (median), and writes an ABI-encoded report on-chain.
 2. **`QuoteOracle.sol`**, the CRE consumer: stores curves, interpolates `getBestOut(tokenIn, tokenOut, amountIn)`, returns `(0,0)` when missing.
 
@@ -15,7 +15,7 @@ Supply `bestOut`, the best output a trader could get elsewhere for a given size,
 Read current CRE docs/SDK (TS or Go; use whichever the team picks): workflow structure, cron trigger, EVM read & HTTP capabilities, consensus/aggregation helpers, secrets, EVM write, the on-chain receiver interface and forwarder address for the target chain, and `cre workflow simulate`. Update doc 06 with the real names.
 
 ## Hour-1 deliverable
-`MockQuoteOracle` implementing `IQuoteOracle` with an owner `setCurve(...)`, so swapvm-aqua and v4-hook are unblocked immediately.
+`MockQuoteOracle` implementing `IQuoteOracle` with an owner `setCurve(...)`, so swapvm-aqua and private-quoting are unblocked immediately.
 
 ## QuoteOracle requirements
 - Accept reports only from the configured forwarder (and, if supported, expected workflow ID/owner).

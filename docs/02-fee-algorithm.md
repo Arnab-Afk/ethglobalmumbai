@@ -1,6 +1,6 @@
 # 02 — Fee Algorithm (shared source of truth)
 
-Every surface (SwapVM opcode, v4 hook, off-chain simulator) **must** implement exactly this. The Solidity library `CompetitiveFee.sol` in `packages/fee-core` is the canonical version; everything else calls it or mirrors it and is tested against it.
+Every surface (SwapVM opcode, private quoter client, off-chain simulator) **must** implement exactly this. The Solidity library `CompetitiveFee.sol` in `packages/fee-core` is the canonical version; everything else calls it or mirrors it and is tested against it.
 
 ## Inputs
 
@@ -14,7 +14,7 @@ Every surface (SwapVM opcode, v4 hook, off-chain simulator) **must** implement e
 | `fallbackFee` | Fee used when the quote is stale/missing | config |
 | `maxQuoteAge` | Staleness limit | config |
 
-Fees are expressed in **pips** (1 pip = 1e-6, so 3000 = 0.30%) to match Uniswap v4's `LPFeeLibrary` units. Convert at the SwapVM boundary if it uses different units.
+Fees are expressed in **pips** (1 pip = 1e-6, so 3000 = 0.30%; the same unit Uniswap v4 uses). Convert at the SwapVM boundary if it uses different units.
 
 ## Rule
 
@@ -42,7 +42,7 @@ f   = 1 − a* / amountIn
 
 Requires `Q_target < y` (otherwise the trade drains the pool; use `feeCap`/revert).
 
-For Uniswap v4 concentrated liquidity, use **full-range positions in the MVP** so the pool behaves as constant product with virtual reserves `x = L / sqrtP`, `y = L · sqrtP`. Multi-tick crossing is out of scope for the hackathon.
+The MVP pool uses a plain constant-product curve. Concentrated-liquidity curves are out of scope for the hackathon.
 
 ## Rounding
 

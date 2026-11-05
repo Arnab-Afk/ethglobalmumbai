@@ -29,6 +29,6 @@ Implement exactly `docs/02-fee-algorithm.md`. Summary:
 
 ## Rules
 - Use full-precision `mulDiv` for products; no intermediate overflow for 1e30-scale reserves.
-- Keep the library `internal` + `pure`/`view` so it inlines into the opcode and hook.
-- Interface changes (`Config` struct, `compute` signature) must be reflected in `docs/03-architecture.md` and flagged to the swapvm-aqua and v4-hook owners.
+- Keep the library `internal` + `pure`/`view` so it inlines into the opcode.
+- Interface changes (`Config` struct, `compute` signature) must be reflected in `docs/03-architecture.md` and flagged to the swapvm-aqua and private-quoting owners (the private quoter uses the TS reference).
 - Report gas for `compute` in your summary.

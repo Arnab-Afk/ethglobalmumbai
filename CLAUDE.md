@@ -6,7 +6,7 @@ An AMM whose swap fee is set **last, per trade**: before each swap it reads the 
 
 Three surfaces, one fee engine:
 1. **1inch SwapVM instruction on Aqua.** Core deliverable. See `docs/04-swapvm-opcode.md`
-2. **Uniswap v4 dynamic-fee hook.** See `docs/05-uniswap-v4-hook.md`
+2. **Private & competitive quoting (Ethereum Foundation track).** Anon-RPC quotes + Frame mempool submission. See `docs/05-ef-private-quoting.md`
 3. **Chainlink CRE workflow → QuoteOracle.** See `docs/06-chainlink-cre.md`
 
 Read `docs/02-fee-algorithm.md` before touching any fee code. It is the spec.
@@ -18,9 +18,9 @@ Read `docs/02-fee-algorithm.md` before touching any fee code. It is the spec.
 - **Units:** fees in pips (1e-6). Convert only at a surface boundary, in one clearly named function.
 - **Rounding favors the trader.** "Trader output ≥ best competitor" must hold exactly; tests must prove it.
 - **Fail safe:** stale or missing quote → `fallbackFee`. Never revert a swap because the oracle is down.
-- **Verify sponsor APIs, don't assume.** SwapVM, Aqua, v4-periphery and CRE SDKs change. Read the actual source/docs before coding against them and fix our docs if they're wrong.
+- **Verify sponsor APIs, don't assume.** SwapVM, Aqua, CRE SDKs and the EF privacy tools (Anon-RPC, Frame mempool) change or are new. Read the actual source/docs before coding against them and fix our docs if they're wrong.
 - **Exclude our own liquidity** from competitor quotes (self-undercut hazard).
-- MVP scope: exact-input swaps, full-range v4 liquidity, single chain. See non-goals in `docs/08-risks-and-open-questions.md`.
+- MVP scope: exact-input swaps, constant-product curve, single chain. See non-goals in `docs/08-risks-and-open-questions.md`.
 
 ## Tooling (planned)
 
@@ -32,7 +32,7 @@ Read `docs/02-fee-algorithm.md` before touching any fee code. It is the spec.
 
 ```
 packages/fee-core      packages/oracle      packages/swapvm-opcode
-packages/v4-hook       packages/cre-workflow apps/demo      docs/
+packages/private-quoting packages/cre-workflow apps/demo   docs/
 ```
 
 ## Specialist subagents (`.claude/agents/`)
@@ -41,7 +41,7 @@ packages/v4-hook       packages/cre-workflow apps/demo      docs/
 |---|---|
 | `fee-math` | `packages/fee-core`: formula, rounding, property tests |
 | `swapvm-aqua` | `packages/swapvm-opcode`: SwapVM instruction, Aqua strategy |
-| `v4-hook` | `packages/v4-hook`: hook, address mining, v4 tests |
+| `private-quoting` | `packages/private-quoting`: Anon-RPC quoter, Frame mempool submitter, searcher-bot demo |
 | `cre-oracle` | `packages/cre-workflow` + `packages/oracle` |
 | `demo-integration` | `apps/demo`, mock venues, end-to-end scripts, submission materials |
 
@@ -49,4 +49,4 @@ Delegate to the owning agent for work inside its package; keep cross-package cha
 
 ## Git
 
-Commit per workstream with a scope prefix: `fee-core:`, `swapvm:`, `v4-hook:`, `cre:`, `oracle:`, `demo:`, `docs:`.
+Commit per workstream with a scope prefix: `fee-core:`, `swapvm:`, `private:`, `cre:`, `oracle:`, `demo:`, `docs:`.

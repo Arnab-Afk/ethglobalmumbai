@@ -23,7 +23,7 @@ write: EVM write → QuoteOracle.onReport(report)
 | Source | How | Notes |
 |---|---|---|
 | Uniswap v3 | EVM read of Quoter (`quoteExactInputSingle`) per fee tier | Take best across tiers |
-| Uniswap v4 (other pools) | v4 Quoter EVM read | Exclude **our** hooked pool |
+| Uniswap v4 (other pools) | v4 Quoter EVM read | Exclude any pool of ours |
 | Sushi / other v2-style | `getAmountsOut` EVM read | Cheap, deterministic |
 | Aggregator API (1inch / 0x) | HTTP capability | ⚠️ May include our own Aqua liquidity → self-undercut. Exclude our liquidity or skip. Needs API key handling in CRE secrets. |
 | **Mock venues** (demo) | Our own deployed pools | Lets us move competitor prices live on stage |

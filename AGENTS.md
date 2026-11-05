@@ -6,7 +6,7 @@ Per-workstream specialist briefs are in [`.claude/agents/`](.claude/agents/):
 
 - [`fee-math.md`](.claude/agents/fee-math.md): shared competitive-fee library
 - [`swapvm-aqua.md`](.claude/agents/swapvm-aqua.md): 1inch SwapVM opcode + Aqua
-- [`v4-hook.md`](.claude/agents/v4-hook.md): Uniswap v4 hook
+- [`private-quoting.md`](.claude/agents/private-quoting.md): EF track, private quoting + submission
 - [`cre-oracle.md`](.claude/agents/cre-oracle.md): Chainlink CRE workflow + QuoteOracle
 - [`demo-integration.md`](.claude/agents/demo-integration.md): demo, mocks, e2e, submission
 

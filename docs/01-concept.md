@@ -31,7 +31,7 @@ The fee rule is a small, pure function (see [02-fee-algorithm.md](02-fee-algorit
 | Surface | Role in the story |
 |---|---|
 | **1inch SwapVM opcode on Aqua** | *Core.* A new instruction makers can drop into any SwapVM program, so any Aqua liquidity strategy can price competitively. |
-| **Uniswap v4 hook** | Shows the engine works for a mainstream pool type via `beforeSwap` dynamic fee override. |
+| **Private & competitive quoting (EF)** | Quotes via Anon-RPC and swaps via the Frame mempool, so the competitive price reaches the trader without leaking intent or getting sandwiched. |
 | **Chainlink CRE workflow** | Supplies the "best competing venue" input: fetches quotes off-chain, reaches DON consensus, and writes a quote curve on-chain. |
 
 ## What's novel vs. what's borrowed
@@ -40,12 +40,12 @@ The fee rule is a small, pure function (see [02-fee-algorithm.md](02-fee-algorit
 - **Ours (built at the hackathon):**
   - the fee rule and its closed-form solution for constant-product curves
   - a reusable SwapVM instruction (a primitive, not a single pool)
-  - the same rule as a v4 hook
+  - a private quote + submission path that keeps the "best price" promise intact against front-running
   - an oracle-fed quote *curve* (size-aware) delivered by CRE rather than a single spot price
 
 ## One-line pitches
 
 - **General:** "An AMM that charges the most it can while always being the best price."
 - **1inch/Aqua:** "A SwapVM opcode that lets any Aqua strategy price its fee against the market, live, per trade."
-- **Uniswap:** "A v4 hook that turns the LP fee into a per-swap competitive auction against every other venue."
+- **Ethereum Foundation:** "We price every trade against the whole market. Private quoting and private submission make sure only the trader sees that price before it executes."
 - **Chainlink:** "CRE as the cross-venue price-discovery layer that on-chain AMMs can't do themselves."
