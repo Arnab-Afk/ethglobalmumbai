@@ -32,11 +32,29 @@ EVM reads are deterministic across nodes, which keeps consensus easy. HTTP sourc
 
 ## On-chain consumer: `QuoteOracle.sol`
 
-- Implements the CRE consumer/receiver interface and accepts reports **only from the configured forwarder** (check the current CRE docs for the receiver interface name and forwarder address on the target chain).
-- Stores per `(tokenIn, tokenOut)`: `amountsIn[]`, `bestOuts[]`, `observedAt`.
-- `getBestOut(tokenIn, tokenOut, amountIn)` interpolates (see [02](02-fee-algorithm.md)); returns `(0, 0)` if missing.
-- Rejects reports with `observedAt` older than the stored one (no replay / rollback).
-- Sanity checks: curve monotonic in `amountIn`, `bestOut` non-decreasing, array lengths match, max points.
+Verified CRE write path (Nov 2026): workflow → `KeystoneForwarder` → consumer `onReport(bytes metadata, bytes report)`. Consumer must implement **`IReceiver`** + ERC-165. Production `metadata` is **64 bytes** (62-byte packed workflow identity + 2-byte `reportId`). See [Building Consumer Contracts](https://docs.chain.link/cre/guides/workflow/using-evm-client/onchain-write/building-consumer-contracts).
+
+- Accepts reports **only from the configured forwarder** (`msg.sender == forwarder`). Owner `applyReport` escape hatch for demos / simulation without a live forwarder.
+- Stores per `(tokenIn, tokenOut)`: `amountsIn[]`, `bestOuts[]`, `observedAt`, `venueIds`.
+- `getBestOut(tokenIn, tokenOut, amountIn)` interpolates (see [02](02-fee-algorithm.md)); returns `(0, 0)` if missing or above last bucket.
+- Rejects reports with `observedAt` ≤ stored (no replay / rollback).
+- Sanity checks: equal lengths, strictly increasing `amountsIn`, non-decreasing `bestOuts`, max **16** points (`QuoteCurveLib.MAX_POINTS`).
+
+### Report encoding (frozen with Saish)
+
+```solidity
+struct CurveUpdate {
+    address tokenIn;
+    address tokenOut;
+    uint64 observedAt;
+    uint256[] amountsIn;
+    uint256[] bestOuts;
+    bytes32 venueIds;
+}
+// report = abi.encode(CurveUpdate[])
+```
+
+Saish's CRE workflow must ABI-encode exactly this payload before `writeReport`.
 
 ## Freshness vs. cost
 

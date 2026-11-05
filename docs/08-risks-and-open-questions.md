@@ -5,8 +5,8 @@
 | # | Question | Why it matters | Default if unresolved |
 |---|---|---|---|
 | Q1 | Which chain has SwapVM/Aqua + CRE write support + Anon-RPC / Frame mempool? | Single-chain end-to-end demo | Testnet for CRE+oracle; fork for SwapVM if not deployed there |
-| Q2 | Current SwapVM instruction/registry API? Can third parties add opcodes without a fork of the VM? | Shapes the whole opcode workstream | Fork SwapVM, register instruction in our build |
-| Q3 | How SwapVM applies fees internally (input vs output, units) | Fee conversion at the boundary | Mirror the built-in input-fee instruction |
+| Q2 | Current SwapVM instruction/registry API? Can third parties add opcodes without a fork of the VM? | Shapes the whole opcode workstream | **Resolved:** live router has fixed table (no dynamic register). Path A: fork/`AquaOpcodes` + redeploy (prize-allowed). Path B: Extruction opcode 32. See `docs/04`. |
+| Q3 | How SwapVM applies fees internally (input vs output, units) | Fee conversion at the boundary | **Resolved:** `_flatFeeAmountInXD` wraps `amountIn`; scale `BPS=1e9`. Convert pips↔bps ×1000. Mirror FlatFee; don't use dynamic protocol fee for LP. |
 | Q4 | CRE deploy access at the event, or simulation only? | Honest scoping of the Chainlink submission | Simulation + documented path to deploy |
 | Q5 | Which competitor venues exist on the chosen chain? | Real vs mock data | Mock pools + one real venue |
 | Q6 | Exact sponsor prize requirements | Qualification | Update doc 07 |

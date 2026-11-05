@@ -55,3 +55,8 @@ This is a stretch for a pure AMM demo. Keep the AMM core unchanged and add priva
 ## Judging angle
 - Privacy is load-bearing: the competitive-fee promise breaks without it, and the demo shows that directly.
 - Uses EF privacy infrastructure for a concrete DeFi use case, not just a wrapper.
+
+## Live endpoints (staged 2026-11-05)
+
+See [05b-ef-endpoints.md](05b-ef-endpoints.md) for Anon-RPC links and the public Frame/alt-mempool RPC (https://altmempool.forshtat.com/rpc, chain 1337). Secrets mirror: C:\Users\arnab\ethglobal-mumbai-secrets\soham\EF_BOOTSTRAP.env.
+

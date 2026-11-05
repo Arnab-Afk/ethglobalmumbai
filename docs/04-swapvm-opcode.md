@@ -2,58 +2,178 @@
 
 ## Goal
 
-Ship a **new SwapVM instruction** that sets the fee for the current swap from the competitive fee rule, so any maker running a SwapVM program on **Aqua** liquidity can add competitive pricing by inserting one instruction.
+Ship a **competitive-fee pricing primitive** for SwapVM programs on **Aqua**, so any maker can price just ahead of the best competing venue per trade.
 
-This is the headline deliverable. It's a *primitive*, which is what makes it a strong Aqua submission: not "one more pool" but a building block for every strategy.
+This is the headline deliverable. 1inch scores SwapVM usage higher; prize rules explicitly allow **redeploying a modified SwapVM with custom opcodes**.
 
-## Background (verify against the 1inch repos at kickoff)
+## Verified background (kickoff, Nov 2026)
 
-- **SwapVM** executes a maker-defined program (bytecode of instructions) to compute a swap's amounts. Instructions handle balances, curves (e.g. constant product), fees, limits, etc.
-- **Aqua** is 1inch's shared-liquidity layer: makers keep funds in their wallet and allocate them virtually to strategies (SwapVM programs) that takers swap against.
+Sources: [`1inch/swap-vm`](https://github.com/1inch/swap-vm), [Aqua opcode gallery](https://business.1inch.com/portal/documentation/aqua/swapvm/opcode-gallery), [Fee](https://business.1inch.com/portal/documentation/aqua/swapvm/aqua-router-opcodes/fee), [Extruction](https://business.1inch.com/portal/documentation/aqua/swapvm/aqua-router-opcodes/extruction). Deployed router: `AquaSwapVMRouter` v1.0.2 (`0x111111338c5091e8440b67b168bae16a668ac0de`).
 
-> ⚠️ Instruction names, the opcode registry mechanism, the context/register layout, and how fees are applied differ between versions. **First task at kickoff: read the current SwapVM + Aqua source and examples, then update this doc with the real names.** Don't build against assumptions.
+### How SwapVM + Aqua fit
+
+- **SwapVM** runs a maker program (bytecode: `opcode | argsLen | args…`) during `quote()` and `swap()`.
+- **Aqua** holds maker balances virtually; Aqua mode uses `orderHash` settlement (`pull`/`push`), no EIP-712 signature.
+- Routers = `SwapVM` + an opcode set. Aqua uses `AquaOpcodes` via `AquaSwapVMRouter`.
+
+### Deployed Aqua opcode table (authoritative)
+
+No dynamic registration on the live router. Reserved gaps (0–9, 22–26) are no-ops. Unknown indices panic.
+
+| Index | Family | Function / SDK builder | Args |
+|---|---|---|---|
+| 10–16, 20, 33 | Controls | `jump`, token guards, `deadline`, `salt`, … | varies |
+| 17 | XYCSwap | `xycSwapXD` | none |
+| 18 | XYCConcentrate | `concentrateGrowLiquidity2D` | 2×32 |
+| 19 | Decay | `decayXD` | `period` u16 |
+| **21** | **Fee** | **`flatFeeAmountInXD`** | **`feeBps` u32** |
+| 27–28 | Fee | protocol / aqua protocol flat | `feeBps` + `to` |
+| 29–30 | Fee | dynamic protocol / aqua dynamic | `feeProvider` 20 |
+| 31 | PeggedSwap | `peggedSwapGrowPriceRange2D` | 160 bytes |
+| **32** | **Extruction** | **`extruction`** | **`target` 20 + args** |
+
+### Fee units (critical)
+
+SwapVM fee scale: **`BPS = 1e9` (= 100%)**. Example: 0.30% → `feeBps = 3_000_000`.
+
+Our fee-core uses **pips** where **`1e6 = 100%`** (Uniswap v4 style; 0.30% → `3000`).
+
+```
+swapVmBps = pips * 1_000
+pips      = swapVmBps / 1_000
+```
+
+Convert only at the SwapVM boundary in one named helper (`pipsToSwapVmBps` / `swapVmBpsToPips`).
+
+### Built-in LP fee: `_flatFeeAmountInXD` (opcode 21)
+
+Source: `src/instructions/Fee.sol`. Wrapping instruction — must run **before** amounts are computed (`amountIn` or `amountOut` still zero for the other leg).
+
+Exact-in behaviour (mirror this):
+
+1. `feeAmountIn = amountIn * feeBps / BPS` (floor div)
+2. temporarily `amountIn -= feeAmountIn`
+3. `ctx.runLoop()` → nested curve opcode (e.g. XYC)
+4. restore taker-defined `amountIn`
+
+Exact-out: run loop first, then add `amountIn * feeBps / (BPS - feeBps)`.
+
+Dynamic protocol fees (29/30) call `IProtocolFeeProvider.getFeeBpsAndRecipient` via `staticcall` and **transfer** fee to a recipient — wrong semantics for an LP fee that should stay in the pool. Do **not** use them for competitive LP pricing.
+
+### Context registers (`src/libs/VM.sol`)
+
+```solidity
+struct SwapQuery {
+    bytes32 orderHash;
+    address maker;
+    address taker;
+    address tokenIn;
+    address tokenOut;
+    bool    isExactIn;
+}
+
+struct SwapRegisters {
+    uint256 balanceIn;
+    uint256 balanceOut;
+    uint256 amountIn;
+    uint256 amountOut;
+    uint256 amountNetPulled;
+}
+```
+
+Balances are already in registers when pricing runs (Aqua `safeBalances`). Fill the missing leg: `isExactIn ? amountOut : amountIn`.
+
+### Q2 resolved: how to add a custom instruction
+
+| Path | What | Pros | Cons |
+|---|---|---|---|
+| **A — Fork + custom opcode (preferred for prize)** | Extend `AquaOpcodes` with `CompetitiveFee`, redeploy router | Matches “define your own instructions”; scores SwapVM higher; can wrap like FlatFee | Must redeploy router; demo against our build / fork |
+| **B — Extruction Path C (fallback / also-ship)** | Non-upgradeable `IExtruction`/`IStaticExtruction` target at opcode 32 | Works on deployed router without fork; official Path C | Target owns full pricing (fee + curve); not a native opcode |
+
+Prize wording: *“redeployments of a modified SwapVM contract is allowed”* and *“Projects that utilize SwapVM will be scored higher.”* → **Path A is primary.** Ship Path B as a secondary demo if time allows (same fee-core).
+
+---
 
 ## Design
 
-### Instruction: `CompetitiveFee`
+### Path A — Instruction: `CompetitiveFee` (new opcode)
 
-Placed **before** the curve/swap instruction in a program, the same way an existing fee instruction would be.
+Placed like FlatFee: **before** the curve instruction. Wrapping: compute dynamic `feeBps`, then same exact-in/out amount adjustment + `runLoop()`.
 
-**Arguments (encoded in the program):**
-- `oracle` address (or an index into a known-oracle table, if args must be small)
-- `feeFloor`, `feeCap`, `fallbackFee` (pips or SwapVM fee units)
-- `undercutBps`, `maxQuoteAge`
+**Args (packed):**
+
+| Field | Size | Notes |
+|---|---|---|
+| `oracle` | 20 | `IQuoteOracle` |
+| `feeFloor` | 4 | SwapVM `feeBps` (1e9 scale) **or** pips — pick one at freeze; recommend **pips in args, convert inside** |
+| `feeCap` | 4 | same |
+| `fallbackFee` | 4 | same |
+| `undercutBps` | 2 | undercut in basis points (1e4 = 100%), same as fee-core |
+| `maxQuoteAge` | 4 | seconds |
 
 **Behaviour:**
-1. Read `tokenIn`, `tokenOut`, `amountIn` and the maker's current balances from the swap context.
-2. `oracle.getBestOut(tokenIn, tokenOut, amountIn)`.
-3. `fee = CompetitiveFee.compute(...)` (shared library).
-4. Apply the fee to the input amount using the same mechanics as SwapVM's built-in input-fee instruction, so downstream curve instructions see the net amount.
 
-**Quote mode:** SwapVM supports quoting (view) as well as swapping. The instruction must be view-safe so aggregators can quote us and see the competitive price. This is what makes 1inch's router actually pick us.
+1. Read `tokenIn`, `tokenOut`, `amountIn`, `balanceIn`, `balanceOut` from context.
+2. `oracle.getBestOut(tokenIn, tokenOut, amountIn)` (view; never revert the swap on failure — treat as missing → fallback).
+3. `feePips = CompetitiveFee.compute(...)` (fee-core).
+4. `feeBps = pipsToSwapVmBps(feePips)`.
+5. Apply FlatFee-equivalent wrapping around the nested curve.
 
-### Example program (pseudocode)
+**Quote mode:** must be view-safe (`isStaticContext`); quote == swap amounts.
+
+MVP: exact-in only for competitive path; exact-out → `fallbackFee` (see `docs/02`).
+
+### Path B — `CompetitiveFeeExtruction` (opcode 32)
+
+Single `view` `extruction(...)` implementing both `IExtruction` and `IStaticExtruction` (identical amounts by construction). Non-upgradeable (`immutable` oracle + config).
+
+Inside: recompute guard → `getBestOut` → `CompetitiveFee.compute` → constant-product with fee applied → write `amountOut` / `amountIn`. Args after the 20-byte target carry oracle/config if not immutable.
+
+### Example programs
+
+Path A (forked router):
 
 ```
-[ balances(tokenA, tokenB) ]
-[ CompetitiveFee(oracle, floor=500, cap=10000, fallback=3000, undercut=1, maxAge=60) ]
-[ xyk swap ]
-[ invalidate / nonce ]
+[ Controls / salt as needed ]
+[ CompetitiveFee(oracle, floor, cap, fallback, undercut, maxAge) ]
+[ xycSwapXD ]
+```
+
+Path B (deployed or forked router):
+
+```
+[ extruction(CompetitiveFeeExtruction, args…) ]
 ```
 
 ### Self-reference hazard
 
-If the CRE workflow uses the **1inch aggregator API** as one source, that quote may already include *our own* Aqua liquidity, and we'd be undercutting ourselves. Either exclude it or query only individual venues. See [06-chainlink-cre.md](06-chainlink-cre.md).
+If CRE uses the 1inch aggregator API, that quote may include our Aqua liquidity → fee spirals to floor. Exclude own pools / query discrete venues only. See [06-chainlink-cre.md](06-chainlink-cre.md).
+
+---
+
+## Unit helper (boundary only)
+
+```solidity
+uint256 constant PIP_SCALE = 1e6;   // fee-core
+uint256 constant SWAPVM_BPS = 1e9;  // Fee.sol
+
+function pipsToSwapVmBps(uint24 pips) pure returns (uint32) {
+    return uint32(uint256(pips) * (SWAPVM_BPS / PIP_SCALE)); // * 1000
+}
+```
+
+---
 
 ## Deliverables
 
-- [ ] Instruction contract + registration in a SwapVM build
-- [ ] Example maker program using it + script to publish/allocate on Aqua
-- [ ] Foundry tests: quote vs swap consistency, stale-oracle fallback, rounding favors taker
-- [ ] Comparison script: same trade against a flat-fee program vs ours → LP revenue delta
+- [ ] Path A: `CompetitiveFee` instruction + registration in our `AquaOpcodes` build
+- [ ] (Optional) Path B: `CompetitiveFeeExtruction` + tests
+- [ ] Example maker program + Aqua allocate script
+- [ ] Foundry tests: quote == swap, stale → fallback, rounding favors taker, composition with XYC
+- [ ] Comparison script: flat-fee program vs competitive → LP revenue delta
 
 ## Judging angle
 
-- Novel primitive in SwapVM, composable with existing instructions
-- Uses Aqua's shared liquidity: the same capital can run competitive and flat strategies side by side
-- Clean demo: aggregator quote shows our price just beating the best alternative
+- Novel SwapVM instruction (or Extruction primitive) any Aqua strategy can drop in
+- Same capital can run competitive and flat strategies side by side on Aqua
+- Demo: quote just beats best alternative; LP captures surplus vs flat 5 bp / 30 bp

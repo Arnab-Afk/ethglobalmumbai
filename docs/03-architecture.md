@@ -56,6 +56,8 @@ docs/              This documentation
 
 ## Interfaces (contract between workstreams)
 
+> **Frozen (Arnab, hour 1):** `packages/oracle/src/IQuoteOracle.sol`, `MockQuoteOracle.sol`, `packages/fee-core/src/CompetitiveFee.sol` (`Config` + `compute`). Changing them means updating this doc and notifying all workstreams.
+
 These are the seams. Agree on them first; then every workstream can build in parallel against mocks.
 
 ```solidity
