@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MarketView } from "@/components/market/market-view";
 
 export const metadata: Metadata = {
-  title: "Market · Hairline",
+  title: "Market · neat",
   description: "Competitor prices for WETH → USDC, published on-chain by the Chainlink CRE workflow.",
 };
 

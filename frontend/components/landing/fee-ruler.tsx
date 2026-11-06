@@ -6,7 +6,7 @@ import { priceTrades } from "@/lib/replay";
 
 /**
  * "How it works" visual: one price ruler. Three marks for a single trade (the best competing
- * venue, what Hairline pays, what the pool could pay with no fee) and the fee is simply the gap.
+ * venue, what neat pays, what the pool could pay with no fee) and the fee is simply the gap.
  * Figures come from the deployed fee contract via priceTrades(); the 10 ETH docs/02 worked
  * example is shown until the live call returns.
  */
@@ -16,7 +16,7 @@ type Size = (typeof SIZES)[number];
 
 interface Point {
   best: number; // best venue, USDC
-  hairline: number; // Hairline pays, USDC
+  hairline: number; // neat pays, USDC
   zero: number; // zero-fee output, USDC
   feePips: number;
 }
@@ -125,7 +125,7 @@ export function FeeRuler() {
           style={{ left: at(p.hairline) }}
         />
         <div className="absolute top-0 max-w-[220px] pl-3 transition-all duration-500 ease-out" style={{ left: at(p.hairline) }}>
-          <div className="text-[12px] text-[#6B6560]">Hairline pays you</div>
+          <div className="text-[12px] text-[#6B6560]">neat pays you</div>
           <div className="text-[22px] font-medium tracking-[-0.02em] [font-variant-numeric:tabular-nums]">{usd(p.hairline)}</div>
           <div className="text-[12px] text-[#1F8A5B] [font-variant-numeric:tabular-nums]">
             +{usd(p.hairline - p.best)} over the best venue

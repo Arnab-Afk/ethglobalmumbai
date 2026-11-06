@@ -29,4 +29,4 @@ import { CompetitiveFeeClient } from "neat3-sdk";
 const q = await client.quote({ tokenIn, amountIn });
 ```
 
-S1–S3 are in this package. S4: the Hairline app (`frontend/`) reads Sepolia through `neat3-sdk/anon`. It targets `frontend/`, not `apps/demo`, because `frontend/` is the app we demo; it quotes Sepolia `previewFeePips`, so it uses the SDK transport rather than `CompetitiveFeeClient` (which wraps the devnet pool).
+S1–S3 are in this package. S4: the neat app (`frontend/`) reads Sepolia through `neat3-sdk/anon`. It targets `frontend/`, not `apps/demo`, because `frontend/` is the app we demo; it quotes Sepolia `previewFeePips`, so it uses the SDK transport rather than `CompetitiveFeeClient` (which wraps the devnet pool).

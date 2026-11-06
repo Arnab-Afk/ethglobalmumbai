@@ -12,7 +12,7 @@ import { Eyebrow, SectionHead } from "./section";
 export function AudienceToggle() {
   const [edge, setEdge] = useState<number | null>(null);
 
-  // Live 10 WETH trade: how much more Hairline pays than the best venue.
+  // Live 10 WETH trade: how much more neat pays than the best venue.
   useEffect(() => {
     priceTrades([10]).then(
       (r) => setEdge(r.trades[0].hairline.out - r.trades[0].bestOut),

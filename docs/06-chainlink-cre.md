@@ -152,7 +152,7 @@ Plan for the mainnet-fork demo (not built yet): add `univ3` and `univ4` venue ki
 
 ## Submission text (draft)
 
-> **Hairline: a swap fee set last, per trade, from a Chainlink CRE quote curve.**
+> **neat: a swap fee set last, per trade, from a Chainlink CRE quote curve.**
 > Before each swap, the pool needs to know the best output the trader could get elsewhere. A CRE workflow quotes competing venues across trade sizes and checks every quote against the Chainlink ETH/USD feed. Quotes far above fair are thrown out (Sepolia's Uniswap v3 pool, ~+1,060%, is rejected live). The workflow writes both directions of WETH/USDC to `QuoteOracle` in one signed report. The pool then charges the largest fee that still beats that curve, so the trader always gets at least the best price elsewhere.
 >
 > **What runs:** `cre workflow simulate --broadcast` (CRE CLI 1.39, TS SDK): cron → one Multicall3 read for all Chainlink feeds → venue quotes → fair-price filter → `abi.encode(CurveUpdate[])` → `writeReport` → `QuoteOracle.onReport` on Sepolia via the CRE mock forwarder. Transactions: `0x48f2…aaa2` (first), `0xd431…581e` (first two-direction), and 38 from `cre:watch` on 6 Nov.

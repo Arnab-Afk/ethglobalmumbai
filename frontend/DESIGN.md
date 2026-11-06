@@ -1,4 +1,4 @@
-# Hairline landing page: design system
+# neat landing page: design system
 
 The landing page (`app/page.tsx`, `components/landing/*`) is a **light, editorial** marketing page:
 white and warm-grey sections, one lavender brand colour, big quiet headings, thin rules instead of
@@ -41,7 +41,7 @@ not per section.**
 | Warm grey | `#F7F5F2` | Alternate section background (sticky "never too high" panel, "Built for" strip), input wells in the hero card |
 | Lavender | `#AB9FF2` | Brand surface: hero and Integrations band, final-CTA blocks, ticker dot |
 | Lavender bar | `#CDC6F9` | Hero staircase bars only |
-| Lavender soft | `#EEEBFD` / `#EFECFD` | Fee band on the ruler, highlighted "Hairline" row in the compare card |
+| Lavender soft | `#EEEBFD` / `#EFECFD` | Fee band on the ruler, highlighted "neat" row in the compare card |
 | Purple ink | `#5B46C7` | Accent text on white (6.7:1): big figures, links in cards, fee value |
 | Deep purple | `#3E2FA0` | Number inside the lavender fee band |
 | Win green | `#1F8A5B` / `#1F9D57` | "+X over the best venue", winning-row dot |
@@ -112,7 +112,7 @@ coloured bands. **Every section starts with it**, except the hero, the sticky sp
 display type) and FAQ (eyebrow + h2 in a left column).
 
 ### Header (`header.tsx` → `LandingHeader`)
-Text wordmark "Hairline" (no logo mark), links centered, wallet pill right. Transparent over the
+Text wordmark "neat", always lowercase (no logo mark in the header; the 30 ml peg glass is the favicon only), links centered, wallet pill right. Transparent over the
 hero, `bg-white/90 backdrop-blur-md` with a 1px shadow once scrolled past 40px. The wallet pill is
 white on lavender and ink once solid. The wallet is touched **only on click**.
 
@@ -141,15 +141,15 @@ white on lavender and ink once solid. The wallet is touched **only on click**.
 
 ### Data visuals
 - **Fee ruler** (`fee-ruler.tsx`): the one explanatory visual. Three marks on a ticked line (best
-  venue, Hairline, pool before any fee); the fee is the lavender gap labelled "LPs keep". The
-  Hairline mark is the only solid ink line with a dot. Labels never overlap: venue label below/right,
-  Hairline label above/right, zero-fee label below/left. Marks animate with
+  venue, neat, pool before any fee); the fee is the lavender gap labelled "LPs keep". The
+  neat mark is the only solid ink line with a dot. Labels never overlap: venue label below/right,
+  neat label above/right, zero-fee label below/left. Marks animate with
   `transition-all duration-500 ease-out` when the size changes.
 - **Compare card**: table, mono heads, a status dot per row (ink = venue, green = wins, grey = loses),
-  Hairline row highlighted in lavender soft.
+  neat row highlighted in lavender soft.
 - **Ticker tape**: `h-14 bg-[#151619]`, fixed mono "Live · Sepolia" label with a pinging lavender
   dot, rows scroll with `hairline-ticker`, pause on hover.
-- Charts follow the dataviz validator palette: Hairline `#8572e6`, flat 30 bp `#c4862a`, flat 5 bp `#26967b`.
+- Charts follow the dataviz validator palette: neat `#8572e6`, flat 30 bp `#c4862a`, flat 5 bp `#26967b`.
 
 ### Decorative shapes (the only ones allowed)
 - **Hero staircase** (`HeroBars`): static bars in `#CDC6F9` on lavender, rows `9.5vw` tall, each
@@ -164,7 +164,7 @@ white on lavender and ink once solid. The wallet is touched **only on click**.
 | # | Section | Surface | Eyebrow | Content |
 |---|---|---|---|---|
 | 1 | Hero | Lavender | — | h1, lede, Launch App, two stats, replay link; live swap card right |
-| 2 | Ticker | Ink | Live · Sepolia | Hairline quote per size vs best venue |
+| 2 | Ticker | Ink | Live · Sepolia | neat quote per size vs best venue |
 | 3 | How it works (`#how`) | White | Pricing | `SectionHead` + fee ruler + four numbered steps |
 | 4 | Why it wins (`#market`) | White + warm-grey sticky panel | Markets | Display h2 panel; compare card + three principles |
 | 5 | Integrations | Lavender | Integrations | `SectionHead` + three contract cards (1inch Aqua, Chainlink CRE, Ethereum Foundation) |

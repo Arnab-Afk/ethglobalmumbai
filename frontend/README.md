@@ -1,4 +1,4 @@
-# Hairline (frontend)
+# neat (frontend)
 
 The demo app: quote, market and dashboard on Sepolia.
 

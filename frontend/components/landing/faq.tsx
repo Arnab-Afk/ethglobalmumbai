@@ -1,7 +1,11 @@
 const QUESTIONS = [
   {
-    q: "What is Hairline?",
+    q: "What is neat?",
     a: "An AMM whose swap fee is set last, on every trade. Before the swap, it reads what the best competing venue pays for that exact trade and charges the largest fee that still pays you more. LPs keep everything above that.",
+  },
+  {
+    q: "Why the name, and the glass?",
+    a: "Neat means served as it is, nothing added. The glass has a pour line: the fee fills up to the point where you still beat the best venue, then stops.",
   },
   {
     q: "How is the fee decided?",

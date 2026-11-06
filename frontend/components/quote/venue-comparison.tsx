@@ -10,7 +10,7 @@ const SHOWN = 5;
 
 /**
  * Optional "view all quotes", like a wallet's swap screen: collapsed to one line (best of N, our edge),
- * expanding to every venue we checked for this exact trade, ranked by what it pays, Hairline on top.
+ * expanding to every venue we checked for this exact trade, ranked by what it pays, neat on top.
  * Bars are zoomed onto the spread so a 0.01% gap is visible; the footer says how the fee
  * was chosen: the largest fee that still pays at least the best venue plus the undercut.
  */
@@ -54,7 +54,7 @@ export function VenueComparison({
         {" · "}
         {beats ? (
           <>
-            Hairline <span className="text-win">{pct(vsBest(ours))}</span> vs {best.name} {best.detail}
+            neat <span className="text-win">{pct(vsBest(ours))}</span> vs {best.name} {best.detail}
           </>
         ) : (
           <>
@@ -99,7 +99,7 @@ export function VenueComparison({
 
       <ol className="tnum mt-3 flex flex-col gap-1.5 text-sm">
         <Row
-          label="Hairline"
+          label="neat"
           detail={`${pipsToPercent(quote.feePips)} fee`}
           value={amt(ours)}
           width={width(ours)}
@@ -127,7 +127,7 @@ export function VenueComparison({
 
       <p className="mt-3 border-t border-line pt-3 text-sm leading-relaxed text-fg-2">
         At a 0% fee this pool would pay <span className="text-fg">{amt(zero)}</span> {tokenOut.symbol} for {fmtSmart(quote.amountIn, tokenIn.decimals)}{" "}
-        {tokenIn.symbol}. Hairline charges the <span className="text-fg">largest fee that still pays at least the best venue
+        {tokenIn.symbol}. neat charges the <span className="text-fg">largest fee that still pays at least the best venue
         </span>{" "}
         ({best.name} {best.detail}, {amt(best.out)}) plus {undercut} bp: <span className="text-fg">{pipsToPercent(quote.feePips)}</span>. LPs keep{" "}
         <span className="text-fg">{amt(zero - ours)}</span> {tokenOut.symbol}, and the trader still gets{" "}

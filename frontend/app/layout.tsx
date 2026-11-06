@@ -15,14 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hairline - best price, every swap",
+  title: "neat - best price, served neat",
   description:
-    "Hairline checks the best price you could get anywhere else, then beats it. You receive more. Liquidity providers earn what a flat fee would have missed.",
+    "neat checks what the best venue would pay you, then charges a fee only up to that line. You still get more. LPs keep the rest.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      // Smooth scrolling for in-page anchors only: Next skips it for route changes.
+      data-scroll-behavior="smooth"
+      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <WalletProvider>{children}</WalletProvider>
       </body>

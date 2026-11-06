@@ -437,7 +437,7 @@ function venueName(quote: LiveQuote) {
   return head.startsWith("No ") ? "Best pool" : head || "Best pool";
 }
 
-/** The sentence and two bars from the reference: Hairline against the best pool. */
+/** The sentence and two bars from the reference: neat against the best pool. */
 function EdgeNote({ quote, tokenOut }: { quote: LiveQuote; tokenOut: Token }) {
   const dec = tokenOut.decimals;
   const symbol = tokenOut.symbol;
@@ -471,7 +471,7 @@ function EdgeNote({ quote, tokenOut }: { quote: LiveQuote; tokenOut: Token }) {
       </p>
       {hasBest && (
         <div className="mt-3 space-y-2.5">
-          <Bar label="Hairline" value={fmt2(quote.ourOut, dec)} width={width(quote.ourOut)} fill="#3B6CFF" />
+          <Bar label="neat" value={fmt2(quote.ourOut, dec)} width={width(quote.ourOut)} fill="#3B6CFF" />
           <Bar label={venueName(quote)} value={fmt2(quote.bestOut, dec)} width={width(quote.bestOut)} fill="#4A453F" />
         </div>
       )}

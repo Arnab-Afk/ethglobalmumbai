@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .wall { stroke: #3d4350; fill: none; }
+    .base { fill: #3d4350; }
+    @media (prefers-color-scheme: dark) { .wall { stroke: #e4e8ee; } .base { fill: #e4e8ee; } }
+  </style>
+  <!-- whisky, neat: sits on the heavy base, flat top at the pour line -->
+  <path d="M7.3 13h17.4l-.9 10H8.2z" fill="#c8782a"/>
+  <path d="M7.3 13h17.4" stroke="#f0b264" stroke-width="1.2"/>
+  <!-- heavy glass base -->
+  <path class="base" d="M6.75 23h18.5l-.45 5H7.2z" fill-opacity=".55"/>
+  <!-- tapered tumbler walls -->
+  <path class="wall" d="M5 4l2.2 24h17.6L27 4" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- glint on the glass -->
+  <path d="M9 6.5l.6 5" stroke="#fff" stroke-opacity=".6" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

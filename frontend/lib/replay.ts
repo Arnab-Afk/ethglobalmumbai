@@ -39,7 +39,7 @@ export interface ReplayTrade {
   i: number;
   size: number; // WETH
   bestOut: number; // USDC, 0 = no competitor quote for this size
-  feePips: number; // Hairline's fee from the contract
+  feePips: number; // neat's fee from the contract
   hairline: PoolResult;
   flat30: PoolResult;
   flat5: PoolResult;
