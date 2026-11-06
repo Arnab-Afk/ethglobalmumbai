@@ -5,7 +5,7 @@ import type { PoolSide } from "./pools";
 import type { Token } from "./tokens";
 
 // Batch so one quote (fee preview + block) is a single HTTP request: the public RPC rate-limits.
-const client = createPublicClient({
+export const client = createPublicClient({
   chain: sepolia,
   transport: http(SEPOLIA.rpcUrl, { batch: { wait: 20 }, retryCount: 2 }),
 });

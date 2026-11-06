@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Mascot } from "@/components/mascot";
 import { QuoteCard } from "@/components/quote/quote-card";
 
 export default function Home() {
@@ -7,6 +8,8 @@ export default function Home() {
       <Suspense fallback={<QuoteCardSkeleton />}>
         <QuoteCard />
       </Suspense>
+      {/* Mascot lives on the quote screen only, in the bottom-left gutter beside the card. */}
+      <Mascot className="pointer-events-none fixed bottom-0 left-[4vw] -z-10 hidden w-[300px] xl:block" />
     </div>
   );
 }
