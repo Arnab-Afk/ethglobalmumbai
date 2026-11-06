@@ -93,7 +93,7 @@ export function CompareCard() {
       <p className="mt-4 border-t border-[#E7E4DF] pt-4 text-[14px] leading-snug text-[#6B6560]">
         {t && !t.hairline.won
           ? "Too big to win: even at zero fee the venue pays more, so no pool takes this trade."
-          : "Green: pays at least the best venue, so it wins the trade. Priced by the deployed fee contract on Sepolia."}
+          : "Green: pays at least the best venue, so it wins the trade. Same Sepolia replay as the dashboard."}
       </p>
     </div>
   );

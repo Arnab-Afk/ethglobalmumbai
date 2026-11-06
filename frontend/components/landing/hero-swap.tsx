@@ -71,7 +71,7 @@ export function HeroSwap() {
       <div className="rounded-[20px] bg-white p-2 text-[#151619] shadow-[0_30px_80px_rgb(40_28_96/0.28)]">
         {/* Pay */}
         <div className="rounded-[14px] bg-[#F7F5F2] px-5 pt-4 pb-5">
-          <div className="text-[13px] font-semibold text-[#6B6560]">Pay on Sepolia</div>
+          <div className="text-[13px] font-semibold text-[#6B6560]">You pay</div>
           <div className="mt-2 flex items-center gap-3">
             <input
               inputMode="decimal"
@@ -98,7 +98,7 @@ export function HeroSwap() {
 
         {/* Receive */}
         <div className="rounded-[14px] bg-[#F7F5F2] px-5 pt-4 pb-5">
-          <div className="text-[13px] font-semibold text-[#6B6560]">Receive</div>
+          <div className="text-[13px] font-semibold text-[#6B6560]">You receive</div>
           <div className="mt-2 flex items-center gap-3">
             <div
               className={`min-w-0 flex-1 truncate text-[36px] font-semibold tracking-[-0.03em] [font-variant-numeric:tabular-nums] transition-opacity ${
@@ -148,7 +148,7 @@ export function HeroSwap() {
             href={`/swap?sell=${SELL.symbol}&buy=${BUY.symbol}&amount=${encodeURIComponent(amount || "1")}`}
             className="mt-1 flex h-14 w-full items-center justify-center rounded-[14px] bg-[#151619] text-[16px] font-bold text-white transition-colors hover:bg-black"
           >
-            Swap on Hairline →
+            Review quote →
           </Link>
         )}
       </div>

@@ -13,15 +13,15 @@ const QUESTIONS = [
   },
   {
     q: "Can my swap be front-run?",
-    a: "Every swap carries minOut, set to its quote. It goes out as one EIP-8141 frame transaction, so if anyone moves the price first, the whole batch reverts and you keep your tokens. Quotes go through Anon-RPC, so the RPC never learns who asked or for how much.",
+    a: "Quote reads go through Anon-RPC, so the RPC does not learn who asked or the size. On the EIP-8141 devnet the swap is one frame transaction with minOut set to the quote: if the price moves first, the whole batch reverts. The Sepolia demo fill is a normal pool swap, and only for WETH to USDC.",
   },
   {
     q: "Where do competitor prices come from?",
-    a: "A Chainlink CRE workflow quotes competing venues off-chain and writes a size-aware price curve to QuoteOracle on Sepolia. In this deployment the fee contract still reads a demo oracle, so swap quotes use its curve until it is pointed at QuoteOracle.",
+    a: "For liquid pairs the swap reads live mainnet output from Uniswap v3, Uniswap v4, Uniswap v2 and SushiSwap. GivenQuotePreview on Sepolia turns the best of those into a fee. Chainlink CRE writes a size-aware curve to QuoteOracle, which the Market page shows. The dashboard replay uses a separate demo curve.",
   },
   {
     q: "Is it live on mainnet?",
-    a: "No. Hairline is an ETHGlobal Mumbai prototype running on Sepolia and an EIP-8141 devnet. Use test tokens only.",
+    a: "No. Quotes settle on Sepolia. WETH and USDC in the app are mintable demo tokens, and only that pair can fill on the Sepolia pool. Everything else is a quote. Private submission was proven on an EIP-8141 devnet.",
   },
 ];
 

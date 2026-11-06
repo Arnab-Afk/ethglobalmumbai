@@ -33,11 +33,11 @@ export function AudienceToggle() {
           label="Traders"
           statement="You're paid at least what the best venue pays."
           figure={edge === null ? "—" : `+$${edge.toFixed(2)}`}
-          caption="more than the best venue on a 10 WETH sell, priced live on Sepolia"
+          caption="more than the best venue on a 10 WETH sell, from the Sepolia replay"
           rows={[
             ["Quotes", "Private, over Anon-RPC"],
-            ["Slippage guard", "minOut set to your quote"],
-            ["If the price moves", "The swap reverts, no bad fill"],
+            ["Price to beat", "Best Uniswap or Sushi pool"],
+            ["Sepolia fill", "WETH to USDC, on the demo pool"],
           ]}
           cta={{ label: "Launch App", href: "/swap" }}
         />

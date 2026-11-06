@@ -165,10 +165,10 @@ export function FeeRuler() {
 }
 
 const STEPS = [
-  { title: "You ask for a quote", body: "Your trade size goes out privately over Anon-RPC." },
-  { title: "The competition is priced", body: "Chainlink CRE posts the best venue's price curve to QuoteOracle." },
+  { title: "You name the trade", body: "Exact input. The size goes out privately over Anon-RPC." },
+  { title: "The competition is priced", body: "We read what Uniswap and Sushi would pay for that exact size on mainnet." },
   { title: "The fee is set last", body: "The contract charges the most it can while paying you just above that venue." },
-  { title: "You're paid, or it reverts", body: "minOut is your quote. If the price moves against you, nothing fills." },
+  { title: "You review, then fill", body: "WETH to USDC can fill on the Sepolia demo pool. Every other pair stops at the quote." },
 ];
 
 function Mark({ x, tone, from, to }: { x: string; tone: "ink" | "muted"; from: string; to: string }) {
