@@ -7,11 +7,13 @@ import { fmtAmount, fmtSmart } from "@/lib/format";
 import { isAxisPair } from "@/lib/base-axis";
 import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import { fillMode, quoteActionLabel, quoteHonestyBanner } from "@/lib/trade";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { QuoteDetails } from "./quote-details";
 import { ReadError } from "./read-error";
 import { RefreshRing } from "./refresh-ring";
 import { DEFAULT_SLIPPAGE_BPS, SwapSettings } from "./slippage-row";
+import { StatusBanner } from "./status-banner";
 import { SwapReview } from "./swap-review";
 import { TokenButton } from "./token-pill";
 import { TokenPicker } from "./token-picker";
@@ -93,8 +95,9 @@ export function QuoteCard() {
   const inFlight = useRef(false);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
+  const mode = fillMode(sell, buy);
   const { address, onSepolia, connecting, switching, openConnectModal, switchToSepolia } = useWallet();
-  const balances = useBalances([sell, buy]);
+  const { balances } = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
 
@@ -290,18 +293,35 @@ export function QuoteCard() {
               ? { label: "No bid", tone: "off" }
               : quoted.ourOut < quoted.bestOut
                 ? { label: "Rival pays more · no bid", tone: "off" }
-                : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)}`, tone: "off" }
-          : !address
-            ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : openConnectModal, tone: "soft" }
-            : !onSepolia
+                : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)} · quote only`, tone: "off" }
+          : !quoted
+            ? { label: "Checking the best venue…", tone: "off" }
+            : !address
               ? {
-                  label: switching ? "Switching…" : "Switch to Sepolia",
-                  onClick: switching ? undefined : () => void switchToSepolia(),
-                  tone: "warn",
+                  label: quoteActionLabel(mode, { connecting, hasAddress: false }),
+                  onClick: connecting ? undefined : openConnectModal,
+                  tone: "soft",
                 }
-              : !quoted
-                ? { label: "Checking the best venue…", tone: "off" }
-                : { label: "Swap", onClick: () => setReviewKey(key), tone: "primary" };
+              : !onSepolia
+                ? {
+                    label: quoteActionLabel(mode, { switching, hasAddress: true, onSepolia: false }),
+                    onClick: switching ? undefined : () => void switchToSepolia(),
+                    tone: "warn",
+                  }
+                : {
+                    label: quoteActionLabel(mode, { hasAddress: true, onSepolia: true }),
+                    onClick: () => setReviewKey(key),
+                    tone: mode === "sepolia-fill" ? "primary" : "soft",
+                  };
+
+  const honesty =
+    quoted &&
+    quoteHonestyBanner({
+      mode,
+      status: quoted.status,
+      maxQuoteAge: config?.maxQuoteAge,
+      ageSeconds: quoted.status === "stale" ? quoted.blockTime - quoted.updatedAt : undefined,
+    });
 
   const actionTone = {
     primary: "bg-[#2F6BFF] text-white hover:bg-[#245BE0]",
@@ -418,6 +438,8 @@ export function QuoteCard() {
         {action.label}
       </button>
 
+      {honesty && <StatusBanner tone={honesty.tone} text={honesty.text} />}
+
       {fresh && shownPool && (
         <QuoteDetails
           quote={fresh}
@@ -515,6 +537,11 @@ function EdgeNote({ quote, tokenOut }: { quote: LiveQuote; tokenOut: Token }) {
         ) : hasBest ? (
           <>
             The best pool pays <span className="font-semibold text-[#151619]">{fmt2(-edge, dec)} {symbol}</span> more on this size.
+          </>
+        ) : quote.status === "stale" ? (
+          <>
+            Competitor quote is stale, so the fee is the fallback. LPs earn{" "}
+            <span className="font-semibold text-[#151619]">{fmt2(kept, dec)} {symbol}</span>.
           </>
         ) : (
           <>

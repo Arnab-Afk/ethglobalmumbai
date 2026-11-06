@@ -35,7 +35,7 @@ export function DashboardView() {
       </div>
 
       <p className="mt-6 max-w-[54ch] text-[13px] leading-[1.55] text-[#8A847E]">
-        Replay via{" "}
+        Synthetic replay via{" "}
         <a
           className="text-[#5B46C7] hover:underline"
           href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}#code`}
@@ -44,10 +44,14 @@ export function DashboardView() {
         >
           {shortAddr(SEPOLIA.contracts.CompetitiveFeeExtruction)}
         </a>{" "}
-        <code className="text-[#6B6560]">eth_call</code>, not live fills. Demo swaps on SepoliaSwapPool are separate.
+        <code className="text-[#6B6560]">eth_call</code> against MockQuoteOracle. Not live fills. Demo WETH → USDC swaps on SepoliaSwapPool are a separate path.
       </p>
 
-      {error && <p className="mt-4 text-[14px] text-[#B42318]">Couldn&apos;t run the replay: {error}</p>}
+      {error && (
+        <p className="mt-4 text-[14px] text-[#B42318]">
+          Couldn&apos;t run the replay (Sepolia read failed): {error}
+        </p>
+      )}
 
       <section className="mt-8 rounded-[28px] bg-white px-5 py-6 shadow-[0_24px_60px_rgb(40_28_96/0.07)] ring-1 ring-black/[0.04] sm:px-7 sm:py-7">
         <div className="grid items-end gap-8 sm:grid-cols-[minmax(0,1.35fr)_1fr_1fr]">

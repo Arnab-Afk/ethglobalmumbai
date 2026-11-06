@@ -43,24 +43,24 @@ const SURFACES = [
       ["Pair", "WETH → USDC"],
       ["Reference", "Chainlink ETH/USD"],
       ["Contract", shortAddr(SEPOLIA.contracts.QuoteOracle)],
-      ["Status", "Live on mainnet"],
+      ["Status", "Curve on Sepolia"],
     ],
     link: { label: "See the market", href: "/market", internal: true },
     track: "Chainlink · CRE",
-    desc: "The workflow quotes venues off-chain and writes a price curve on-chain. The Market page shows that curve. The dashboard replay uses a separate demo curve. A missing or stale quote falls back to 0.30%.",
+    desc: "The workflow quotes venues off-chain and writes a price curve on-chain. The Market page shows that curve. The dashboard replay uses a separate MockQuoteOracle curve. A missing or stale quote falls back to 0.30%.",
   },
   {
     card: "Anon-RPC + Frame",
-    cardSub: "Quote reads are private. The devnet swap is one atomic frame.",
+    cardSub: "Quote reads are private. Frame fill proven on EIP-8141 devnet.",
     rows: [
-      ["Reads", "Anon-RPC"],
+      ["Reads", "Anon-RPC (live)"],
       ["neat paid", "29,512.45"],
       ["Best venue", "29,500.00"],
       ["Tx", `${FRAME_TX.slice(0, 6)}…${FRAME_TX.slice(-4)}`],
     ],
-    link: { label: "View transaction", href: `https://eip8141.arnabbhowmik.in/tx/${FRAME_TX}` },
+    link: { label: "View frame tx", href: `https://eip8141.arnabbhowmik.in/tx/${FRAME_TX}` },
     track: "Ethereum Foundation",
-    desc: "Every quote in this app is read over Anon-RPC. On the EIP-8141 devnet the swap went out as one frame transaction with minOut set to the quote, so a front-run reverts the whole batch.",
+    desc: "Sepolia quote reads go over Anon-RPC. Wallet fills in this app use a normal SepoliaSwapPool tx. Private frame submission was proven once on the EIP-8141 devnet with minOut set to the quote.",
   },
 ];
 
@@ -84,14 +84,14 @@ export default function LandingPage() {
               get more. LPs keep the rest.
             </p>
             <div className="mt-14 grid max-w-[480px] grid-cols-2 gap-x-8 border-t border-black/15 pt-8">
-              <Stat value="3.1×" label="vs a flat 0.30% pool" />
-              <Stat value="+$6.10" label="ahead on the closest trade" />
+              <Stat value="3.1×" label="LP revenue vs flat 0.30% · 40-trade replay" />
+              <Stat value="+$6.10" label="worst trader edge in that replay" />
             </div>
             <Link
               href="/dashboard"
               className="mt-5 inline-block font-mono text-[12px] tracking-[0.14em] text-[#1C1C1C]/60 uppercase hover:text-[#1C1C1C]"
             >
-              See the 40-trade replay →
+              Open the Sepolia eth_call replay →
             </Link>
           </div>
 

@@ -86,7 +86,7 @@ export function MarketView() {
           <p className="font-mono text-[12px] tracking-[0.14em] text-[#5B46C7] uppercase">Mainnet venues</p>
           <h1 className="mt-3 text-[44px] leading-none font-medium tracking-[-0.04em]">Market</h1>
           <p className="mt-3 max-w-[36ch] text-[16px] leading-[1.5] text-[#6B6560]">
-            Best mainnet output for {tokenIn.symbol} → {tokenOut.symbol}, by size.
+            CRE QuoteOracle curve for {tokenIn.symbol} → {tokenOut.symbol}, by size. Separate from the swap screen&apos;s live mainnet venue reads.
           </p>
         </div>
         <div role="tablist" aria-label="Trade direction" className="flex h-11 items-center rounded-full bg-white p-1 ring-1 ring-black/[0.06]">
@@ -109,7 +109,11 @@ export function MarketView() {
         </div>
       </div>
 
-      {error && <p className="mt-6 text-[14px] text-[#B42318]">Couldn&apos;t reach Sepolia: {error}</p>}
+      {error && (
+        <p className="mt-6 text-[14px] text-[#B42318]">
+          Couldn&apos;t load QuoteOracle: {error}
+        </p>
+      )}
 
       <section className="mt-8 rounded-[28px] bg-white px-5 py-6 shadow-[0_24px_60px_rgb(40_28_96/0.07)] ring-1 ring-black/[0.04] sm:px-7 sm:py-7">
         <div className="grid items-end gap-8 sm:grid-cols-[minmax(0,1.45fr)_1fr_1fr]">
@@ -150,7 +154,13 @@ export function MarketView() {
                 label="Quote age"
                 value={age !== null ? fmtAge(age) : "Never"}
                 unit={age !== null ? "ago" : undefined}
-                note={age !== null ? (fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s. Fee falls back.`) : "Waiting for a report"}
+                note={
+                  age !== null
+                    ? fresh
+                      ? "Within maxQuoteAge for fee pricing"
+                      : `Older than ${MAX_QUOTE_AGE}s. Swaps that read this curve fall back to the fixed fee.`
+                    : "Waiting for a CRE report"
+                }
               />
             </>
           ) : (
@@ -184,11 +194,12 @@ export function MarketView() {
               Up to <span className="tnum font-medium text-[#151619]">{fmtSize(data.maxSize)} {tokenIn.symbol}</span>.
             </>
           )}{" "}
-          The swap screen sends this output to{" "}
+          This page is the CRE-written curve. The swap screen prices liquid pairs from live mainnet venue
+          eth_calls into{" "}
           <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.GivenQuotePreview}`} target="_blank" rel="noreferrer">
             GivenQuotePreview
           </a>
-          , which calls fee-core.
+          ; both paths share fee-core.
         </p>
       </section>
 
@@ -306,9 +317,10 @@ function FigureSkeleton({ large }: { large?: boolean }) {
   );
 }
 
-/** ["mock-b","mock-b","mock-b"] → "mock-b ×3"; mixed → "mock-a, mock-b ×2". */
+/** ["mock-b","mock-b","mock-b"] → "mock-b ×3"; mixed → "mock-a, mock-b ×2". Labels come from the CRE workflow config. */
 function summarizeVenues(venues: string[]): string {
   const counts = new Map<string, number>();
   venues.forEach((v) => counts.set(v, (counts.get(v) ?? 0) + 1));
-  return [...counts].map(([v, n]) => (n > 1 ? `${v} ×${n}` : v)).join(", ");
+  const body = [...counts].map(([v, n]) => (n > 1 ? `${v} ×${n}` : v)).join(", ");
+  return venues.some((v) => v.startsWith("mock-")) ? `${body} (workflow labels)` : body;
 }

@@ -12,30 +12,32 @@ import { isAxisPair } from "@/lib/base-axis";
 import { fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import { feeStatusNote, fillMode, humanizeReadFailure, quoteActionLabel, quoteHonestyBanner } from "@/lib/trade";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
+import { StatusBanner } from "@/components/quote/status-banner";
+import { anonNetwork, isDirectReads } from "@/lib/rpc";
 
 const HERO_KEY = "neat-hero-trade";
 
-type HeroTrade = { amount: string; open: boolean; sell: string; buy: string };
+type HeroTrade = { amount: string; sell: string; buy: string };
 
 const noopSubscribe = () => () => {};
 
 function readHeroTrade(): HeroTrade {
   try {
     const raw = sessionStorage.getItem(HERO_KEY);
-    if (!raw) return { amount: "1", open: false, sell: DEFAULT_SELL.symbol, buy: DEFAULT_BUY.symbol };
+    if (!raw) return { amount: "1", sell: DEFAULT_SELL.symbol, buy: DEFAULT_BUY.symbol };
     const parsed = JSON.parse(raw) as Partial<HeroTrade>;
     const sell = tokenBySymbol(parsed.sell)?.symbol ?? DEFAULT_SELL.symbol;
     let buy = tokenBySymbol(parsed.buy)?.symbol ?? DEFAULT_BUY.symbol;
     if (buy === sell) buy = sell === DEFAULT_SELL.symbol ? DEFAULT_BUY.symbol : DEFAULT_SELL.symbol;
     return {
       amount: typeof parsed.amount === "string" && parsed.amount !== "" ? parsed.amount : "1",
-      open: parsed.open === true,
       sell,
       buy,
     };
   } catch {
-    return { amount: "1", open: false, sell: DEFAULT_SELL.symbol, buy: DEFAULT_BUY.symbol };
+    return { amount: "1", sell: DEFAULT_SELL.symbol, buy: DEFAULT_BUY.symbol };
   }
 }
 
@@ -57,6 +59,7 @@ export function HeroSwap() {
   const [quote, setQuote] = useState<LiveQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [failMsg, setFailMsg] = useState<string>("");
   const [attempt, setAttempt] = useState(0);
   const [pricesOpen, setPricesOpen] = useState(false);
   const [ready, setReady] = useState(false);
@@ -65,13 +68,14 @@ export function HeroSwap() {
   const [config, setConfig] = useState<FeeConfig | null>(null);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
+  const mode = fillMode(sell, buy);
   const axis = isAxisPair(sell.symbol, buy.symbol);
 
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   if (hydrated && !ready) {
     const saved = readHeroTrade();
     setAmount(saved.amount);
-    setPricesOpen(saved.open);
+    setPricesOpen(false); // always land on Get prices; expand only on click
     setSell(tokenBySymbol(saved.sell) ?? DEFAULT_SELL);
     setBuy(tokenBySymbol(saved.buy) ?? DEFAULT_BUY);
     setReady(true);
@@ -81,9 +85,9 @@ export function HeroSwap() {
     if (!ready) return;
     sessionStorage.setItem(
       HERO_KEY,
-      JSON.stringify({ amount, open: pricesOpen, sell: sell.symbol, buy: buy.symbol }),
+      JSON.stringify({ amount, sell: sell.symbol, buy: buy.symbol }),
     );
-  }, [amount, pricesOpen, sell.symbol, buy.symbol, ready]);
+  }, [amount, sell.symbol, buy.symbol, ready]);
 
   useEffect(() => {
     getFeeConfig().then(setConfig, () => {});
@@ -109,6 +113,7 @@ export function HeroSwap() {
       hardTimeout = window.setTimeout(() => {
         if (cancelled) return;
         setFailed(true);
+        setFailMsg("Quote timed out after 20s");
         setLoading(false);
       }, 20_000);
       getLiveQuote(sell, buy, amountIn, pool).then(
@@ -117,12 +122,14 @@ export function HeroSwap() {
           window.clearTimeout(hardTimeout);
           setQuote(q);
           setFailed(false);
+          setFailMsg("");
           setLoading(false);
         },
-        () => {
+        (e) => {
           if (cancelled) return;
           window.clearTimeout(hardTimeout);
           setFailed(true);
+          setFailMsg(e instanceof Error ? (e as { shortMessage?: string }).shortMessage ?? e.message : String(e));
           setLoading(false);
         },
       );
@@ -207,19 +214,35 @@ export function HeroSwap() {
               ? { label: "Sell USDC for AXIS to bid" }
               : axis && shown && shown.ourOut < shown.bestOut
                 ? { label: "Rival pays more · no bid" }
-                : !address
-                  ? {
-                      label: connecting ? "Connecting…" : "Connect wallet to swap",
-                      onClick: connecting ? undefined : openConnectModal,
-                    }
-                  : !onSepolia
+                : axis && shown
+                  ? { label: `Maximum bid ${pipsToPercent(shown.feePips, 4)} · quote only` }
+                  : !address
                     ? {
-                        label: switching ? "Switching…" : "Switch to Sepolia",
-                        onClick: switching ? undefined : () => void switchToSepolia(),
+                        label: quoteActionLabel(mode, { connecting, hasAddress: false }),
+                        onClick: connecting ? undefined : openConnectModal,
                       }
-                    : axis && shown
-                      ? { label: `Maximum bid ${pipsToPercent(shown.feePips, 4)}` }
-                      : { label: "Swap", onClick: () => setReview(true) };
+                    : !onSepolia
+                      ? {
+                          label: quoteActionLabel(mode, { switching, hasAddress: true, onSepolia: false }),
+                          onClick: switching ? undefined : () => void switchToSepolia(),
+                        }
+                      : {
+                          label: quoteActionLabel(mode, { hasAddress: true, onSepolia: true }),
+                          onClick: () => setReview(true),
+                        };
+
+  const honesty =
+    shown &&
+    quoteHonestyBanner({
+      mode,
+      status: shown.status,
+      maxQuoteAge: config?.maxQuoteAge,
+      ageSeconds: shown.status === "stale" ? shown.blockTime - shown.updatedAt : undefined,
+    });
+  const failCopy =
+    failed && !shown
+      ? humanizeReadFailure(failMsg || "Couldn't reach the chain", !!anonNetwork && !isDirectReads())
+      : null;
 
   const sellUsd =
     shown && sell.usd
@@ -292,7 +315,7 @@ export function HeroSwap() {
         <TokenButton token={buy} tone="light" onClick={() => setPicking("buy")} />
         {!awaitingQuote && (
           <div className="col-span-2 -mt-1 text-[13px] font-medium text-[#9A948C] [font-variant-numeric:tabular-nums]">
-            {receiveUsd ?? (failed ? "Couldn't reach Sepolia" : !pool ? "No pool for this pair" : "")}
+            {receiveUsd ?? (failed ? failCopy?.title ?? "Couldn't price this trade" : !pool ? "No pool for this pair" : "")}
           </div>
         )}
       </Field>
@@ -306,11 +329,9 @@ export function HeroSwap() {
             <>
               <span className="font-bold text-[#111]">{pipsToPercent(shown.feePips)}</span>
               <span className="font-medium text-[#8A847E]">
-                {shown.status === "live"
-                  ? hasBest
-                    ? ` · beats best venue by $${edge.toFixed(2)}`
-                    : " · live quote"
-                  : " · fallback, no live competitor quote"}
+                {shown.status === "live" && hasBest
+                  ? ` · beats best venue by $${edge.toFixed(2)}`
+                  : ` · ${feeStatusNote(shown.status, hasBest)}`}
               </span>
             </>
           ) : (
@@ -333,6 +354,19 @@ export function HeroSwap() {
       >
         {action.label}
       </button>
+
+      {honesty && pricesOpen && (
+        <div className="px-1">
+          <StatusBanner tone={honesty.tone} text={honesty.text} />
+        </div>
+      )}
+
+      {failCopy && pricesOpen && (
+        <p className="mt-2 px-2 text-center text-[12px] leading-snug text-[#B42318]">
+          <span className="font-medium">{failCopy.title}. </span>
+          {failCopy.body}
+        </p>
+      )}
 
       {error && pricesOpen && (
         <p className="mt-2 px-1 text-center text-[12px] leading-snug font-medium text-[#B42318]">{error}</p>
@@ -420,7 +454,7 @@ function PriceDetails({
             ))}
           </ul>
         ) : (
-          <p className="px-4 pt-2 pb-6 text-[14px] text-[#9A9A9E]">Couldn&apos;t reach Sepolia.</p>
+          <p className="px-4 pt-2 pb-6 text-[14px] text-[#9A9A9E]">Couldn&apos;t load venue prices. Retry from the button below.</p>
         )
       ) : (
         <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain">

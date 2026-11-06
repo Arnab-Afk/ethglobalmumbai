@@ -127,6 +127,13 @@ export interface LiveQuote {
   reserves?: PoolSide;
   /** Set when the numbers come from the live Base AXIS/USDC pool. */
   network?: "base";
+  /**
+   * Where competitor output came from:
+   * - mainnet: live Uniswap / Sushi eth_calls + GivenQuotePreview
+   * - sepolia: QuoteOracle / VenueReader curve on Sepolia
+   * - base: live Base Uniswap bid
+   */
+  pricing: "mainnet" | "sepolia" | "base";
 }
 
 let configPromise: Promise<FeeConfig> | undefined;
@@ -204,6 +211,7 @@ async function quoteMainnet(tokenIn: Token, tokenOut: Token, amountIn: bigint): 
     venue: venues[0] ? `${venues[0].name} ${venues[0].detail} · mainnet` : "No mainnet venue",
     venues,
     reserves: book,
+    pricing: "mainnet",
   };
 }
 
@@ -239,6 +247,7 @@ async function quoteSepolia(tokenIn: Token, tokenOut: Token, amountIn: bigint, p
     status,
     latencyMs: performance.now() - t0,
     venue: "Uniswap v3",
+    pricing: "sepolia",
   };
 }
 

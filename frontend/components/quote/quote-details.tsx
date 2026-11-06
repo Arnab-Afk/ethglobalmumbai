@@ -32,8 +32,8 @@ export function QuoteDetails({
   const [open, setOpen] = useState(false);
   const [allPools, setAllPools] = useState(false);
   const [inverted, setInverted] = useState(false);
-  const onBase = quote.network === "base";
-  const onMainnet = !onBase && quote.venues !== undefined;
+  const onBase = quote.pricing === "base" || quote.network === "base";
+  const onMainnet = quote.pricing === "mainnet" || (!onBase && quote.venues !== undefined);
   const previewAddress = onMainnet
     ? SEPOLIA.contracts.GivenQuotePreview
     : SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader;
@@ -81,25 +81,31 @@ export function QuoteDetails({
         <span className="text-muted">No quote for this size</span>
       ),
       hint: onBase
-        ? "What the best Uniswap v3 pool on Base pays for this exact trade, read at this block."
-        : "What the best competing venue pays for this trade, from the competitor price curve on Sepolia.",
+        ? "What the best Uniswap pool on Base pays for this exact trade, read at this block."
+        : onMainnet
+          ? "Best live mainnet output across Uniswap v2/v3/v4 and Sushi for this exact size."
+          : "What the competitor curve on Sepolia pays for this trade (CRE / VenueReader).",
     },
     {
       k: "Minimum received",
       v: `${fmtSmart(minOut, tokenOut.decimals, 8)} ${out}`,
-      hint: "minOut on the swap. Anything less and the transaction reverts.",
+      hint: onMainnet && tokenIn.symbol === "WETH" && tokenOut.symbol === "USDC"
+        ? "minOut on the Sepolia demo swap. Anything less and the transaction reverts."
+        : "minOut if you fill. Quote-only pairs never send a swap from this app.",
     },
     { k: "Max slippage", v: `${slippageBps / 100}%` },
     {
       k: "Quote age",
-      v: onBase
+      v: onBase || onMainnet
         ? "This block"
         : quote.status === "none"
           ? "-"
           : `${fmtAge(quote.blockTime - quote.updatedAt)}${config ? ` of ${config.maxQuoteAge}s` : ""}`,
       hint: onBase
         ? "Rivals and this pool were read at the same Base block."
-        : "How old the competitor price curve is. Past the limit, the pool falls back to a fixed fee.",
+        : onMainnet
+          ? "Mainnet venues are re-quoted each refresh; fee math runs on Sepolia GivenQuotePreview."
+          : "How old the competitor price curve is. Past the limit, the pool falls back to a fixed fee.",
     },
   ];
   if (config && !onBase) rows.push({ k: "Fee range", v: `${pipsToPercent(config.feeFloor)} - ${pipsToPercent(config.feeCap)}` });
@@ -107,7 +113,13 @@ export function QuoteDetails({
     k: "Pool",
     v: onBase
       ? "AXIS/USDC on Base"
-      : `${fmtAmount(pool.reserveIn, tokenIn.decimals, 0)} ${tokenIn.symbol} / ${fmtAmount(pool.reserveOut, tokenOut.decimals, 0)} ${out}`,
+      : onMainnet && !(tokenIn.symbol === "WETH" && tokenOut.symbol === "USDC")
+        ? `Pinned book · ${fmtAmount(pool.reserveIn, tokenIn.decimals, 0)} ${tokenIn.symbol} / ${fmtAmount(pool.reserveOut, tokenOut.decimals, 0)} ${out}`
+        : `${fmtAmount(pool.reserveIn, tokenIn.decimals, 0)} ${tokenIn.symbol} / ${fmtAmount(pool.reserveOut, tokenOut.decimals, 0)} ${out}`,
+  });
+  rows.push({
+    k: "Source",
+    v: onBase ? "Base Uniswap" : onMainnet ? "Mainnet venues + Sepolia fee preview" : "Sepolia oracle curve",
   });
   rows.push({ k: "Priced in", v: `${Math.round(quote.latencyMs)} ms` });
 

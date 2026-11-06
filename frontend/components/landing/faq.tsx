@@ -25,7 +25,7 @@ const QUESTIONS = [
   },
   {
     q: "Is it live on mainnet?",
-    a: "Yes. Competitor prices and fee pricing run against live mainnet venues. Private quote reads use Anon-RPC; optional private submission was proven with EIP-8141 frames.",
+    a: "Yes for quotes: competitor prices and fee math use live mainnet venues (or Base for AXIS). Only Demo WETH → Demo USDC fills on Sepolia today. Private quote reads use Anon-RPC; EIP-8141 frame submission was proven on a separate devnet tx, not from this UI.",
   },
 ];
 
