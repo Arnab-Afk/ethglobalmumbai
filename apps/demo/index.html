@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Last-look fee — Sepolia</title>
+    <style>
+      :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+      body { margin: 0; background: #0e1116; color: #e7ecf3; }
+      main { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+      h1 { font-size: 1.4rem; font-weight: 650; margin: 0 0 8px; }
+      p.lead { color: #9aa6b8; margin: 0 0 24px; line-height: 1.45; }
+      label { display: block; font-size: 0.8rem; color: #9aa6b8; margin-bottom: 6px; }
+      input { width: 100%; box-sizing: border-box; background: #171c24; color: inherit; border: 1px solid #2a3342; border-radius: 8px; padding: 10px 12px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+      button { background: #3d7eff; color: white; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+      button:disabled { opacity: 0.6; cursor: wait; }
+      .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+      .card { background: #171c24; border: 1px solid #2a3342; border-radius: 12px; padding: 14px 16px; }
+      .card span { display: block; color: #9aa6b8; font-size: 0.75rem; margin-bottom: 4px; }
+      .card strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+      #status { margin-top: 16px; color: #9aa6b8; min-height: 1.2em; }
+      a { color: #8eb4ff; }
+      @media (max-width: 640px) { .row, .cards { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Last-look fee</h1>
+      <p class="lead">Live Sepolia read of MockQuoteOracle + CompetitiveFeeExtruction. This quotes the fee for a trade size. A token fill needs the EF devnet pool (faucet) or an Aqua fork.</p>
+      <div class="row">
+        <div>
+          <label for="amount">Amount in (ETH)</label>
+          <input id="amount" value="1" />
+        </div>
+        <div>
+          <label for="rin">Reserve in (ETH)</label>
+          <input id="rin" value="1000" />
+        </div>
+        <div>
+          <label for="rout">Reserve out (USDC)</label>
+          <input id="rout" value="3000000" />
+        </div>
+      </div>
+      <button id="go" type="button">Quote on Sepolia</button>
+      <div class="cards">
+        <div class="card"><span>Best competing out</span><strong id="best">—</strong></div>
+        <div class="card"><span>Our fee</span><strong id="fee">—</strong></div>
+        <div class="card"><span>Curve age</span><strong id="age">—</strong></div>
+        <div class="card"><span>Oracle</span><strong id="oracle">MockQuoteOracle</strong></div>
+      </div>
+      <p id="status"></p>
+      <p class="lead">Contracts: <a id="ext" href="https://sepolia.etherscan.io/address/0x23ED7de99DF648f8164c9Ef3bD0657059f6E2187#code">Extruction</a> · <a href="https://sepolia.etherscan.io/address/0x6F036c93B907099c0623b7312ED2AaFebB39A539#code">Mock oracle</a></p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
