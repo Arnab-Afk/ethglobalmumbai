@@ -12,6 +12,7 @@
     "aqua:build": "tsx scripts/aqua-ship-quote.ts",
     "aqua:ship": "tsx scripts/aqua-ship-quote.ts --send",
     "aqua:fork": "bash scripts/aqua-fork.sh",
+    "aqua:fork:win": "powershell -ExecutionPolicy Bypass -File scripts/run-aqua-fork.ps1",
     "test:fork": "FORK_RPC=${FORK_RPC:-https://ethereum-rpc.publicnode.com} forge test --mt Fork -vv"
   },
   "keywords": [],

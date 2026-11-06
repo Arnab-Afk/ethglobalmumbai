@@ -25,6 +25,8 @@ forge test            # offline unit tests; the fork suite skips without FORK_RP
 
 Needs Foundry and Python 3. `FORK_RPC` defaults to a public mainnet RPC.
 
+On Windows: `npm run aqua:fork:win` (`scripts/run-aqua-fork.ps1`) forks, deploys and ships through the TS SDK, but stops before the swap. `npm run test:fork` runs the full ship + swap on any OS, and so does `aqua:fork` under Git Bash or WSL.
+
 What `aqua:fork` prints (Nov 7 run, competitor quote 2,965 USDC for 1 WETH):
 
 ```
