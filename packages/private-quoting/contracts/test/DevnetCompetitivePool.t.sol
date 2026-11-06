@@ -62,6 +62,28 @@ contract DevnetCompetitivePoolTest is Test {
         assertEq(usdc.balanceOf(trader), out);
     }
 
+    function test_deadline_reverts() public {
+        weth.mint(trader, 10e18);
+        vm.prank(trader);
+        weth.approve(address(pool), 10e18);
+        vm.prank(trader);
+        vm.expectRevert(abi.encodeWithSelector(DevnetCompetitivePool.Expired.selector, block.timestamp - 1));
+        pool.swap(address(weth), 10e18, 0, block.timestamp - 1);
+    }
+
+    function test_priceMoves_cannotBeatVenue_reverts() public {
+        (uint256 quoted,,,) = pool.quote(address(weth), 10e18);
+        // Competitor suddenly pays more than our whole reserve can beat.
+        _setCurve(quoted + 1_000_000e6);
+        (uint256 nowOut,, uint256 bestNow,) = pool.quote(address(weth), 10e18);
+        weth.mint(trader, 10e18);
+        vm.startPrank(trader);
+        weth.approve(address(pool), 10e18);
+        vm.expectRevert(abi.encodeWithSelector(DevnetCompetitivePool.CannotBeatVenue.selector, nowOut, bestNow));
+        pool.swap(address(weth), 10e18, 0);
+        vm.stopPrank();
+    }
+
     function test_minOutGuard_reverts() public {
         (uint256 quoted,,,) = pool.quote(address(weth), 10e18);
         weth.mint(trader, 10e18);

@@ -15,6 +15,9 @@ contract DevnetCompetitivePool {
 
     error BadToken(address token);
     error InsufficientOutput(uint256 amountOut, uint256 minOut);
+    error Expired(uint256 deadline);
+    /// @dev Live recheck: we do not fill a trade we no longer beat. Trader keeps their tokens.
+    error CannotBeatVenue(uint256 amountOut, uint256 bestOut);
 
     IERC20 public immutable token0;
     IERC20 public immutable token1;
@@ -73,12 +76,21 @@ contract DevnetCompetitivePool {
         amountOut = CompetitiveFee.outAfterFee(amountIn, reserveIn, reserveOut, feePips);
     }
 
-    /// @notice Exact-in swap. `minOut` is the trader's guard: a front-run that worsens the price reverts the swap.
+    /// @notice Exact-in swap. Deadline defaults to this block so existing callers keep working.
     function swap(address tokenIn, uint256 amountIn, uint256 minOut) external returns (uint256 amountOut) {
+        return swap(tokenIn, amountIn, minOut, block.timestamp);
+    }
+
+    /// @notice Exact-in swap. Rechecks `bestOut` in this transaction.
+    ///         Reverts if we cannot beat it, if `amountOut < minOut`, or if `deadline` has passed.
+    function swap(address tokenIn, uint256 amountIn, uint256 minOut, uint256 deadline) public returns (uint256 amountOut) {
+        if (block.timestamp > deadline) revert Expired(deadline);
+
         uint24 feePips;
         uint256 bestOut;
         uint256 q0;
         (amountOut, feePips, bestOut, q0) = quote(tokenIn, amountIn);
+        if (bestOut != 0 && amountOut < bestOut) revert CannotBeatVenue(amountOut, bestOut);
         if (amountOut < minOut) revert InsufficientOutput(amountOut, minOut);
 
         (IERC20 tIn, IERC20 tOut) = _pair(tokenIn);
