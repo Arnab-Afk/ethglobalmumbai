@@ -39,7 +39,7 @@ Env overrides: `FRAME_GATEWAY_RPC`, `FRAME_EXPLORER`, `FRAME_PRIVATE_KEY` (else 
 
 ## Not done yet
 
-- Live run: blocked while the devnet faucet is empty (Nov 6). Run `fund` → `deploy` → `swap --mode frame`, then put the explorer link in the submission.
+- Live run: done. Admitted frame tx [`0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59) (all four frames status `0x1`). It ran against an earlier deployment; `web/public/deployment.json` now holds a redeploy. To reproduce: `fund` → `deploy` → `swap --mode frame`.
 - Anon-RPC networks, tried in Chrome on Nov 6 (reads of the Sepolia pool decimals through `neat3-sdk/anon`): **nox** 5 s, **nym** 46 s on a cold start, **tor-js** timed out after 140 s (the upstream demo gateway is down). On this page, nym reached the network but the devnet gateway answered "JSON is not a valid request object", so use nox here; nym works against the public Sepolia endpoints used by `frontend/`.
 - No automated test compares a live Anon-RPC quote with a plain-RPC quote at the same block. The SDK tests use mocks; the two were checked by eye (222.97 USDC both ways).
 - The sandwich-bot comparison was dropped from the plan: a public alt-mempool can't show "private path not sandwiched". See docs/05.
