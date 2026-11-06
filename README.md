@@ -31,7 +31,7 @@ Deployed addresses: [deployments/sepolia.json](deployments/sepolia.json) and [pa
 
 - **Censorship resistant.** Swaps can go out as EIP-8141 frame transactions to the alt mempool. The pool and the v4 hook have no owner and no allowlist, so anyone can trade. The price inputs do have owners: `VenueReader` (which venues count) and `QuoteOracle` (which CRE forwarder may write). An owner who reports a false `bestOut` can make the devnet pool refuse trades (`CannotBeatVenue`), but cannot move anyone's funds.
 - **Open source.** MIT ([LICENSE](LICENSE)), everything is in this repo. Exception: `packages/swapvm-opcode` depends on 1inch's `@1inch/aqua-sdk` and SwapVM, which are source-available (Degensoft licenses), not FOSS.
-- **Private.** The app reads Sepolia through Anon-RPC by default (Nox mixnet, `frontend/lib/rpc.ts`), so the RPC never learns who asked for which pair or size. Not anonymized: the one read of the Anon-RPC specifier contract at startup, and your wallet's own RPC once you connect. The alt mempool is public, so a submitted swap is visible before inclusion.
+- **Private.** The app reads Sepolia through Anon-RPC by default (Nox mixnet, with Nym and Tor as fallbacks, `frontend/lib/rpc.ts`), so the RPC never learns who asked for which pair or size. Not anonymized: the one read of the Anon-RPC specifier contract at startup, your wallet's own RPC once you connect, and the mainnet competitor-price reads (`frontend/lib/mainnet.ts`), which are direct for now. The alt mempool is public, so a submitted swap is visible before inclusion.
 - **Secure.** A swap reverts instead of filling worse: `minOut` defaults to the quote, `deadline` to 10 minutes, and the pool rechecks the competitor price in the same transaction. Approve and swap are one atomic frame batch, so a revert rolls both back. Fee math lives in one library (`packages/fee-core`) with fuzz tests for "trader output ≥ best venue". The client has no trackers or analytics.
 
 ## Mentor feedback and the path we are locking
@@ -81,6 +81,6 @@ The fee engine already works. A real frame swap on our EIP-8141 devnet beat the 
 - [`.claude/agents/`](.claude/agents/) — one specialist subagent per workstream:
   - `fee-math` — the shared fee library and its tests (source of truth)
   - `swapvm-aqua` — 1inch SwapVM opcode + Aqua integration
-  - `private-quoting` — EF track: Anon-RPC quotes, Frame mempool submission, sandwich comparison
+  - `private-quoting` — EF track: Anon-RPC quotes, Frame mempool submission (the sandwich comparison was dropped; the alt mempool is public)
   - `cre-oracle` — Chainlink CRE workflow + on-chain quote oracle
   - `demo-integration` — demo scripts, frontend, mock venues, pitch

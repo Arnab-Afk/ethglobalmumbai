@@ -4,7 +4,7 @@ Two EF surfaces around the competitive-fee AMM, on our self-hosted EIP-8141 devn
 
 | Piece | What it does | EF prize it qualifies for |
 |---|---|---|
-| `web/` | Quote page. Every devnet read goes through **Anon-RPC** by default (Tor, Nym or Nox anon-client in a sandboxed, hash-pinned worker) | Best Use of Anon-RPC: *"app routes its RPC reads through Anon-RPC by default"* |
+| `web/` | Devnet quote page. Every read goes through **Anon-RPC** (pick Nox, Nym or Tor in the page; sandboxed, hash-pinned worker). The Sepolia app in `frontend/` fails over Nox → Nym → Tor | Best Use of Anon-RPC: *"app routes its RPC reads through Anon-RPC by default"* |
 | `src/cli/swap.ts --mode frame` | One **EIP-8141 frame tx** `[VERIFY, mint\|ATOMIC, approve\|ATOMIC, swap]` sent to the **standard alt-mempool** (`eth_sendFrameTransaction`) | Alt mempool: *"code that submits one"* + explorer link |
 | `contracts/` | `DevnetCompetitivePool`: x·y=k pool whose fee comes from `fee-core`'s `CompetitiveFee.compute` (not re-implemented), reading `MockQuoteOracle` | — |
 
@@ -40,6 +40,7 @@ Env overrides: `FRAME_GATEWAY_RPC`, `FRAME_EXPLORER`, `FRAME_PRIVATE_KEY` (else 
 ## Not done yet
 
 - Live run: blocked while the devnet faucet is empty (Nov 6). Run `fund` → `deploy` → `swap --mode frame`, then put the explorer link in the submission.
-- Anon-RPC page has not been tried in a real browser yet (it builds; tor-js uses a demo gateway that may be down).
+- Anon-RPC networks, tried in Chrome on Nov 6 (reads of the Sepolia pool decimals through `@hairline/sdk/anon`): **nox** 5 s, **nym** 46 s on a cold start, **tor-js** timed out after 140 s (the upstream demo gateway is down). On this page, nym reached the network but the devnet gateway answered "JSON is not a valid request object", so use nox here; nym works against the public Sepolia endpoints used by `frontend/`.
+- No automated test compares a live Anon-RPC quote with a plain-RPC quote at the same block. The SDK tests use mocks; the two were checked by eye (222.97 USDC both ways).
 - The sandwich-bot comparison was dropped from the plan: a public alt-mempool can't show "private path not sandwiched". See docs/05.
 - Stretch idea that really needs the alt-mempool: a *staked* sender whose VERIFY frame reads the pool's reserves (non-sender storage, which the canonical mempool rejects and the alt-mempool allows once staked). A front-run then makes the tx invalid before inclusion, so the trader pays no gas for a failed swap.
