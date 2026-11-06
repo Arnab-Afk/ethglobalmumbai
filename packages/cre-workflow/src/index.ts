@@ -1,5 +1,6 @@
 export * from "./types.js";
 export * from "./buildCurve.js";
+export * from "./describeCurve.js";
 export * from "./encodeReport.js";
 export * from "./quotePair.js";
 export * from "./venueIds.js";

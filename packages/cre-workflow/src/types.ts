@@ -30,6 +30,9 @@ export interface PairConfig {
   /** Exact-in size buckets (atomic units as decimal strings). */
   amountsIn: string[];
   venues: VenueConfig[];
+  /** Optional token decimals, used only to print readable logs. */
+  decimalsIn?: number;
+  decimalsOut?: number;
 }
 
 export interface WorkflowConfig {
