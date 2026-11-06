@@ -42,6 +42,12 @@
   --color-fd-info: var(--purple-ink);
 }
 
+/* Fumadocs centres the docs grid at 97rem and paints the sidebar across the empty left gutter, so on wide
+   screens the sidebar items float ~200px from the edge. A full-width grid puts the sidebar flush left. */
+:root {
+  --fd-layout-width: 100%;
+}
+
 html {
   color-scheme: light;
   scrollbar-gutter: stable;
