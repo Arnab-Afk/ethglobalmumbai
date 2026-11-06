@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hairline — best price, by a hair",
+  title: "Hairline — best price, every swap",
   description:
-    "An AMM that sets its swap fee per trade, just under the best competing venue. Traders get best execution; LPs keep the rest.",
+    "Hairline checks the best price you could get anywhere else, then beats it. You receive more. Liquidity providers earn what a flat fee would have missed.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

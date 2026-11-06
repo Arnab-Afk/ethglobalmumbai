@@ -6,6 +6,7 @@ const sdkDist = path.join(repoRoot, "packages/sdk/dist");
 
 const nextConfig: NextConfig = {
   /* config options here */
+  devIndicators: { position: "bottom-right" },
   experimental: {
     agentFeedback: true,
   },

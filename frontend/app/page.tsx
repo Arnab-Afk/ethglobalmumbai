@@ -24,8 +24,8 @@ const PRINCIPLES = [
 
 const SURFACES = [
   {
-    card: "CompetitiveFeeExtruction",
-    cardSub: "SwapVM fee opcode, deployed and verified on Sepolia.",
+    card: "CompetitiveFee",
+    cardSub: "One fee library. The swap screen and the SwapVM opcode both call it.",
     rows: [
       ["Fee floor", "0.05%"],
       ["Fee cap", "1.00%"],
@@ -34,11 +34,11 @@ const SURFACES = [
     ],
     link: { label: "View contract", href: `${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}#code` },
     track: "1inch · Aqua",
-    desc: "A SwapVM instruction any Aqua strategy can use to price its fee against the market, per trade. Quote and swap run the same code.",
+    desc: "A SwapVM instruction any Aqua strategy can drop in. This app prices each trade with the same library, against live mainnet venue output.",
   },
   {
     card: "QuoteOracle",
-    cardSub: "Competitor curves written by a Chainlink CRE workflow.",
+    cardSub: "Size-aware curves written by a Chainlink CRE workflow.",
     rows: [
       ["Pair", "WETH → USDC"],
       ["Reference", "Chainlink ETH/USD"],
@@ -47,20 +47,20 @@ const SURFACES = [
     ],
     link: { label: "See the market", href: "/market", internal: true },
     track: "Chainlink · CRE",
-    desc: "The workflow quotes competing venues off-chain and writes a size-aware price curve on-chain, the input every fee is set against.",
+    desc: "The workflow quotes venues off-chain and writes a price curve on-chain. The Market page shows that curve. The dashboard replay uses a separate demo curve. A missing or stale quote falls back to 0.30%.",
   },
   {
-    card: "Frame swap",
-    cardSub: "EIP-8141 devnet, quoted over Anon-RPC.",
+    card: "Anon-RPC + Frame",
+    cardSub: "Quote reads are private. The devnet swap is one atomic frame.",
     rows: [
+      ["Reads", "Anon-RPC"],
       ["Hairline paid", "29,512.45"],
       ["Best venue", "29,500.00"],
-      ["Protection", "minOut + batch"],
       ["Tx", `${FRAME_TX.slice(0, 6)}…${FRAME_TX.slice(-4)}`],
     ],
     link: { label: "View transaction", href: `https://eip8141.arnabbhowmik.in/tx/${FRAME_TX}` },
     track: "Ethereum Foundation",
-    desc: "Private quotes, then one atomic frame transaction with minOut set to the quote. A front-run reverts the whole batch.",
+    desc: "Every quote in this app is read over Anon-RPC. On the EIP-8141 devnet the swap went out as one frame transaction with minOut set to the quote, so a front-run reverts the whole batch.",
   },
 ];
 
@@ -75,27 +75,27 @@ export default function LandingPage() {
         <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-24 pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16 lg:pt-28 lg:pb-24">
           <div>
             <h1 className="text-[58px] leading-[0.98] font-semibold tracking-[-0.055em] sm:text-[84px] xl:text-[100px]">
-              Best price,
+              Best price.
               <br />
-              by a hair
+              Every swap.
             </h1>
-            <p className="mt-8 max-w-[460px] text-[18px] leading-[1.5] font-medium text-[#1C1C1C]/80">
-              Hairline is an AMM that sets its swap fee last, on every trade. It reads the best competing venue for that
-              exact size, then charges the most it can while still paying you more.
+            <p className="mt-8 max-w-[440px] text-[18px] leading-[1.5] font-medium text-[#1C1C1C]/80">
+              Hairline checks the best price you could get anywhere else, then beats it. You receive more. Liquidity
+              providers earn what a flat fee would have missed.
             </p>
             <div className="mt-8">
               <LaunchButton dark />
             </div>
 
-            <div className="mt-14 flex flex-wrap gap-x-10 gap-y-6 border-t border-black/15 pt-8">
-              <Stat value="3.1×" label="LP revenue vs a flat 30 bp pool" />
-              <Stat value="+$6.10" label="Worst margin over the best venue" />
+            <div className="mt-14 grid max-w-[480px] grid-cols-2 gap-x-8 border-t border-black/15 pt-8">
+              <Stat value="3.1×" label="vs a flat 0.30% pool" />
+              <Stat value="+$6.10" label="ahead on the closest trade" />
             </div>
             <Link
               href="/dashboard"
               className="mt-5 inline-block font-mono text-[12px] tracking-[0.14em] text-[#1C1C1C]/60 uppercase hover:text-[#1C1C1C]"
             >
-              Sepolia replay · 40 trades →
+              See the 40-trade replay →
             </Link>
           </div>
 
@@ -160,7 +160,7 @@ export default function LandingPage() {
             tone="lavender"
             eyebrow="Integrations"
             title="One fee engine, three integrations."
-            note="Chainlink CRE prices the competition, the SwapVM opcode sets the fee, and private quoting protects the trade."
+            note="Uniswap and Sushi set the price to beat. CRE writes the curve on Market. Anon-RPC and Frame keep the quote private."
           />
 
           <div className="mt-14 grid gap-10 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-5">
@@ -229,7 +229,7 @@ export default function LandingPage() {
         <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
           <Eyebrow tone="dark">Live on Sepolia</Eyebrow>
           <h2 className="mt-4 mb-12 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px] md:mb-20">
-            Trade at the best price, by a hair.
+            Get the best price on every swap.
           </h2>
           <LaunchButton />
         </div>
@@ -276,7 +276,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <div className="text-[44px] leading-none font-semibold tracking-[-0.04em] sm:text-[52px]">{value}</div>
-      <div className="mt-2 text-[14px] font-semibold text-[#1C1C1C]/75">{label}</div>
+      <div className="mt-2 max-w-[16ch] text-[14px] leading-snug font-semibold text-[#1C1C1C]/75">{label}</div>
     </div>
   );
 }
