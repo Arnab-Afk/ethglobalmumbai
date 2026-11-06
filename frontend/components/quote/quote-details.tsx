@@ -1,32 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { DEMO_POOL, SEPOLIA, USDC, WETH } from "@/lib/deployments";
-import { fmtAge, fmtAmount } from "@/lib/format";
+import { SEPOLIA } from "@/lib/deployments";
+import { fmtAge, fmtAmount, fmtSmart } from "@/lib/format";
+import type { PoolSide } from "@/lib/pools";
 import { pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import type { Token } from "@/lib/tokens";
 
 /** Rate line that expands into the fee breakdown, plus a link to verify on-chain. */
 export function QuoteDetails({
   quote,
+  tokenIn,
+  tokenOut,
+  pool,
   config,
   slippageBps,
 }: {
   quote: LiveQuote;
+  tokenIn: Token;
+  tokenOut: Token;
+  pool: PoolSide;
   config: FeeConfig | null;
   slippageBps: number;
 }) {
   const [open, setOpen] = useState(false);
-  const rate = (quote.ourOut * 10n ** BigInt(WETH.decimals)) / quote.amountIn;
+  const rate = (quote.ourOut * 10n ** BigInt(tokenIn.decimals)) / quote.amountIn;
   const minOut = (quote.ourOut * BigInt(10_000 - slippageBps)) / 10_000n;
+  const out = tokenOut.symbol;
 
   const rows: [string, React.ReactNode][] = [
     ["Our fee", `${pipsToPercent(quote.feePips)} (${quote.feePips.toLocaleString()} pips)`],
-    ["LP keeps", `${fmtAmount(quote.zeroFeeOut - quote.ourOut, USDC.decimals, 2)} USDC`],
-    ["Minimum received", `${fmtAmount(minOut, USDC.decimals, 6)} USDC`],
+    ["LP keeps", `${fmtSmart(quote.zeroFeeOut - quote.ourOut, tokenOut.decimals)} ${out}`],
+    ["Minimum received", `${fmtSmart(minOut, tokenOut.decimals, 10)} ${out}`],
     ["Quote age", quote.status === "none" ? "—" : fmtAge(quote.blockTime - quote.updatedAt)],
   ];
   if (config) rows.push(["Fee range", `${pipsToPercent(config.feeFloor)} – ${pipsToPercent(config.feeCap)}`]);
-  rows.push(["Pool (demo reserves)", `${fmtAmount(DEMO_POOL.reserveIn, 18, 0)} / ${fmtAmount(DEMO_POOL.reserveOut, 6, 0)}`]);
+  rows.push([
+    "Pool reserves",
+    `${fmtAmount(pool.reserveIn, tokenIn.decimals, 0)} ${tokenIn.symbol} / ${fmtAmount(pool.reserveOut, tokenOut.decimals, 0)} ${out}`,
+  ]);
 
   return (
     <div className="text-base">
@@ -37,7 +49,7 @@ export function QuoteDetails({
         className="tnum flex h-8 w-full items-center justify-between"
       >
         <span>
-          1 WETH = {fmtAmount(rate, USDC.decimals, 2)} USDC
+          1 {tokenIn.symbol} = {fmtSmart(rate, tokenOut.decimals)} {out}
         </span>
         <span className="flex items-center gap-2 text-fg-2">
           {pipsToPercent(quote.feePips)}

@@ -1,6 +1,6 @@
-import { USDC } from "@/lib/deployments";
-import { fmtAge, fmtAmount } from "@/lib/format";
+import { fmtAge, fmtSmart } from "@/lib/format";
 import { pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import type { Token } from "@/lib/tokens";
 import { RefreshRing } from "./refresh-ring";
 
 /**
@@ -10,12 +10,14 @@ import { RefreshRing } from "./refresh-ring";
  */
 export function PriceCard({
   quote,
+  tokenOut,
   config,
   loading,
   refreshKey,
   refreshMs,
 }: {
   quote: LiveQuote;
+  tokenOut: Token;
   config: FeeConfig | null;
   loading: boolean;
   refreshKey: number;
@@ -26,9 +28,10 @@ export function PriceCard({
   const best = Number(quote.bestOut);
   const hasBest = best > 0;
 
-  // Zoom the axis onto the interesting region so sub-1% gaps are visible.
-  const min = Math.min(ours, hasBest ? best : ours);
-  const lo = min - (full - min) * 0.6;
+  // With a competitor, zoom onto the region around it so sub-1% gaps are visible.
+  // Without one there is nothing to compare, so show the true split from zero.
+  const min = Math.min(ours, best);
+  const lo = hasBest ? Math.max(0, min - (full - min) * 0.6) : 0;
   const pos = (v: number) => `${((v - lo) / (full - lo)) * 100}%`;
 
   const age = quote.blockTime - quote.updatedAt;
@@ -85,18 +88,18 @@ export function PriceCard({
       <div className="tnum mt-2 flex justify-between text-sm">
         <span>
           <span className="text-fg-2">You get </span>
-          {fmtAmount(quote.ourOut, USDC.decimals, 2)}
+          {fmtSmart(quote.ourOut, tokenOut.decimals)}
         </span>
         <span>
           <span className="text-fg-2">LP keeps </span>
-          {fmtAmount(quote.zeroFeeOut - quote.ourOut, USDC.decimals, 2)}
+          {fmtSmart(quote.zeroFeeOut - quote.ourOut, tokenOut.decimals)}
         </span>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-2">
         <Legend swatch="bg-accent-hi" label="You receive" />
         <Legend swatch="bg-accent-hi/40" label="LP keeps" />
-        {hasBest && <Legend swatch="bg-fg w-0.5 rounded-full" label={`Best venue ${fmtAmount(quote.bestOut, USDC.decimals, 2)}`} />}
+        {hasBest && <Legend swatch="bg-fg w-0.5 rounded-full" label={`Best venue ${fmtSmart(quote.bestOut, tokenOut.decimals)}`} />}
       </div>
 
       {fallback && (
@@ -104,7 +107,7 @@ export function PriceCard({
           <span className="mr-1.5 inline-block size-1.5 rounded-full bg-warn align-middle" />
           {quote.status === "stale"
             ? `Competitor curve is ${fmtAge(age)} old${config ? `, past the ${config.maxQuoteAge}s limit` : ""}.`
-            : "No competitor quote covers this size."}{" "}
+            : "No competitor curve for this pair and size yet."}{" "}
           Fee falls back to {pipsToPercent(config?.fallbackFee ?? quote.feePips)} until a fresh curve lands.
         </p>
       )}
