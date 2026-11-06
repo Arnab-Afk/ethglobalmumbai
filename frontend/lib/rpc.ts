@@ -1,3 +1,4 @@
+import { fallback, http } from "viem";
 import { ANON_NETWORKS, createAnonFetch, type AnonFetch, type AnonNetwork } from "@hairline/sdk/anon";
 
 /**
@@ -25,11 +26,39 @@ export function getAnon(): AnonFetch | undefined {
   return (anon ??= createAnonFetch({ network: anonNetwork }));
 }
 
-/** fetch for viem's http transport. With Anon-RPC on there is no fallback to a plain fetch: it fails closed. */
+// Direct reads are never chosen for the user: only an explicit click (setDirectReads) turns Anon-RPC off.
+let direct = false;
+const listeners = new Set<() => void>();
+export const isDirectReads = () => direct;
+export const subscribeDirectReads = (fn: () => void) => (listeners.add(fn), () => void listeners.delete(fn));
+export function setDirectReads() {
+  direct = true;
+  listeners.forEach((fn) => fn());
+}
+
+/** fetch for viem's http transport. With Anon-RPC on there is no silent fallback to a plain fetch: it fails closed. */
 export const rpcFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-  const a = getAnon();
+  const a = direct ? undefined : getAnon();
   return a ? a.fetch(input, init) : fetch(input, init);
 };
 
-/** Tor and mixnets add seconds per request; direct reads keep viem's default. */
-export const rpcTimeoutMs = anonNetwork ? 120_000 : 10_000;
+/** Tor and mixnets add seconds per request; direct reads keep viem's default. One endpoint gets this long before the next is tried. */
+export const rpcTimeoutMs = anonNetwork ? 30_000 : 10_000;
+
+/**
+ * Sepolia endpoints, tried in order (they all go through rpcFetch, so a fallback stays anonymous).
+ * Each one answered a batched eth_call with browser CORS headers on Nov 6; drpc, 1rpc, ankr, zan and tatum did not
+ * (paid plan, no batching or no eth_call), so they are left out.
+ */
+export const SEPOLIA_RPCS = [
+  "https://ethereum-sepolia-rpc.publicnode.com",
+  "https://gateway.tenderly.co/public/sepolia",
+  "https://ethereum-sepolia-public.nodies.app",
+  "https://rpc.sepolia.ethpandaops.io",
+] as const;
+
+export const sepoliaTransport = () =>
+  fallback(
+    SEPOLIA_RPCS.map((url) => http(url, { batch: { wait: 20 }, retryCount: 0, fetchFn: rpcFetch, timeout: rpcTimeoutMs })),
+    { retryCount: 0 },
+  );
