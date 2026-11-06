@@ -37,6 +37,8 @@ import { isMockVenue, quoteMockVenue } from "../src/venues/mockVenue.js";
 
 /** EVM TxStatus values from the CRE SDK (FATAL = 0, REVERTED = 1, SUCCESS = 2). */
 const TX_STATUS: Record<number, string> = { 0: "FATAL", 1: "REVERTED", 2: "SUCCESS" };
+/** ReceiverContractExecutionStatus values (SUCCESS = 0, REVERTED = 1). */
+const RECEIVER_STATUS: Record<number, string> = { 0: "SUCCESS", 1: "REVERTED" };
 
 type EVMClient = InstanceType<typeof cre.capabilities.EVMClient>;
 
@@ -152,12 +154,24 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
     .result();
 
   // The reply carries BigInt and Uint8Array fields, which JSON.stringify cannot print.
+  // txStatus covers the forwarder transaction only. The forwarder catches a failing
+  // receiver, so QuoteOracle's own result is in receiverContractExecutionStatus.
   const status = TX_STATUS[reply.txStatus] ?? `UNKNOWN(${reply.txStatus})`;
+  const receiver =
+    reply.receiverContractExecutionStatus === undefined
+      ? "n/a"
+      : (RECEIVER_STATUS[reply.receiverContractExecutionStatus] ??
+        `UNKNOWN(${reply.receiverContractExecutionStatus})`);
   const txHash = reply.txHash && reply.txHash.length > 0 ? bytesToHex(reply.txHash) : "none";
   runtime.log(
-    `cre-workflow: writeReport status=${status} txHash=${txHash}` +
+    `cre-workflow: writeReport status=${status} receiver=${receiver} txHash=${txHash}` +
       (reply.errorMessage ? ` error=${reply.errorMessage}` : ""),
   );
+  if (receiver === "REVERTED") {
+    runtime.log(
+      "cre-workflow: WARNING QuoteOracle reverted inside the forwarder call; the curve was NOT stored (check gasLimit and the report)",
+    );
+  }
   return payload;
 };
 
