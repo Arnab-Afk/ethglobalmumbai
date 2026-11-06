@@ -30,6 +30,17 @@ export function LandingHeader() {
 
   const solid = scrolled || menu;
 
+  // We're already on the landing page: glide back to the top instead of re-navigating to "/".
+  // Modified clicks (new tab / window) keep the normal link behaviour.
+  const toTop = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    setMenu(false);
+    if (window.location.hash) history.replaceState(null, "", window.location.pathname + window.location.search);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  };
+
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
@@ -37,7 +48,7 @@ export function LandingHeader() {
       }`}
     >
       <div className={`relative ${CONTAINER} flex h-14 items-center justify-between`}>
-        <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em]" aria-label="Hairline home">
+        <Link href="/" onClick={toTop} className="text-[18px] font-extrabold tracking-[-0.03em]" aria-label="Hairline home">
           Hairline
         </Link>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[15px] font-semibold lg:flex">
