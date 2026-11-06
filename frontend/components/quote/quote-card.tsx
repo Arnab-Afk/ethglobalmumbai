@@ -96,9 +96,10 @@ export function QuoteCard() {
     return () => clearTimeout(t);
   }, [runQuote, sell, buy, amount]);
 
-  // Re-quote once per block.
+  // Re-quote once per block. Also after an error: an Anon-RPC network can drop out for a while
+  // (e.g. Nox "No exit offers TLS tunnels"), and the quote should recover on its own when it returns.
   useEffect(() => {
-    if (state.kind !== "ok") return;
+    if (state.kind !== "ok" && state.kind !== "error") return;
     const t = setTimeout(() => {
       setRefreshKey((k) => k + 1);
       runQuote();
