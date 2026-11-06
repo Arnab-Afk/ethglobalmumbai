@@ -41,7 +41,22 @@ async function quoteVenue(
       break;
     }
     case "http": {
-      // CRE HTTP capability path — local simulate skips unless fetch is injected later.
+      if (!venue.url || typeof fetch !== "function") break;
+      try {
+        const res = await fetch(venue.url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            tokenIn: pair.tokenIn,
+            tokenOut: pair.tokenOut,
+            amountIn: amountIn.toString(),
+          }),
+        });
+        const body = (await res.json()) as { amountOut?: string };
+        if (body.amountOut) amountOut = BigInt(body.amountOut);
+      } catch {
+        amountOut = 0n;
+      }
       break;
     }
   }
