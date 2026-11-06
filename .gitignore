@@ -24,3 +24,5 @@ Thumbs.db
 .devnet-state.json
 # private-quoting: Sepolia demo pool deploy output (addresses go into deployments/sepolia.json)
 .sepolia-swap.json
+
+graphify-out
