@@ -34,21 +34,20 @@ This is a stretch for a pure AMM demo. Keep the AMM core unchanged and add priva
 - **Sealed competitive quotes (RFQ):** the trader privately requests quotes from several venues (ours + mocks); each returns a signed firm quote with expiry; the trader picks the best. Our quoter runs the fee-core TS reference so the firm quote matches on-chain execution.
 - Quote expiry/nonce enforcement on-chain (needs a small addition to Arnab's SwapVM program; coordinate first).
 
-## Integration (placeholder: fill in after kickoff research)
+## Integration (filled in from the build, Nov 6)
 
-| Piece | What we need to know | Owner |
+| Piece | What we found | Where |
 |---|---|---|
-| Anon-RPC | Endpoint/SDK, which methods are supported (`eth_call` for quotes?), networks, latency | Soham |
-| Frame mempool | How a tx is submitted, tx type/format, which network/devnet, how inclusion is confirmed | Soham |
-| Our quote call | SwapVM quote entrypoint + calldata (from Arnab's `swapvm-opcode` package) | Arnab → Soham |
-| Searcher bot (demo) | Watches the public mempool on the fork and sandwiches our pool | Soham, with Ishika for demo wiring |
+| Anon-RPC | Browser-only (`@anon-rpc/browser-harness@0.4.0`). `eth_call` reads work through it. Nox answers in about 5 s, Nym in about 45 s cold, the tor-js demo gateway is down. The app fails over Nox, then Nym, then Tor. See [05b](05b-ef-endpoints.md). | `packages/sdk/src/anon.ts`, `frontend/lib/rpc.ts` |
+| Frame mempool | `eth_sendFrameTransaction` on `https://eip8141-rpc.arnabbhowmik.in/rpc` (chain 1337), atomic batch `[VERIFY, mint, approve, swap]`. Public, so no sandwich protection; `minOut` plus the atomic batch is the guard. | `packages/sdk/src/frame.ts`, `packages/private-quoting/src/cli/swap.ts` |
+| Our quote call | `DevnetCompetitivePool.quote` and `swap` on devnet; the Sepolia demo pool uses the same contract. | `packages/private-quoting/contracts`, `docs/team/sepolia-swap.md` |
+| Searcher bot | Dropped (the alt mempool is public). | none |
 
 ## Package
 
-`packages/private-quoting/`
-- `client/`: quoter + submitter (TS, viem/ethers), with public and private modes behind one flag
-- `searcher/`: sandwich bot for the public-path demo
-- `scripts/`: side-by-side run producing JSON for the dashboard
+- `packages/sdk`: `@hairline/sdk`. `CompetitiveFeeClient` (quote and swap encoding), `anon.ts` (Anon-RPC fetch), `frame.ts` (frame submitter).
+- `packages/private-quoting`: devnet pool contracts, CLIs (`deploy`, `swap`, `curve`, `deploy-sepolia`), `web/` (devnet quote page), `scripts/` (`quote-sdk.ts`, `preflight-sepolia-swap.ts`).
+- `frontend/`: the Sepolia swap app; reads go through `lib/rpc.ts`.
 
 ## Tests
 - Quote via Anon-RPC == quote via a normal RPC (same block)
