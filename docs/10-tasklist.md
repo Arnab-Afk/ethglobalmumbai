@@ -5,7 +5,7 @@ Status snapshot. Update when something lands.
 | ID | Owner | Task | Package / surface | Status |
 |---|---|---|---|---|
 | A1–A5 | Arnab | fee-core, oracle, SwapVM Extruction, Sepolia deploy | `fee-core`, `oracle`, `swapvm-opcode` | **Done** |
-| A6 | Arnab | Aqua fork end-to-end + flat vs competitive LP compare | `swapvm-opcode` | Soft remaining |
+| **A6** | **Soham** | **1inch Aqua demo (Path B): Anvil mainnet/Base fork → deploy Extruction → ship strategy → one on-chain Aqua swap that moves tokens; keep flat-vs-competitive Foundry compare for the slide** | **`packages/swapvm-opcode`** (`npm run aqua:fork`, `DeployFork.s.sol`, `FlatVsCompetitive.t.sol`) | **Soft remaining** — Path B + unit tests already shipped; need the fork settlement proof for the Aqua prize |
 | C1 | Arnab / Saish | CRE aggregator scaffold + local simulate | `cre-workflow` | **Done** (scaffold) |
 | C2 | Saish | `cre workflow simulate` + honest deploy/sim write-up | `cre-workflow` | **Done** (simulate + `--broadcast` to Sepolia, Chainlink fair-price check, WETH⇄USDC, Multicall3; see `docs/06`) |
 | C3 | Arnab / Saish | A swap path that reads `QuoteOracle` (proposed: `VenueReader` falls back to it when a venue is far from Chainlink) | `oracle` | **Pending**, needed for the Chainlink track |
@@ -31,3 +31,12 @@ const q = await client.quote({ tokenIn, amountIn });
 ```
 
 S1–S3 are in this package. S4: the neat app (`frontend/`) reads Sepolia through `neat3-sdk/anon`. It targets `frontend/`, not `apps/demo`, because `frontend/` is the app we demo; it quotes Sepolia `previewFeePips`, so it uses the SDK transport rather than `CompetitiveFeeClient` (which wraps the devnet pool).
+
+## Soham — A6 Aqua fork demo (1inch)
+
+Prize gap only: judges need **on-chain token transfers** (local fork OK) using official Aqua/SwapVM. Path B `CompetitiveFeeExtruction` + Sepolia deploy + Foundry tests are already done by Arnab.
+
+1. `cd packages/swapvm-opcode` → set `FORK_RPC` → `npm run aqua:fork`
+2. Confirm ship + one Aqua swap (pull/push) moves tokens; save tx / script output for the demo
+3. Re-run `forge test` / flat-vs-competitive for the slide if needed
+4. Path A native opcode is optional polish, not required to qualify
