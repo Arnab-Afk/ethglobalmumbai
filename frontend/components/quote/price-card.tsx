@@ -38,7 +38,7 @@ export function PriceCard({
   const fallback = quote.status !== "live";
 
   return (
-    <section className="rounded-lg bg-surface p-4">
+    <section className="panel rounded-lg p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-base font-medium">
@@ -65,14 +65,14 @@ export function PriceCard({
         <div className="relative h-9 overflow-hidden rounded-md bg-surface-2">
           <div
             className="absolute inset-y-0 left-0"
-            style={{ width: pos(ours), background: "linear-gradient(0deg, #c12707, #df5331)" }}
+            style={{ width: pos(ours), background: "linear-gradient(180deg, var(--accent-hi), var(--accent-lo))" }}
           />
           <div
             className="absolute inset-y-0 right-0"
             style={{
               left: pos(ours),
               background:
-                "repeating-linear-gradient(135deg, rgb(223 83 49 / 0.5) 0 4px, rgb(223 83 49 / 0.18) 4px 8px)",
+                "repeating-linear-gradient(135deg, rgb(255 106 31 / 0.5) 0 1px, rgb(255 106 31 / 0.1) 1px 5px)",
             }}
           />
         </div>
@@ -97,8 +97,8 @@ export function PriceCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-2">
-        <Legend swatch="bg-accent-hi" label="You receive" />
-        <Legend swatch="bg-accent-hi/40" label="LP keeps" />
+        <Legend swatch="bg-accent" label="You receive" />
+        <Legend swatch="bg-accent/30" label="LP keeps" />
         {hasBest && <Legend swatch="bg-fg w-0.5 rounded-full" label={`Best venue ${fmtSmart(quote.bestOut, tokenOut.decimals)}`} />}
       </div>
 

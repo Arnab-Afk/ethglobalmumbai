@@ -46,9 +46,9 @@ export function TokenPicker({
       aria-modal="true"
       aria-label="Select a token"
     >
-      <div className="w-full max-w-[400px] overflow-hidden rounded-xl border border-line bg-[#2c211d] shadow-2xl shadow-black/50">
+      <div className="w-full max-w-[400px] overflow-hidden rounded-xl border border-line-hi bg-panel shadow-2xl shadow-black/60">
         <div className="border-b border-line p-3">
-          <label className="flex h-11 items-center gap-2.5 rounded-lg border border-accent-hi/70 bg-black/15 px-3 focus-within:border-accent-hi">
+          <label className="flex h-11 items-center gap-2.5 rounded-lg border border-line-hi bg-black/30 px-3 focus-within:border-accent/70">
             <svg width="15" height="15" viewBox="0 0 16 16" className="text-fg-2" aria-hidden>
               <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.6" fill="none" />
               <path d="m11 11 3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

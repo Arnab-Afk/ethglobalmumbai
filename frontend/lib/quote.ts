@@ -19,6 +19,13 @@ const extructionAbi = parseAbi([
   "function maxQuoteAge() view returns (uint32)",
 ]);
 
+const erc20Abi = parseAbi(["function balanceOf(address owner) view returns (uint256)"]);
+
+/** ERC-20 balance on Sepolia (batched with any other reads in the same tick). */
+export function getTokenBalance(token: Token, owner: `0x${string}`): Promise<bigint> {
+  return client.readContract({ address: token.address, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
+}
+
 const PIP_SCALE = 1_000_000n;
 
 export interface FeeConfig {
@@ -36,7 +43,7 @@ export type QuoteStatus =
 
 export interface LiveQuote {
   amountIn: bigint;
-  /** What the trader gets from Last Look after our fee. */
+  /** What the trader gets from Hairline after our fee. */
   ourOut: bigint;
   /** Our output at zero fee. ourOut + lpKeeps = zeroFeeOut. */
   zeroFeeOut: bigint;

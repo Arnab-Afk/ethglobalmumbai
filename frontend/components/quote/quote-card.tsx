@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { parseUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { fmtAge, fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
@@ -12,10 +12,12 @@ import { QuoteDetails } from "./quote-details";
 import { SlippageRow } from "./slippage-row";
 import { TokenPicker } from "./token-picker";
 import { TokenButton } from "./token-pill";
+import { useBalances } from "../wallet/use-balances";
+import { useWallet } from "../wallet/wallet-provider";
 
 const REFRESH_MS = 12_000; // one Sepolia block
 const DEBOUNCE_MS = 350;
-const DEFAULT_AMOUNT = "10";
+const DEFAULT_AMOUNT = ""; // start empty, like any swap form
 
 type State =
   | { kind: "idle" }
@@ -53,6 +55,10 @@ export function QuoteCard() {
   const reqId = useRef(0);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
+  const wallet = useWallet();
+  const balances = useBalances([sell, buy]);
+  const sellBal = balances[sell.address];
+  const buyBal = balances[buy.address];
 
   useEffect(() => {
     getFeeConfig().then(setConfig, () => {});
@@ -140,19 +146,26 @@ export function QuoteCard() {
         ? fmtAmount((quote.amountIn * quote.ourOut) / quote.bestOut, sell.decimals, 2)
         : null;
 
-  const amountValid = parseAmount(amount, sell.decimals) !== null;
-  const cta = !pool
-    ? `No pool for ${sell.symbol} → ${buy.symbol} yet`
-    : !amountValid
-      ? "Enter amount"
-      : "Swap pool not deployed on Sepolia";
+  const amountIn = parseAmount(amount, sell.decimals);
+  type Cta = { label: string; onClick?: () => void };
+  const cta: Cta = !pool
+    ? { label: `No pool for ${sell.symbol} → ${buy.symbol} yet` }
+    : amountIn === null
+      ? { label: "Enter amount" }
+      : !wallet.address
+        ? { label: wallet.connecting ? "Connecting…" : "Connect wallet", onClick: wallet.connect }
+        : !wallet.onSepolia
+          ? { label: "Switch to Sepolia", onClick: wallet.switchToSepolia }
+          : sellBal !== undefined && amountIn > sellBal
+            ? { label: `Insufficient ${sell.symbol} balance` }
+            : { label: "Swap pool not deployed on Sepolia" };
 
   return (
     <div className="flex w-full max-w-[470px] flex-col gap-2">
       {/* Top row */}
       <div className="flex h-10 items-center justify-between">
         <FreshnessTab quote={quote} hasPool={!!pool} />
-        <span className="flex h-10 items-center gap-2 rounded-lg bg-surface py-1.5 pl-1.5 pr-3.5 text-base font-medium">
+        <span className="flex h-10 items-center gap-2 panel rounded-lg py-1.5 pl-1.5 pr-3.5 text-base font-medium">
           <span className="grid size-7 place-items-center rounded-md bg-[#627eea]">
             <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden>
               <path d="M5 0 0 8.3l5 3L10 8.3 5 0Zm0 12.3L0 9.3 5 16l5-6.7-5 3Z" fill="#fff" />
@@ -164,7 +177,7 @@ export function QuoteCard() {
 
       {/* Sell + Buy, with the flip button sitting in the 8px gap */}
       <div className="relative flex flex-col gap-2">
-        <div className="h-[136px] rounded-lg bg-surface p-4">
+        <div className="panel h-[136px] rounded-lg p-4">
           <div className="text-base font-medium text-fg-2">Sell</div>
           <div className="mt-2 flex h-10 items-center gap-3">
             <input
@@ -180,14 +193,26 @@ export function QuoteCard() {
             />
             <TokenButton token={sell} onClick={() => setPicking("sell")} />
           </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center text-sm text-fg-2">{sellUsd ? `$${sellUsd}` : "-"}</div>
+          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
+            <span>{sellUsd ? `$${sellUsd}` : "-"}</span>
+            {sellBal !== undefined && (
+              <button
+                type="button"
+                onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
+                className="transition-colors hover:text-fg"
+                title="Use full balance"
+              >
+                {fmtSmart(sellBal, sell.decimals)} {sell.symbol}
+              </button>
+            )}
+          </div>
         </div>
 
         <button
           type="button"
           onClick={flip}
           aria-label="Switch tokens"
-          className="absolute left-1/2 top-[136px] z-10 grid size-9 -translate-x-1/2 -translate-y-[14px] place-items-center rounded-lg bg-solid text-fg transition-colors hover:bg-[#4a3830]"
+          className="absolute left-1/2 top-[136px] z-10 grid size-9 -translate-x-1/2 -translate-y-[14px] place-items-center rounded-lg border border-line-hi bg-solid text-fg transition-colors hover:border-accent/60 hover:text-accent-hi"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
             <path
@@ -201,7 +226,7 @@ export function QuoteCard() {
           </svg>
         </button>
 
-        <div className="h-[136px] rounded-lg bg-surface p-4">
+        <div className="panel h-[136px] rounded-lg p-4">
           <div className="text-base font-medium text-fg-2">Buy</div>
           <div className="mt-2 flex h-10 items-center gap-3">
             <div
@@ -213,12 +238,19 @@ export function QuoteCard() {
             </div>
             <TokenButton token={buy} onClick={() => setPicking("buy")} />
           </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center text-sm text-fg-2">
-            {buyUsd ? `$${buyUsd}` : quote ? "" : "-"}
-            {hasBest && (
-              <span className={`${buyUsd ? "ml-1" : ""} ${edgePct >= 0 ? "text-win" : "text-lose"}`} title="vs best competing venue">
-                ({edgePct >= 0 ? "+" : ""}
-                {edgePct.toFixed(2)}% vs best venue)
+          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
+            <span>
+              {buyUsd ? `$${buyUsd}` : quote ? "" : "-"}
+              {hasBest && (
+                <span className={`${buyUsd ? "ml-1" : ""} ${edgePct >= 0 ? "text-win" : "text-lose"}`} title="vs best competing venue">
+                  ({edgePct >= 0 ? "+" : ""}
+                  {edgePct.toFixed(2)}% vs best venue)
+                </span>
+              )}
+            </span>
+            {buyBal !== undefined && (
+              <span>
+                {fmtSmart(buyBal, buy.decimals)} {buy.symbol}
               </span>
             )}
           </div>
@@ -227,14 +259,20 @@ export function QuoteCard() {
 
       <SlippageRow bps={slippageBps} onChange={setSlippageBps} />
 
-      {/* Swap execution is screen 3; until a fillable pool exists this is quote-only. */}
-      <button
-        type="button"
-        disabled
-        className="h-14 w-full cursor-not-allowed rounded-lg bg-surface text-base font-medium text-muted"
-      >
-        {cta}
-      </button>
+      {/* Swap execution is screen 3; until a fillable pool exists the last step is quote-only. */}
+      {cta.onClick ? (
+        <button type="button" onClick={cta.onClick} className="btn-primary h-14 w-full rounded-lg text-base font-medium">
+          {cta.label}
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="panel h-14 w-full cursor-not-allowed rounded-lg text-base font-medium text-muted"
+        >
+          {cta.label}
+        </button>
+      )}
 
       {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>}
 
@@ -273,7 +311,7 @@ function FreshnessTab({ quote, hasPool }: { quote?: LiveQuote; hasPool: boolean 
       : { live: "Live", stale: `Stale · ${fmtAge(age)}`, none: "No venue curve" }[quote.status];
   const dot = !quote ? "bg-faint" : { live: "bg-win", stale: "bg-warn", none: "bg-faint" }[quote.status];
   return (
-    <span className="flex h-10 items-center gap-2 rounded-lg bg-surface pl-3 pr-4 text-base font-medium">
+    <span className="flex h-10 items-center gap-2 panel rounded-lg pl-3 pr-4 text-base font-medium">
       <span className={`size-2 rounded-full ${dot}`} />
       {label}
     </span>

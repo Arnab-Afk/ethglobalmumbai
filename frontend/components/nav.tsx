@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { WalletButton } from "./wallet/wallet-button";
 
 // Screens still to build are listed but not linked, so the demo never hits a 404.
 const LINKS = [
@@ -15,14 +16,14 @@ export function Nav() {
 
   return (
     <header className="grid h-14 grid-cols-[1fr_auto_1fr] items-center px-5">
-      <Link href="/" className="flex items-center gap-2 justify-self-start" aria-label="Last Look home">
+      <Link href="/" className="flex items-center gap-2 justify-self-start" aria-label="Hairline home">
         <Mark />
         <span className="text-[19px] font-semibold tracking-[-0.03em]">
-          Last<span className="font-normal text-fg-2">Look</span>
+          Hair<span className="font-normal text-fg-2">line</span>
         </span>
       </Link>
 
-      <nav className="flex h-9 items-center rounded-full bg-surface p-1 text-sm">
+      <nav className="flex h-9 items-center panel rounded-full p-1 text-sm">
         {LINKS.map((l) =>
           l.ready ? (
             <Link
@@ -42,8 +43,7 @@ export function Nav() {
         )}
       </nav>
 
-      {/* Right slot reserved for wallet connect (screen 3). */}
-      <span />
+      <WalletButton />
     </header>
   );
 }
@@ -53,7 +53,7 @@ function Mark() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
       <rect x="2" y="10" width="8" height="10" rx="2" fill="var(--fg-2)" fillOpacity=".55" />
-      <rect x="12" y="2" width="8" height="18" rx="2" fill="var(--accent-hi)" />
+      <rect x="12" y="2" width="8" height="18" rx="2" fill="var(--accent)" />
     </svg>
   );
 }
