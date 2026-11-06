@@ -3,7 +3,7 @@ import { AudienceToggle } from "@/components/landing/audience-toggle";
 import { CompareCard } from "@/components/landing/compare-card";
 import { Faq } from "@/components/landing/faq";
 import { FeeDiagram } from "@/components/landing/fee-diagram";
-import { LandingHeader, LaunchButton } from "@/components/landing/header";
+import { LandingHeader } from "@/components/landing/header";
 import { HeroSwap } from "@/components/landing/hero-swap";
 import { QuoteTicker } from "@/components/landing/quote-ticker";
 import { CONTAINER, Eyebrow, H2, RULE, SECTION_Y, SectionHead } from "@/components/landing/section";
@@ -83,10 +83,6 @@ export default function LandingPage() {
               neat checks what the best venue would pay you, then charges a fee only up to that line. You still
               get more. LPs keep the rest.
             </p>
-            <div className="mt-8">
-              <LaunchButton dark />
-            </div>
-
             <div className="mt-14 grid max-w-[480px] grid-cols-2 gap-x-8 border-t border-black/15 pt-8">
               <Stat value="3.1×" label="vs a flat 0.30% pool" />
               <Stat value="+$6.10" label="ahead on the closest trade" />
@@ -228,10 +224,9 @@ export default function LandingPage() {
         <BlockPattern />
         <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
           <Eyebrow tone="dark">Live on Sepolia</Eyebrow>
-          <h2 className="mt-4 mb-12 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px] md:mb-20">
+          <h2 className="mt-4 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px]">
             Every swap, served neat.
           </h2>
-          <LaunchButton />
         </div>
       </section>
 

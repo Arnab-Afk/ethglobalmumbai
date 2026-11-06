@@ -13,11 +13,13 @@
   },
   "dependencies": {
     "@anon-rpc/browser-harness": "0.4.0",
+    "@tanstack/react-query": "^5.107.0",
     "neat3-sdk": "file:../packages/sdk",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "viem": "^2.57.16"
+    "viem": "^2.57.16",
+    "wagmi": "^3.7.11"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

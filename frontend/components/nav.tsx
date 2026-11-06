@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWallet } from "./wallet/wallet-provider";
 import { WalletButton } from "./wallet/wallet-button";
 
 const LINKS = [
@@ -15,6 +16,8 @@ const LINKS = [
 export function Nav() {
   const pathname = usePathname();
   const light = pathname === "/swap" || pathname === "/market";
+  const { address, onSepolia } = useWallet();
+  const networkOk = !address || onSepolia;
 
   return (
     <header
@@ -57,11 +60,20 @@ export function Nav() {
         <div className="flex items-center gap-2">
           <span
             className={`hidden h-8 items-center gap-2 rounded-full border px-3 text-[14px] font-medium md:flex ${
-              light ? "border-[#E7E4DF] text-[#3A3A3A]" : "border-line-hi text-fg-2"
+              networkOk
+                ? light
+                  ? "border-[#E7E4DF] text-[#3A3A3A]"
+                  : "border-line-hi text-fg-2"
+                : "border-warn/40 bg-warn/10 text-warn"
             }`}
           >
-            <span className={`size-2 rounded-full ${light ? "bg-[#2F6BFF]" : "bg-accent"}`} aria-hidden />
-            Sepolia
+            <span
+              className={`size-2 rounded-full ${
+                networkOk ? (light ? "bg-[#2F6BFF]" : "bg-accent") : "bg-warn"
+              }`}
+              aria-hidden
+            />
+            {networkOk ? "Sepolia" : "Wrong network"}
           </span>
           <WalletButton />
         </div>

@@ -11,17 +11,18 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
-  // The SDK is a file: dependency whose build lives outside frontend/. Turbopack's root is the
-  // repo, so the package name does not resolve from frontend/node_modules.
+  // The SDK is a file: dependency outside frontend/. Turbopack's root is the repo, and it will
+  // not read packages/sdk/dist because dist/ is gitignored, so resolve the TypeScript source.
   transpilePackages: ["neat3-sdk"],
   turbopack: {
     root: repoRoot,
     // Relative to turbopack.root. An absolute Windows path makes Turbopack throw
     // "windows imports are not implemented yet" and the swap page returns 500.
     resolveAlias: {
-      "neat3-sdk/anon": "../packages/sdk/dist/anon.js",
-      "neat3-sdk/frame": "../packages/sdk/dist/frame.js",
-      "neat3-sdk": "../packages/sdk/dist/index.js",
+      // dist/ is gitignored; Turbopack must resolve the TypeScript source.
+      "neat3-sdk/anon": "../packages/sdk/src/anon.ts",
+      "neat3-sdk/frame": "../packages/sdk/src/frame.ts",
+      "neat3-sdk": "../packages/sdk/src/index.ts",
     },
     rules: {
       "*.css": {

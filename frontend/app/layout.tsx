@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Manrope } from "next/font/google";
-import { WalletProvider } from "@/components/wallet/wallet-provider";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 // Manrope is the one sans font across the landing page and every app screen.
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <WalletProvider>{children}</WalletProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
