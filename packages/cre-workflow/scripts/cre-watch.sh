@@ -2,10 +2,10 @@
 # Run the CRE workflow simulation on a timer, like the deployed workflow's cron would.
 #
 # The workflow is not deployed to the Chainlink DON, so it only runs when someone calls
-# `cre workflow simulate`. This loop does that every INTERVAL seconds, so each run reads
+# `cre workflow simulate`. This loop does that every INTERVAL seconds (default 300), so each run reads
 # the live Chainlink feed and venue prices again.
 #
-#   npm run cre:watch                         # dry run every 60 s (no transactions)
+#   npm run cre:watch                         # dry run every 300 s (no transactions)
 #   INTERVAL=30 npm run cre:watch             # every 30 s
 #   BROADCAST=1 npm run cre:watch             # also write each curve to QuoteOracle on Sepolia
 #   MAX_RUNS=3 INTERVAL=5 npm run cre:watch   # stop after 3 runs (for testing)
@@ -16,7 +16,7 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
-INTERVAL="${INTERVAL:-60}"
+INTERVAL="${INTERVAL:-300}"
 BROADCAST="${BROADCAST:-0}"
 TARGET="${TARGET:-sepolia-settings}"
 MAX_RUNS="${MAX_RUNS:-0}" # 0 = run until stopped

@@ -53,7 +53,7 @@ cre workflow simulate ./workflow -T sepolia-settings --broadcast    # real Sepol
 The workflow is not deployed to the Chainlink DON, so it only runs when someone calls `cre workflow simulate`. The Chainlink feed itself is always live; our workflow just reads it on each run. `cre:watch` re-runs the simulation on a timer, standing in for the deployed workflow's cron:
 
 ```sh
-npm run cre:watch                         # dry run every 60 s, no transactions
+npm run cre:watch                         # dry run every 300 s (5 min), no transactions
 INTERVAL=30 npm run cre:watch             # every 30 s
 BROADCAST=1 npm run cre:watch             # also write each curve to QuoteOracle (Sepolia tx per run)
 MAX_RUNS=3 INTERVAL=5 npm run cre:watch   # stop after 3 runs
