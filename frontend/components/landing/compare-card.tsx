@@ -37,7 +37,7 @@ export function CompareCard() {
   const t = trades?.[tab];
   const rows = t
     ? [
-        { name: "Best venue", out: t.bestOut, kept: null, won: true, fee: "—", venue: true, hl: false },
+        { name: "Best venue", out: t.bestOut, kept: null, won: true, fee: "-", venue: true, hl: false },
         { name: "neat", out: t.hairline.out, kept: t.hairline.revenue, won: t.hairline.won, fee: pipsToPercent(t.feePips), venue: false, hl: true },
         { name: "Flat 30 bp", out: t.flat30.out, kept: t.flat30.revenue, won: t.flat30.won, fee: "0.30%", venue: false, hl: false },
         { name: "Flat 5 bp", out: t.flat5.out, kept: t.flat5.revenue, won: t.flat5.won, fee: "0.05%", venue: false, hl: false },
@@ -89,7 +89,7 @@ export function CompareCard() {
                 </td>
                 <td className="py-3 text-right text-[#151619]">{usd(r.out)}</td>
                 <td className={`py-3 text-right ${r.hl ? "font-medium text-[#5B46C7]" : "text-[#6B6560]"}`}>
-                  {r.kept == null ? "—" : usd(r.kept)}
+                  {r.kept == null ? "-" : usd(r.kept)}
                 </td>
                 <td className={`py-3 pr-3 text-right ${r.hl ? "rounded-r-lg font-medium text-[#5B46C7]" : "text-[#6B6560]"}`}>
                   {r.fee}

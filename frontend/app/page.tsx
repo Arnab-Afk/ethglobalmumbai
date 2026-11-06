@@ -43,7 +43,7 @@ const SURFACES = [
       ["Pair", "WETH → USDC"],
       ["Reference", "Chainlink ETH/USD"],
       ["Contract", shortAddr(SEPOLIA.contracts.QuoteOracle)],
-      ["Status", "Live on Sepolia"],
+      ["Status", "Live on mainnet"],
     ],
     link: { label: "See the market", href: "/market", internal: true },
     track: "Chainlink · CRE",
@@ -223,7 +223,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-[#151619] text-white">
         <BlockPattern />
         <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
-          <Eyebrow tone="dark">Live on Sepolia</Eyebrow>
+          <Eyebrow tone="dark">Live on mainnet</Eyebrow>
           <h2 className="mt-4 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px]">
             Every swap, served neat.
           </h2>
@@ -235,7 +235,7 @@ export default function LandingPage() {
         <div>
           <div className="text-[22px] font-semibold tracking-[-0.03em]">neat</div>
           <p className="mt-2 max-w-[34ch] text-[15px] leading-[1.5] text-[#6B6560]">
-            Inspired by PropellerHeads&apos; Fynd. All code written during ETHGlobal Mumbai.
+            An AMM that sets its fee last, against live mainnet venues.
           </p>
         </div>
         <FooterCol
@@ -248,10 +248,7 @@ export default function LandingPage() {
         />
         <FooterCol
           title="Learn"
-          links={[
-            { label: "About", href: "/about" },
-            { label: "Repository", href: REPO, external: true },
-          ]}
+          links={[{ label: "Repository", href: REPO, external: true }]}
         />
         <FooterCol
           title="Contracts"

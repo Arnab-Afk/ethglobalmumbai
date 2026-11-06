@@ -12,7 +12,7 @@ import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 import { TokenIcon } from "./token-pill";
 
-/** Review sheet: the quote, then Approve and Swap when this pair can fill on Sepolia. */
+/** Review sheet: same cream/white language as the landing hero card and /swap. */
 export function SwapReview({
   quote,
   sell,
@@ -46,7 +46,6 @@ export function SwapReview({
   const shortBalance = sellBal !== undefined && quote.amountIn > sellBal;
   const receiveText = fmtSmart(quote.ourOut, buy.decimals, 8);
 
-  // Only WETH → USDC fills on Sepolia: SepoliaSwapPool's book is pinned to beat selling WETH.
   const canSwap = sell.symbol === "WETH" && buy.symbol === "USDC" && sell.address === SEPOLIA.contracts.DemoWETH;
   const [step, setStep] = useState<"approve" | "swap" | "done">("approve");
   const [busy, setBusy] = useState<string>();
@@ -59,7 +58,6 @@ export function SwapReview({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Skip Approve when the pool can already pull this amount.
   useEffect(() => {
     if (!canSwap || !wallet.address || !wallet.onSepolia) return;
     let live = true;
@@ -99,8 +97,6 @@ export function SwapReview({
         minOut,
         deadline: deadlineIn(600),
       };
-      // The pool prices from its own curve; the screen prices from live mainnet. Don't send a swap
-      // that would revert because the two drifted apart.
       const pq = await poolQuote(args.tokenIn, args.amountIn);
       if (pq.amountOut < minOut) {
         throw new Error(
@@ -132,7 +128,7 @@ export function SwapReview({
       "Fee",
       <>
         {pipsToPercent(quote.feePips)}
-        <span className="text-white/40"> · {fallback ? "fallback, no competitor quote" : "set last for this trade"}</span>
+        <span className="text-[#8A847E]"> · {fallback ? "fallback, no competitor quote" : "set last for this trade"}</span>
       </>,
     ],
     [
@@ -141,16 +137,16 @@ export function SwapReview({
         <>
           {quote.venue ? `${quote.venue} · ` : ""}
           {fmtSmart(quote.bestOut, buy.decimals)} {buy.symbol}
-          {edge >= 0n && <span className="text-win"> · +{fmtSmart(edge, buy.decimals, 4)}</span>}
+          {edge >= 0n && <span className="text-[#1F8A5B]"> · +{fmtSmart(edge, buy.decimals, 4)}</span>}
         </>
       ) : (
-        <span className="text-white/40">No quote for this size</span>
+        <span className="text-[#8A847E]">No quote for this size</span>
       ),
     ],
     ["Minimum received", `${fmtSmart(minOut, buy.decimals, 8)} ${buy.symbol}`],
     ["Max slippage", `${slippageBps / 100}%`],
   ];
-  if (config) rows.push(["Fee range", `${pipsToPercent(config.feeFloor)} – ${pipsToPercent(config.feeCap)}`]);
+  if (config) rows.push(["Fee range", `${pipsToPercent(config.feeFloor)} - ${pipsToPercent(config.feeCap)}`]);
   rows.push(["Pool", `${fmtAmount(pool.reserveIn, sell.decimals, 0)} ${sell.symbol} / ${fmtAmount(pool.reserveOut, buy.decimals, 0)} ${buy.symbol}`]);
 
   type Confirm = { label: string; onClick?: () => void; tone: "primary" | "soft" | "off" };
@@ -158,7 +154,11 @@ export function SwapReview({
   if (!wallet.address) {
     confirm = { label: wallet.connecting ? "Connecting…" : "Connect wallet", onClick: wallet.openConnectModal, tone: "soft" };
   } else if (!wallet.onSepolia) {
-    confirm = { label: "Switch to Sepolia", onClick: wallet.switchToSepolia, tone: "soft" };
+    confirm = {
+      label: wallet.switching ? "Switching…" : "Switch to Sepolia",
+      onClick: wallet.switching ? undefined : () => void wallet.switchToSepolia(),
+      tone: "soft",
+    };
   } else if (shortBalance) {
     confirm = { label: `Insufficient ${sell.symbol}`, tone: "off" };
   } else if (!canSwap) {
@@ -175,22 +175,22 @@ export function SwapReview({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[2px] sm:items-center sm:px-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:px-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
       aria-labelledby="review-title"
     >
-      <div className="w-full max-w-[550px] rounded-t-[28px] bg-[#161618] p-3 text-white shadow-2xl shadow-black/60 sm:rounded-[28px]">
+      <div className="w-full max-w-[460px] rounded-t-[28px] bg-white p-3 text-[#111] shadow-[0_24px_70px_rgb(40_28_96/0.28)] sm:rounded-[28px]">
         <div className="flex items-center justify-between px-2 pt-1 pb-3">
-          <h2 id="review-title" className="text-[16px] font-semibold">
+          <h2 id="review-title" className="text-[16px] font-semibold tracking-[-0.02em]">
             Review quote
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="grid size-8 place-items-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            className="grid size-8 place-items-center rounded-full text-[#8A847E] transition-colors hover:bg-[#F4F2EE] hover:text-[#111]"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
               <path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -199,43 +199,48 @@ export function SwapReview({
         </div>
 
         <Leg label="You pay" amount={amount} token={sell} usd={sellUsd} />
-        <div className="relative z-10 -my-3 flex justify-center" aria-hidden>
-          <span className="grid size-8 place-items-center rounded-xl border-4 border-[#161618] bg-[#2a2a2e] text-white/70">
+        <div className="relative z-10 -my-3.5 flex justify-center" aria-hidden>
+          <span className="grid size-8 place-items-center rounded-full border-[3px] border-white bg-[#F4F2EE] text-[#6F6A64]">
             <svg width="14" height="14" viewBox="0 0 16 16">
-              <path d="M8 3v10M8 13l-3.2-3.2M8 13l3.2-3.2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+              <path d="M4 6.5 8 10.5 12 6.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
         </div>
         <Leg label="You receive" amount={receiveText} token={buy} usd={buyUsd} />
 
-        <dl className="tnum mt-4 space-y-2.5 px-2 text-[14px]">
+        <dl className="tnum mt-4 space-y-2.5 px-3 text-[14px]">
           {rows.map(([k, v]) => (
             <div key={k} className="flex items-baseline justify-between gap-4">
-              <dt className="shrink-0 text-white/45">{k}</dt>
-              <dd className="text-right text-white">{v}</dd>
+              <dt className="shrink-0 text-[#8A847E]">{k}</dt>
+              <dd className="text-right font-medium text-[#111]">{v}</dd>
             </div>
           ))}
         </dl>
 
         {shortBalance && (
-          <p className="mt-4 px-2 text-[13px] text-white/45">
+          <p className="mt-4 px-3 text-[13px] text-[#8A847E]">
             Wallet balance is {fmtSmart(sellBal ?? 0n, sell.decimals)} {sell.symbol}. The quote still stands.
           </p>
         )}
 
         {(txs.approve || txs.swap || swapError) && (
-          <div className="tnum mt-3 flex flex-col gap-1 px-2 text-[13px]">
+          <div className="tnum mt-3 flex flex-col gap-1 px-3 text-[13px]">
             {txs.approve && (
-              <a href={txUrl(txs.approve)} target="_blank" rel="noreferrer" className="text-white/55 hover:text-white">
+              <a href={txUrl(txs.approve)} target="_blank" rel="noreferrer" className="text-[#5B46C7] hover:underline">
                 Approve {txs.approve.slice(0, 10)}… ↗
               </a>
             )}
             {txs.swap && (
-              <a href={txUrl(txs.swap)} target="_blank" rel="noreferrer" className={step === "done" ? "text-win hover:underline" : "text-white/55 hover:text-white"}>
+              <a
+                href={txUrl(txs.swap)}
+                target="_blank"
+                rel="noreferrer"
+                className={step === "done" ? "text-[#1F8A5B] hover:underline" : "text-[#5B46C7] hover:underline"}
+              >
                 {step === "done" ? "Swap confirmed" : "Swap"} {txs.swap.slice(0, 10)}… on Etherscan ↗
               </a>
             )}
-            {swapError && <p className="text-lose">{swapError}</p>}
+            {swapError && <p className="text-[#B42318]">{swapError}</p>}
           </div>
         )}
 
@@ -243,16 +248,16 @@ export function SwapReview({
           type="button"
           onClick={confirm.onClick}
           disabled={!confirm.onClick || wallet.connecting || !!busy}
-          className={`mt-4 h-[52px] w-full rounded-2xl text-[16px] font-semibold transition-colors ${
+          className={`mt-4 flex h-[54px] w-full items-center justify-center rounded-[18px] text-[16px] font-semibold transition-colors ${
             confirm.tone === "off"
-              ? "cursor-not-allowed bg-white/[0.06] text-white/45"
-              : "bg-white text-black hover:bg-white/90"
+              ? "cursor-not-allowed bg-[#111]/25 text-white"
+              : "bg-[#111] text-white hover:bg-black"
           }`}
         >
           {confirm.label}
         </button>
 
-        <p className="px-3 py-3 text-center text-[12px] leading-[1.5] text-white/40">
+        <p className="px-3 py-3 text-center text-[12px] leading-[1.5] text-[#8A847E]">
           {canSwap
             ? "The fee is GivenQuotePreview on the live mainnet Uniswap v3 price. The swap fills on Sepolia against SepoliaSwapPool."
             : "Priced by previewFeePips on Sepolia. No pool there can take this pair, so the swap stops here."}
@@ -265,18 +270,18 @@ export function SwapReview({
 function Leg({ label, amount, token, usd }: { label: string; amount: string; token: Token; usd: string | null }) {
   const size = amount.length <= 8 ? "text-[32px]" : amount.length <= 14 ? "text-[22px]" : "text-[18px]";
   return (
-    <div className="rounded-[18px] bg-white/[0.04] px-4 py-3.5">
-      <div className="text-[13px] font-medium text-white/45">{label}</div>
+    <div className="rounded-[18px] bg-[#F4F2EE] px-5 pt-4 pb-4">
+      <div className="text-[14px] font-medium text-[#8A847E]">{label}</div>
       <div className="mt-2 flex items-center gap-3">
-        <div className={`tnum min-w-0 flex-1 font-medium tracking-[-0.03em] ${size}`} title={amount}>
+        <div className={`tnum min-w-0 flex-1 font-bold tracking-[-0.045em] text-[#111] ${size}`} title={amount}>
           {amount}
         </div>
-        <span className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-[#2c2c30] py-1 pr-3 pl-1 text-[15px] font-semibold">
-          <TokenIcon token={token} size={28} />
+        <span className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-white pr-4 pl-1.5 text-[15px] font-bold tracking-[-0.02em] text-[#111] shadow-[0_1px_2px_rgb(0_0_0/0.05)] ring-1 ring-black/[0.06]">
+          <TokenIcon token={token} size={32} />
           {token.symbol}
         </span>
       </div>
-      <div className="tnum mt-1.5 h-5 text-[13px] text-[#7aa2ff]">{usd ? `$${usd}` : ""}</div>
+      <div className="tnum mt-1.5 h-5 text-[13px] font-medium text-[#9A948C]">{usd ? `$${usd}` : ""}</div>
     </div>
   );
 }
