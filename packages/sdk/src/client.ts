@@ -43,6 +43,15 @@ export interface Quote {
   mode: QuoteMode;
 }
 
+export interface SwapOptions {
+  /** Revert if output is below this. Default: the quoted `amountOut`. */
+  minOut?: bigint;
+  /** Unix seconds; revert after this. Default: now + 10 min. */
+  deadline?: bigint;
+}
+
+const DEFAULT_DEADLINE_SEC = 600;
+
 /** Thin client for the competitive-fee pool: `quote` → `encodeSwap` → `submit`. */
 export class CompetitiveFeeClient {
   readonly pool: Address;
@@ -77,18 +86,20 @@ export class CompetitiveFeeClient {
 
   /**
    * Calls for an exact-in swap: approve, then swap with `minOut` (default: the quoted output, so a price move
-   * before inclusion reverts the swap instead of filling worse). Send them with any wallet, or use `submit`.
+   * before inclusion reverts the swap instead of filling worse) and `deadline` (default: now + 10 min, so a tx
+   * stuck in the mempool cannot fill later). Send them with any wallet, or use `submit`.
    */
-  encodeSwap(q: Pick<Quote, "tokenIn" | "amountIn" | "amountOut">, opts: { minOut?: bigint } = {}): Call[] {
+  encodeSwap(q: Pick<Quote, "tokenIn" | "amountIn" | "amountOut">, opts: SwapOptions = {}): Call[] {
     const minOut = opts.minOut ?? q.amountOut;
+    const deadline = opts.deadline ?? BigInt(Math.floor(Date.now() / 1000) + DEFAULT_DEADLINE_SEC);
     return [
       { to: q.tokenIn, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [this.pool, q.amountIn] }), execution: 60_000n, state: 200_000n },
-      { to: this.pool, data: encodeFunctionData({ abi: poolAbi, functionName: "swap", args: [q.tokenIn, q.amountIn, minOut] }), execution: 250_000n, state: 200_000n },
+      { to: this.pool, data: encodeFunctionData({ abi: poolAbi, functionName: "swap", args: [q.tokenIn, q.amountIn, minOut, deadline] }), execution: 250_000n, state: 200_000n },
     ];
   }
 
   /** Swap via the frame submitter: approve + swap in one EIP-8141 transaction. Returns its hash. */
-  async submit(q: Pick<Quote, "tokenIn" | "amountIn" | "amountOut">, opts: { mode?: "frame"; minOut?: bigint } = {}): Promise<Hex> {
+  async submit(q: Pick<Quote, "tokenIn" | "amountIn" | "amountOut">, opts: SwapOptions & { mode?: "frame" } = {}): Promise<Hex> {
     if ((opts.mode ?? "frame") !== "frame") throw new Error(`unsupported submit mode: ${opts.mode}`);
     if (!this.#frameSubmitter) throw new Error("no frame submitter: call setFrameSubmitter(createFrameSubmitter(...)) first, or send encodeSwap() calls with your own wallet");
     return this.#frameSubmitter(this.encodeSwap(q, opts));
