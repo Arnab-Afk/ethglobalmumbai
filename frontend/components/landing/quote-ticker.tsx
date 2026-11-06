@@ -23,7 +23,7 @@ export function QuoteTicker() {
   return (
     <div className="group relative flex h-14 items-center overflow-hidden bg-[#151619] text-white" aria-label="Hairline quotes by trade size">
       {/* Fixed label */}
-      <div className="relative z-10 flex h-full shrink-0 items-center gap-2 bg-[#151619] pr-6 pl-5 text-[11px] font-bold tracking-[0.14em] text-white/60 uppercase shadow-[16px_0_24px_#151619] sm:pl-16">
+      <div className="relative z-10 flex h-full shrink-0 items-center gap-2 bg-[#151619] pr-6 pl-5 font-mono text-[11px] tracking-[0.14em] text-white/60 uppercase shadow-[16px_0_24px_#151619] sm:pl-10">
         <span className="relative flex size-2">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#AB9FF2] opacity-60" />
           <span className="relative inline-flex size-2 rounded-full bg-[#AB9FF2]" />

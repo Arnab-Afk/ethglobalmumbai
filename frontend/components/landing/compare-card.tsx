@@ -34,8 +34,8 @@ export function CompareCard() {
     : [];
 
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_40px_rgb(21_22_25/0.06)] ring-1 ring-black/5 sm:p-6">
-      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Trade size">
+    <div className="self-start rounded-2xl bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_40px_rgb(21_22_25/0.06)] ring-1 ring-black/5 sm:p-6">
+      <div className="inline-flex flex-wrap rounded-full border border-[#E7E4DF] p-1" role="tablist" aria-label="Trade size">
         {SIZES.map((s, i) => (
           <button
             key={s}
@@ -43,8 +43,8 @@ export function CompareCard() {
             role="tab"
             aria-selected={tab === i}
             onClick={() => setTab(i)}
-            className={`h-9 rounded-md px-3.5 text-[12px] font-bold tracking-[0.08em] uppercase transition-colors ${
-              tab === i ? "bg-[#5B46C7] text-white" : "bg-[#F5F2EF] text-[#6B6560] hover:text-[#151619]"
+            className={`rounded-full px-4 py-1.5 text-[14px] font-medium transition-colors ${
+              tab === i ? "bg-[#151619] text-white" : "text-[#151619] hover:bg-[#F3F1EE]"
             }`}
           >
             {s} WETH
@@ -54,17 +54,17 @@ export function CompareCard() {
 
       <table className="mt-6 w-full text-[15px] [font-variant-numeric:tabular-nums]">
         <thead>
-          <tr className="text-left text-[11px] font-bold tracking-[0.1em] text-[#8A847E] uppercase">
-            <th className="pb-3 pl-3 font-bold">Pays you</th>
-            <th className="pb-3 text-right font-bold">USDC</th>
-            <th className="pb-3 pr-3 text-right font-bold">Fee</th>
+          <tr className="text-left font-mono text-[11px] tracking-[0.12em] text-[#8A847E] uppercase">
+            <th className="pb-3 pl-3 font-normal">Pays you</th>
+            <th className="pb-3 text-right font-normal">USDC</th>
+            <th className="pb-3 pr-3 text-right font-normal">Fee</th>
           </tr>
         </thead>
         <tbody>
           {t ? (
             rows.map((r) => (
               <tr key={r.name} className={r.hl ? "bg-[#EFECFD]" : ""}>
-                <td className={`py-3 pl-3 font-bold text-[#151619] ${r.hl ? "rounded-l-lg" : ""}`}>
+                <td className={`py-3 pl-3 font-medium text-[#151619] ${r.hl ? "rounded-l-lg" : ""}`}>
                   <span className="flex items-center gap-2">
                     <span
                       className={`size-2 rounded-full ${r.venue ? "bg-[#151619]" : r.won ? "bg-[#1F9D57]" : "bg-[#D6D1CC]"}`}
@@ -75,7 +75,7 @@ export function CompareCard() {
                   </span>
                 </td>
                 <td className="py-3 text-right text-[#151619]">{usd(r.out)}</td>
-                <td className={`py-3 pr-3 text-right ${r.hl ? "rounded-r-lg font-bold text-[#5B46C7]" : "text-[#6B6560]"}`}>
+                <td className={`py-3 pr-3 text-right ${r.hl ? "rounded-r-lg font-medium text-[#5B46C7]" : "text-[#6B6560]"}`}>
                   {r.fee}
                 </td>
               </tr>
@@ -90,7 +90,7 @@ export function CompareCard() {
         </tbody>
       </table>
 
-      <p className="mt-4 border-t border-black/5 pt-4 text-[14px] leading-snug text-[#6B6560]">
+      <p className="mt-4 border-t border-[#E7E4DF] pt-4 text-[14px] leading-snug text-[#6B6560]">
         {t && !t.hairline.won
           ? "Too big to win: even at zero fee the venue pays more, so no pool takes this trade."
           : "Green: pays at least the best venue, so it wins the trade. Priced by the deployed fee contract on Sepolia."}

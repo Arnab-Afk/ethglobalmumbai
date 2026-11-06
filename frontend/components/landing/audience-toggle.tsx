@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { priceTrades } from "@/lib/replay";
+import { Eyebrow, SectionHead } from "./section";
 
 /**
  * "Who it's for", editorial: one hairline-framed block split in two. Each side is a mono label,
@@ -21,10 +22,11 @@ export function AudienceToggle() {
 
   return (
     <div>
-      <div className="font-mono text-[12px] tracking-[0.14em] text-[#8A847E] uppercase">Who it&apos;s for</div>
-      <h2 className="mt-4 max-w-[20ch] text-[40px] leading-[1.05] font-medium tracking-[-0.035em] sm:text-[52px]">
-        One fee, both sides of the trade.
-      </h2>
+      <SectionHead
+        eyebrow="Who it's for"
+        title="One fee, both sides of the trade."
+        note="Traders get at least the best price on the market. LPs earn what flat-fee pools leave behind."
+      />
 
       <div className="mt-14 grid border-y border-[#E7E4DF] lg:grid-cols-2">
         <Side
@@ -75,9 +77,9 @@ function Side({
   divider?: boolean;
 }) {
   return (
-    <section className={`flex flex-col px-6 py-10 sm:px-10 lg:py-12 ${divider ? "border-t border-[#E7E4DF] lg:border-t-0 lg:border-l" : ""}`}>
-      <div className="font-mono text-[12px] tracking-[0.14em] text-[#8A847E] uppercase">{label}</div>
-      <h3 className="mt-5 max-w-[20ch] text-[28px] leading-[1.15] font-medium tracking-[-0.03em]">{statement}</h3>
+    <section className={`flex flex-col py-10 lg:py-12 ${divider ? "border-t border-[#E7E4DF] lg:border-t-0 lg:border-l lg:pl-12" : "lg:pr-12"}`}>
+      <Eyebrow>{label}</Eyebrow>
+      <h3 className="mt-5 max-w-[20ch] text-[26px] leading-[1.2] font-medium tracking-[-0.03em]">{statement}</h3>
 
       <div className="mt-10 flex items-baseline gap-4">
         <span className="text-[64px] leading-none font-medium tracking-[-0.05em] text-[#5B46C7] [font-variant-numeric:tabular-nums]">
@@ -97,7 +99,7 @@ function Side({
 
       <Link
         href={cta.href}
-        className="mt-8 w-fit text-[15px] font-medium text-[#151619] underline decoration-[#151619]/30 underline-offset-[6px] transition-colors hover:decoration-[#151619]"
+        className="mt-8 w-fit text-[14px] font-medium text-[#151619] underline decoration-[#151619]/30 underline-offset-4 transition-colors hover:decoration-[#151619]"
       >
         {cta.label} →
       </Link>

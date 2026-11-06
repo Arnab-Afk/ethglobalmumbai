@@ -6,9 +6,9 @@ import { FeeDiagram } from "@/components/landing/fee-diagram";
 import { LandingHeader, LaunchButton } from "@/components/landing/header";
 import { HeroSwap } from "@/components/landing/hero-swap";
 import { QuoteTicker } from "@/components/landing/quote-ticker";
+import { CONTAINER, Eyebrow, H2, RULE, SECTION_Y, SectionHead } from "@/components/landing/section";
 import { SEPOLIA } from "@/lib/deployments";
 import { shortAddr } from "@/lib/format";
-
 
 const LAVENDER = "#AB9FF2"; // Phantom-style lavender: hero and band surfaces, dark ink on top (7.3:1)
 const INK = "#5B46C7"; // purple accent text on white (6.7:1)
@@ -20,13 +20,6 @@ const PRINCIPLES = [
   { t: "Never too high", d: "A fee above the market sends the trade to a cheaper venue, and LPs earn nothing." },
   { t: "Never too low", d: "A fee below what the market allows hands the difference to someone else." },
   { t: "Never on a stale price", d: "If the competitor quote is old or missing, Hairline falls back to a fixed fee." },
-];
-
-const PIPELINE = [
-  { k: "Chainlink CRE", d: "Quotes competing venues off-chain" },
-  { k: "QuoteOracle", d: "Stores a size-aware price curve" },
-  { k: "Fee opcode", d: "Sets the largest fee that still wins" },
-  { k: "Your swap", d: "Settles at minOut, or reverts" },
 ];
 
 const SURFACES = [
@@ -100,7 +93,7 @@ export default function LandingPage() {
             </div>
             <Link
               href="/dashboard"
-              className="mt-5 inline-block text-[12px] font-bold tracking-[0.1em] text-[#1C1C1C]/65 uppercase hover:text-[#1C1C1C]"
+              className="mt-5 inline-block font-mono text-[12px] tracking-[0.14em] text-[#1C1C1C]/60 uppercase hover:text-[#1C1C1C]"
             >
               Sepolia replay · 40 trades →
             </Link>
@@ -115,32 +108,32 @@ export default function LandingPage() {
       {/* ───────── Live quotes tape ───────── */}
       <QuoteTicker />
 
-      {/* ───────── How it works (editorial hairline grid) ───────── */}
+      {/* ───────── How it works ───────── */}
       <section className="bg-white">
-        <div className="mx-auto w-full max-w-[1240px] px-5 py-24 sm:px-10 lg:py-32">
+        <div className={`${CONTAINER} ${SECTION_Y}`}>
           <FeeDiagram />
         </div>
       </section>
 
-      {/* ───────── Split: sticky panel + features ───────── */}
+      {/* ───────── Why it wins: sticky panel + live comparison ───────── */}
       <section className="mx-auto grid w-full max-w-[1600px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
         <div className="hidden lg:block">
-          <div className="sticky top-14 flex h-[calc(100vh-3.5rem)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
-            <h2 className="text-[72px] leading-none font-medium tracking-[-0.03em]">
-              A fee that&apos;s never too high…
-            </h2>
-            <h2 className="text-[72px] leading-none font-medium tracking-[-0.03em]">…and never too low.</h2>
+          <div className="sticky top-14 flex h-[calc(100vh-56px)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
+            <Eyebrow>Why it wins</Eyebrow>
+            <h2 className="-mt-12 text-[72px] leading-none font-medium tracking-[-0.035em]">A fee that&apos;s never too high…</h2>
+            <h2 className="text-[72px] leading-none font-medium tracking-[-0.035em]">…and never too low.</h2>
           </div>
         </div>
 
-        <div className="px-5 py-20 sm:px-16 lg:py-24 lg:pl-20">
-          <h2 className="text-[44px] leading-none font-medium tracking-[-0.03em] lg:hidden">
-            A fee that&apos;s never too high, and never too low.
-          </h2>
+        <div className="px-5 py-24 sm:px-10 lg:py-32 lg:pr-16 lg:pl-20">
+          <div className="lg:hidden">
+            <Eyebrow>Why it wins</Eyebrow>
+            <h2 className={`mt-4 ${H2}`}>A fee that&apos;s never too high, and never too low.</h2>
+          </div>
 
           <div className="mt-12 max-w-[640px] lg:mt-0">
-            <h3 className="text-[28px] leading-[34px] font-bold">See the whole market before you price</h3>
-            <p className="mt-3 max-w-[46ch] text-[17px] leading-[22px] text-[#6B6560]">
+            <h3 className="text-[28px] leading-[1.2] font-medium tracking-[-0.02em]">See the whole market before you price</h3>
+            <p className="mt-3 max-w-[46ch] text-[16px] leading-[1.6] text-[#6B6560]">
               For every size, Hairline knows what the best venue pays. Pick a trade and compare it with flat-fee pools.
             </p>
             <div className="mt-8">
@@ -149,79 +142,53 @@ export default function LandingPage() {
 
             <ul className="mt-10">
               {PRINCIPLES.map((p) => (
-                <li key={p.t} className="border-t border-black/[0.07] py-6">
-                  <div className="text-[20px] font-bold">{p.t}</div>
-                  <p className="mt-1.5 text-[17px] leading-[22px] text-[#6B6560]">{p.d}</p>
+                <li key={p.t} className={`border-t ${RULE} py-6`}>
+                  <h3 className="text-[20px] font-medium tracking-[-0.01em]">{p.t}</h3>
+                  <p className="mt-1.5 text-[16px] leading-[1.6] text-[#6B6560]">{p.d}</p>
                 </li>
               ))}
             </ul>
           </div>
-
         </div>
       </section>
 
       {/* ───────── Lavender band: three integrations ───────── */}
       <section className="relative overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
         <BandArcs />
-        <div className="relative mx-auto w-full max-w-[1600px] px-5 py-24 sm:px-16 lg:pt-40 lg:pb-32">
-          <h2 className="max-w-[11ch] text-[52px] leading-none font-medium tracking-[-0.03em] sm:text-[72px]">
-            One engine, three integrations
-          </h2>
+        <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
+          <SectionHead
+            tone="lavender"
+            eyebrow="Integrations"
+            title="One fee engine, three integrations."
+            note="Chainlink CRE prices the competition, the SwapVM opcode sets the fee, and private quoting protects the trade."
+          />
 
-          <ol className="mt-12 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0" aria-label="How a trade flows through Hairline">
-            {PIPELINE.map((p, i) => (
-              <li key={p.k} className="relative flex items-center">
-                <div className="w-full rounded-2xl bg-white/45 p-5 ring-1 ring-black/5 backdrop-blur-sm lg:mr-8">
-                  <div className="text-[12px] font-bold tracking-[0.12em] text-[#1C1C1C]/55 uppercase">Step {i + 1}</div>
-                  <div className="mt-1.5 text-[19px] font-extrabold tracking-[-0.02em]">{p.k}</div>
-                  <div className="mt-1 text-[14px] leading-snug font-medium text-[#1C1C1C]/70">{p.d}</div>
-                </div>
-                {i < PIPELINE.length - 1 && (
-                  <span className="absolute top-1/2 right-0 hidden size-8 -translate-y-1/2 place-items-center text-[#1C1C1C]/60 lg:grid" aria-hidden>
-                    <svg width="18" height="18" viewBox="0 0 16 16">
-                      <path d="M2 8h11m0 0L8.5 3.5M13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-
-          <div className="mt-6 grid gap-8 lg:grid-cols-3 lg:gap-6">
+          <div className="mt-14 grid gap-10 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-5">
             {SURFACES.map((s) => (
-              <div key={s.track}>
-                <article className="rounded-xl bg-white p-6 text-[#151619] shadow-[0_20px_60px_rgb(0_0_0/0.18)]">
-                  <h3 className="text-[19px] font-bold">{s.card}</h3>
-                  <p className="mt-2 text-[15px] leading-snug text-[#6B6560]">{s.cardSub}</p>
-                  <dl className="mt-6 grid grid-cols-2 border-t border-black/[0.07]">
+              <div key={s.track} className="lg:row-span-2 lg:grid lg:grid-rows-subgrid">
+                <article className="flex flex-col rounded-2xl bg-white p-6 text-[#151619] shadow-[0_1px_2px_rgb(0_0_0/0.04),0_16px_48px_rgb(28_21_48/0.12)]">
+                  <Eyebrow>{s.track}</Eyebrow>
+                  <h3 className="mt-3 text-[20px] font-medium tracking-[-0.01em]">{s.card}</h3>
+                  <p className="mt-2 text-[15px] leading-[1.5] text-[#6B6560]">{s.cardSub}</p>
+                  <dl className={`mt-6 grid grid-cols-2 border-t ${RULE}`}>
                     {s.rows.map(([k, v], i) => (
-                      <div
-                        key={k}
-                        className={`border-black/[0.07] py-3.5 ${i % 2 === 0 ? "border-r pr-4" : "pl-4"} ${i < 2 ? "border-b" : ""}`}
-                      >
-                        <dt className="text-[11px] font-bold tracking-[0.1em] text-[#8A847E] uppercase">{k}</dt>
-                        <dd className="mt-1 text-[15px] font-bold [font-variant-numeric:tabular-nums]">{v}</dd>
+                      <div key={k} className={`${RULE} py-3.5 ${i % 2 === 0 ? "border-r pr-4" : "pl-4"} ${i < 2 ? "border-b" : ""}`}>
+                        <dt className="font-mono text-[11px] tracking-[0.12em] text-[#8A847E] uppercase">{k}</dt>
+                        <dd className="mt-1 text-[15px] font-medium [font-variant-numeric:tabular-nums]">{v}</dd>
                       </div>
                     ))}
                   </dl>
                   {"internal" in s.link && s.link.internal ? (
-                    <Link href={s.link.href} className="mt-4 inline-flex items-center gap-2 text-[12px] font-bold tracking-[0.1em] uppercase" style={{ color: INK }}>
+                    <Link href={s.link.href} className={CARD_LINK} style={{ color: INK }}>
                       {s.link.label} →
                     </Link>
                   ) : (
-                    <a
-                      href={s.link.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-4 inline-flex items-center gap-2 text-[12px] font-bold tracking-[0.1em] uppercase"
-                      style={{ color: INK }}
-                    >
+                    <a href={s.link.href} target="_blank" rel="noreferrer" className={CARD_LINK} style={{ color: INK }}>
                       {s.link.label} ↗
                     </a>
                   )}
                 </article>
-                <h3 className="mt-6 text-[24px] font-bold">{s.track}</h3>
-                <p className="mt-2 max-w-[40ch] text-[17px] leading-[22px] text-[#1C1C1C]/75">{s.desc}</p>
+                <p className="mt-5 max-w-[40ch] text-[16px] leading-[1.6] text-[#1C1C1C]/75 lg:mt-0">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -229,17 +196,19 @@ export default function LandingPage() {
       </section>
 
       {/* ───────── Audiences ───────── */}
-      <section className="mx-auto w-full max-w-[1240px] px-5 py-20 sm:px-10 lg:py-28">
-        <AudienceToggle />
+      <section className="bg-white">
+        <div className={`${CONTAINER} ${SECTION_Y}`}>
+          <AudienceToggle />
+        </div>
       </section>
 
       {/* ───────── Built for ───────── */}
       <section className="bg-[#F7F5F2]">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 px-5 py-20 sm:px-16 lg:flex-row lg:items-center lg:justify-between">
-          <h2 className="max-w-[14ch] text-[28px] leading-[34px] font-bold">Built at ETHGlobal Mumbai for</h2>
-          <ul className="flex flex-wrap items-center gap-x-10 gap-y-4 text-[22px] font-bold tracking-[-0.02em] text-[#8A847E]">
+        <div className={`${CONTAINER} flex flex-col gap-6 py-14 lg:flex-row lg:items-center lg:justify-between`}>
+          <Eyebrow>Built at ETHGlobal Mumbai for</Eyebrow>
+          <ul className="flex flex-wrap items-center gap-x-10 gap-y-3 text-[22px] font-medium tracking-[-0.02em] text-[#151619]/60">
             {["1inch Aqua", "Chainlink CRE", "Ethereum Foundation"].map((s, i) => (
-              <li key={s} className={`flex items-center gap-10 ${i ? "before:h-8 before:w-px before:bg-black/10" : ""}`}>
+              <li key={s} className={`flex items-center gap-10 ${i ? "before:h-6 before:w-px before:bg-black/10" : ""}`}>
                 {s}
               </li>
             ))}
@@ -248,34 +217,31 @@ export default function LandingPage() {
       </section>
 
       {/* ───────── FAQ ───────── */}
-      <section className="mx-auto w-full max-w-[1600px] px-5 py-24 sm:px-16 lg:py-32">
-        <Faq />
+      <section className="bg-white">
+        <div className={`${CONTAINER} ${SECTION_Y}`}>
+          <Faq />
+        </div>
       </section>
 
       {/* ───────── Final CTA ───────── */}
-      <section className="relative overflow-hidden bg-[#151619] px-6 py-20 text-white md:px-10 lg:px-16">
+      <section className="relative overflow-hidden bg-[#151619] text-white">
         <BlockPattern />
-        <div className="relative mx-auto w-full max-w-[1272px]">
-          <h2 className="mb-16 max-w-2xl text-5xl leading-[1.05] font-bold tracking-[-0.03em] md:mb-32">
-            Trade at the best
-            <br />
-            price, by a hair
+        <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
+          <Eyebrow tone="dark">Live on Sepolia</Eyebrow>
+          <h2 className="mt-4 mb-12 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px] md:mb-20">
+            Trade at the best price, by a hair.
           </h2>
           <LaunchButton />
         </div>
       </section>
 
       {/* ───────── Footer ───────── */}
-      <footer className="mx-auto grid w-full max-w-[1272px] gap-12 px-6 py-20 md:px-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-16">
-        <div className="flex flex-col justify-between gap-10">
-          <div>
-            <div className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: INK }}>
-              Hairline
-            </div>
-            <p className="mt-2 max-w-[34ch] text-[15px] leading-snug text-[#6B6560]">
-              Inspired by PropellerHeads&apos; Fynd. All code written during ETHGlobal Mumbai.
-            </p>
-          </div>
+      <footer className={`${CONTAINER} grid gap-12 py-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]`}>
+        <div>
+          <div className="text-[22px] font-semibold tracking-[-0.03em]">Hairline</div>
+          <p className="mt-2 max-w-[34ch] text-[15px] leading-[1.5] text-[#6B6560]">
+            Inspired by PropellerHeads&apos; Fynd. All code written during ETHGlobal Mumbai.
+          </p>
         </div>
         <FooterCol
           title="Product"
@@ -304,6 +270,8 @@ export default function LandingPage() {
   );
 }
 
+const CARD_LINK = "mt-auto w-fit pt-5 inline-flex items-center gap-2 text-[14px] font-medium underline decoration-current/30 underline-offset-4 hover:decoration-current";
+
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
@@ -316,16 +284,16 @@ function Stat({ value, label }: { value: string; label: string }) {
 function FooterCol({ title, links }: { title: string; links: { label: string; href: string; external?: boolean }[] }) {
   return (
     <div>
-      <div className="text-[16px] text-[#8A847E]">{title}</div>
+      <Eyebrow>{title}</Eyebrow>
       <ul className="mt-4 space-y-3">
         {links.map((l) => (
           <li key={l.label}>
             {l.external ? (
-              <a href={l.href} target="_blank" rel="noreferrer" className="text-[16px] font-medium hover:opacity-70">
+              <a href={l.href} target="_blank" rel="noreferrer" className="text-[15px] font-medium hover:opacity-70">
                 {l.label} ↗
               </a>
             ) : (
-              <Link href={l.href} className="text-[16px] font-medium hover:opacity-70">
+              <Link href={l.href} className="text-[15px] font-medium hover:opacity-70">
                 {l.label}
               </Link>
             )}

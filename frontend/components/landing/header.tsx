@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CONTAINER } from "./section";
 import { useEffect, useState } from "react";
 import { shortAddr } from "@/lib/format";
 import { useWallet } from "../wallet/wallet-provider";
@@ -35,11 +36,11 @@ export function LandingHeader() {
         solid ? "bg-white/90 text-[#151619] shadow-[0_1px_0_rgb(0_0_0/0.06)] backdrop-blur-md" : "text-[#1C1C1C]"
       }`}
     >
-      <div className="relative flex h-14 items-center justify-between px-5 sm:px-16">
+      <div className={`relative ${CONTAINER} flex h-14 items-center justify-between`}>
         <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em]" aria-label="Hairline home">
           Hairline
         </Link>
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[15px] font-bold lg:flex">
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[15px] font-semibold lg:flex">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
               {l.label}
@@ -66,7 +67,7 @@ export function LandingHeader() {
       {menu && (
         <div className="border-t border-black/5 bg-white px-5 pb-4 lg:hidden">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setMenu(false)} className="flex h-12 items-center text-[17px] font-bold">
+            <Link key={l.href} href={l.href} onClick={() => setMenu(false)} className="flex h-12 items-center text-[17px] font-semibold">
               {l.label}
             </Link>
           ))}

@@ -25,22 +25,23 @@ const QUESTIONS = [
   },
 ];
 
-/** "Questions? Answers." accordion: native details/summary, no client JS. */
+import { Eyebrow, H2 } from "./section";
+
+/** FAQ accordion: native details/summary, no client JS. */
 export function Faq() {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
-      <h2 className="text-[52px] leading-none font-extrabold tracking-[-0.04em] sm:text-[72px]">
-        Questions?
-        <br />
-        <span className="text-[#151619]/25">Answers.</span>
-      </h2>
-      <div className="border-t border-black/[0.08]">
+      <div>
+        <Eyebrow>FAQ</Eyebrow>
+        <h2 className={`mt-4 max-w-[12ch] ${H2}`}>Questions, answered.</h2>
+      </div>
+      <div className="border-t border-[#E7E4DF]">
         {QUESTIONS.map((item) => (
-          <details key={item.q} className="group border-b border-black/[0.08]">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-[20px] font-bold tracking-[-0.01em] [&::-webkit-details-marker]:hidden">
+          <details key={item.q} className="group border-b border-[#E7E4DF]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-[18px] font-medium tracking-[-0.01em] [&::-webkit-details-marker]:hidden">
               {item.q}
               <span
-                className="grid size-9 shrink-0 place-items-center rounded-full bg-[#F7F5F2] text-[#151619] transition-transform group-open:rotate-45"
+                className="grid size-9 shrink-0 place-items-center rounded-full border border-[#E7E4DF] text-[#151619] transition-transform group-open:rotate-45"
                 aria-hidden
               >
                 <svg width="14" height="14" viewBox="0 0 14 14">
@@ -48,7 +49,7 @@ export function Faq() {
                 </svg>
               </span>
             </summary>
-            <p className="max-w-[62ch] pb-7 text-[17px] leading-[1.55] font-medium text-[#6B6560]">{item.a}</p>
+            <p className="max-w-[62ch] pb-7 text-[16px] leading-[1.6] text-[#6B6560]">{item.a}</p>
           </details>
         ))}
       </div>
