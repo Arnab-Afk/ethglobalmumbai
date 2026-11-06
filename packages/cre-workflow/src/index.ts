@@ -3,6 +3,7 @@ export * from "./buildCurve.js";
 export * from "./describeCurve.js";
 export * from "./encodeReport.js";
 export * from "./quotePair.js";
+export * from "./sanity.js";
 export * from "./venueIds.js";
 export * from "./config.js";
 export { quoteMockXyk } from "./venues/mockXyk.js";

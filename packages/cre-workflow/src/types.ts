@@ -57,4 +57,6 @@ export interface CurveUpdate {
 export interface VenueQuote {
   venueId: string;
   amountOut: bigint;
+  /** Set when a sanity check threw this quote out; rejected quotes never win a bucket. */
+  rejected?: string;
 }

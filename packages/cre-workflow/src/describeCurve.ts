@@ -49,7 +49,11 @@ export function formatBucketLines(summaries: BucketSummary[], opts: FormatOption
   const digits = opts.maxFractionDigits ?? 4;
   return summaries.map((s) => {
     const quotes = s.quotes
-      .map((q) => `${q.venueId}=${formatAmount(q.amountOut, opts.decimalsOut, digits)}`)
+      .map(
+        (q) =>
+          `${q.venueId}=${formatAmount(q.amountOut, opts.decimalsOut, digits)}` +
+          (q.rejected ? `(REJECTED ${q.rejected})` : ""),
+      )
       .join(" ");
     const best = s.winner
       ? `best ${s.winner} ${formatAmount(s.bestOut, opts.decimalsOut, digits)}`

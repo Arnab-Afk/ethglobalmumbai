@@ -2,7 +2,8 @@ import type { CurveUpdate, VenueQuote } from "./types.js";
 import { packVenueIds } from "./venueIds.js";
 
 /**
- * Per size bucket: take max amountOut across venues (exclude zeros / failed quotes).
+ * Per size bucket: take max amountOut across venues (exclude zeros / failed quotes,
+ * and quotes a sanity check marked as rejected).
  * amountsIn must already be strictly increasing (validated before encode).
  */
 export function bestOutPerBucket(
@@ -22,6 +23,7 @@ export function bestOutPerBucket(
     let best = 0n;
     let winner = "";
     for (const q of quotesByBucket[i]!) {
+      if (q.rejected) continue;
       if (q.amountOut > best) {
         best = q.amountOut;
         winner = q.venueId;
