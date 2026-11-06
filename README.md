@@ -1,6 +1,8 @@
-# Last-Look Fee AMM (working name)
+# neat
 
 > An AMM that sets its swap fee **last**, on every trade. Before each swap it checks what the best competing venue would give for *that exact trade* and prices its own fee just under it. Traders always get the best execution; LPs keep the most fee the market allows instead of leaving money on the table with a flat rate.
+
+**Best price. Served neat.** A whisky served neat comes as it is, with no ice and no mixer; so does your price. The fee is poured right up to the line where you still beat the best venue, and not a drop past it.
 
 Built for **ETHGlobal Mumbai**. One fee engine, three integrations:
 
