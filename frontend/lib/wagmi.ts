@@ -5,7 +5,7 @@ import { SEPOLIA } from "./deployments";
 
 /**
  * Standard wagmi setup: EIP-6963 lists every installed wallet (MetaMask, Phantom, Rabby, …).
- * Each wallet is its own connector with its own provider — picking MetaMask does not go through Phantom.
+ * Each wallet is its own connector with its own provider: picking MetaMask does not go through Phantom.
  */
 let config: Config | undefined;
 

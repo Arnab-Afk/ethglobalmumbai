@@ -11,13 +11,13 @@ export function TokenButton({ token, onClick, tone = "dark" }: { token: Token; o
       aria-label={`Select token, current ${token.symbol}`}
       className={
         light
-          ? "flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#F1F0EC] py-1 pr-2.5 pl-1.5 text-[15px] font-semibold tracking-[-0.02em] text-[#1C1C1C] transition-colors hover:bg-[#E7E6E1]"
+          ? "flex h-11 shrink-0 items-center gap-1.5 self-center rounded-full bg-white py-1 pr-3 pl-1.5 text-[15px] font-bold tracking-[-0.02em] text-[#111] shadow-[0_1px_2px_rgb(0_0_0/0.05)] ring-1 ring-black/[0.06] transition-colors hover:bg-[#F7F6F3]"
           : "flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#2c2c30] py-1 pr-2.5 pl-1 text-[16px] font-semibold tracking-[-0.02em] text-white transition-colors hover:bg-[#3a3a40]"
       }
     >
-      <TokenIcon token={token} size={28} />
+      <TokenIcon token={token} size={light ? 32 : 28} />
       {token.symbol}
-      <svg width="14" height="14" viewBox="0 0 16 16" className={light ? "text-[#8A8680]" : "text-fg-2"} aria-hidden>
+      <svg width="14" height="14" viewBox="0 0 16 16" className={light ? "text-[#8A847E]" : "text-fg-2"} aria-hidden>
         <path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
