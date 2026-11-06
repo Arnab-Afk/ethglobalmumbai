@@ -5,7 +5,7 @@ import { AnonRpcWorker } from "@anon-rpc/browser-harness";
 import { createPublicClient, formatUnits, http, parseEther, type Address } from "viem";
 import { poolAbi } from "../src/abi.js";
 
-const GATEWAY = "https://altmempoolgateway.forshtat.com/rpc";
+const GATEWAY = "https://eip8141-rpc.arnabbhowmik.in/rpc";
 
 // From ethereum/anon-rpc adopters.json5. `bootstrap` = chain of the specifier contract (read once, NOT anonymized).
 const MAINNET = "https://ethereum-rpc.publicnode.com";

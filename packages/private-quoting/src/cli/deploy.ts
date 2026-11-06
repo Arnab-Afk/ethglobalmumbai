@@ -37,7 +37,8 @@ s.pool = await deploy("DevnetCompetitivePool", [
 ]);
 saveState(s);
 
-const call = (to: Address, data: `0x${string}`) => sendLegacy(s.privateKey, { to, data, gas: 500_000n });
+// A 1_000_000 gas limit out-of-gas'd the mint on this devnet (state gas). Creation uses 8M.
+const call = (to: Address, data: `0x${string}`) => sendLegacy(s.privateKey, { to, data, gas: devnet.deployGasLimit });
 await call(s.weth, encodeFunctionData({ abi: tokenAbi, functionName: "mint", args: [s.pool, parseEther("1000")] }));
 await call(s.usdc, encodeFunctionData({ abi: tokenAbi, functionName: "mint", args: [s.pool, parseUnits("3000000", 6)] }));
 const { amountsIn, bestOuts } = curvePoints(parseUnits("29610", 6));

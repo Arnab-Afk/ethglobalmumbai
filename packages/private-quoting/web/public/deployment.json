@@ -1,0 +1,10 @@
+{
+  "chainId": 1337,
+  "deployer": "0xd6d1dAa6D87D4A29cd7FB1Df7C266CFe32420f9d",
+  "weth": "0xf1877c0dc40bf2f1e46017c05908635e7cb68af2",
+  "usdc": "0x8b57bd61d7f2ca25b8aa655b9437db3207d564a6",
+  "oracle": "0xe9a8b2ea05097276a16a0848c770c322960792fa",
+  "pool": "0x9960927e3ecce8d5124db1bfad68121cdec20aa0",
+  "lastTxHash": "0xab960f810df4cdb7442d4a91cfdbec24d7fe7e41c0c5fe52cf4a87f7769e6f6d",
+  "network": "self-hosted"
+}

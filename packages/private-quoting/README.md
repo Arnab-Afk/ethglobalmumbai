@@ -1,6 +1,6 @@
 # packages/private-quoting (EF track)
 
-Two EF surfaces around the competitive-fee AMM, on the public EIP-8141 devnet (chain 1337):
+Two EF surfaces around the competitive-fee AMM, on our self-hosted EIP-8141 devnet (chain 1337):
 
 | Piece | What it does | EF prize it qualifies for |
 |---|---|---|
@@ -29,8 +29,8 @@ Env overrides: `FRAME_GATEWAY_RPC`, `FRAME_EXPLORER`, `FRAME_PRIVATE_KEY` (else 
 
 ## Facts verified from source (Nov 2026)
 
-- **Gateway** `https://altmempoolgateway.forshtat.com/rpc` handles everything: alt-mempool, canonical forwarding, reads, faucet (`skandha_explorer_faucet`, 1 ETH, once per address per hour). Source: `forshtat/mempool-workshop` `workshop.config.json5`.
-- **Don't use the devnet's shared genesis key.** The workshop forbids it (`mempool-workshop/AGENTS.md`). If the faucet is empty, ask the EF booth.
+- **RPC** `https://eip8141-rpc.arnabbhowmik.in/rpc`. Frame txs use `eth_sendFrameTransaction`. Normal txs use `eth_sendRawTransaction` on the same URL. Explorer: https://eip8141.arnabbhowmik.in/
+- The public forshtat gateway is not in use. **Don't use the devnet's shared genesis key.**
 - **The alt-mempool is public.** Anyone can `skandha_subscribe("pendingUserOps")` and receive full pending frame txs, calldata included (sidecar `docs/sidecar_subscribe.md`). It is **not** a private mempool, so it gives **no sandwich protection by itself**. Protection here comes from `minOut = quote` plus the atomic batch: a front-run makes the whole batch revert, and the trader keeps their tokens.
 - **Atomic batch** (EIP-8141 @ `4a9ad32c`): `ATOMIC_BATCH_FLAG = 0x4` on frames `i..j-1`; if any frame in the batch fails, the whole batch rolls back and the remaining frames are skipped (receipt status `0x2`).
 - **Anon-RPC is browser-only** today: `@anon-rpc/browser-harness@0.4.0`. The Node harness is unpublished (`private: true`). That's why quoting lives in `web/`, not the CLI. The one bootstrap read of the specifier contract is **not** anonymized (spec trust model).

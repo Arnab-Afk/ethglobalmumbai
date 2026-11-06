@@ -11,10 +11,12 @@
     "typecheck": "tsc --noEmit",
     "fund": "tsx src/cli/fund.ts",
     "deploy": "tsx src/cli/deploy.ts",
+    "seed": "tsx src/cli/seed.ts",
     "swap": "tsx src/cli/swap.ts",
     "web": "vite web",
     "web:build": "vite build web",
-    "curve": "tsx src/cli/curve.ts"
+    "curve": "tsx src/cli/curve.ts",
+    "quote:sdk": "tsx scripts/quote-sdk.ts"
   },
   "engines": {
     "node": ">=20.12"

@@ -13,15 +13,15 @@ export const PKG_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const devnet = {
   chainId: 1337,
-  // The gateway sidecar: alt-mempool (eth_sendFrameTransaction), canonical forwarding (eth_sendRawTransaction), reads, faucet.
-  gatewayUrl: process.env.FRAME_GATEWAY_RPC ?? "https://altmempoolgateway.forshtat.com/rpc",
-  explorerUrl: process.env.FRAME_EXPLORER ?? "https://explorer.altmempool.wtf/",
+  // Self-hosted EIP-8141 node. Frame txs use eth_sendFrameTransaction; eth_sendRawTransaction works too.
+  gatewayUrl: process.env.FRAME_GATEWAY_RPC ?? "https://eip8141-rpc.arnabbhowmik.in/rpc",
+  explorerUrl: process.env.FRAME_EXPLORER ?? "https://eip8141.arnabbhowmik.in/",
   maxFeePerGas: parseGwei("2"),
   // Devnet base fee is 7 wei; workshop uses 0.002 gwei for legacy txs.
   legacyGasPrice: parseGwei("0.002"),
   legacyGasLimit: 250_000n,
   // Contract creation costs state gas on this devnet; the workshop found 900k reverts and 6M works.
-  deployGasLimit: 6_000_000n,
+  deployGasLimit: 8_000_000n,
   txTimeoutSec: 120,
 } as const;
 
