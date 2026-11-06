@@ -72,7 +72,7 @@ export function PriceCard({
             style={{
               left: pos(ours),
               background:
-                "repeating-linear-gradient(135deg, rgb(255 106 31 / 0.5) 0 1px, rgb(255 106 31 / 0.1) 1px 5px)",
+                "repeating-linear-gradient(135deg, rgb(171 159 242 / 0.5) 0 1px, rgb(171 159 242 / 0.1) 1px 5px)",
             }}
           />
         </div>
