@@ -10,7 +10,7 @@ const RPC = process.env.BASE_RPC_URL || "https://base.publicnode.com";
 // Reads go through Anon-RPC like every other read in the app.
 export const baseClient = createPublicClient({
   chain: base,
-  transport: http(RPC, { batch: true, retryCount: 0, fetchFn: rpcFetch, timeout: rpcTimeoutMs }),
+  transport: http(RPC, { batch: { wait: 40 }, retryCount: 0, fetchFn: rpcFetch, timeout: rpcTimeoutMs }),
 });
 
 const AXIS = "0x5bE75e3b0aFf5D1A042A5363Ae36AcB1d6d755ea";
@@ -20,9 +20,14 @@ const STATE_VIEW = "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71";
 const POOL_ID = "0x2202177fdd95fe55e32170a1a94261f111b5c3cd3318f7805deca8d792ac01c9";
 const TICK_LOWER = -296999;
 const TICK_UPPER = -296939;
-const V3_FEES = [100, 200, 500, 3000, 10000] as const;
+/** Live Uniswap v3 tiers for AXIS/USDC. Skip empty 0.01%. */
+const V3_FEES = [200, 500, 3000] as const;
+/** Deepest AXIS/USDC Uniswap v4 book on Base (~$2.4M). */
+const V4_DEEP = "0xc19d91d99afc0332e5013a569c9721cd9ecb51a14c851f7a189a140950a627fa" as const;
 const PIPS = 1_000_000n;
 const EDGE_PIPS = 100n;
+const SQRT_MIN = 4295128739n;
+const SQRT_MAX = 1461446703485210103287273052203988822378723970341n;
 
 const RATIOS = [
   0xfffcb933bd6fad37aa2d162d1a594001n,
@@ -74,12 +79,17 @@ function sqrtPriceAtTick(tick: number): bigint {
 }
 
 /**
- * Zero-fee output while the swap stays inside the position.
- * USDC is token1 and AXIS is token0, so selling USDC moves the price up.
+ * Exact-in output on a concentrated range. USDC is token1 and AXIS is token0,
+ * so selling USDC moves the price up.
  */
-function grossOut(sqrtPrice: bigint, liquidity: bigint, amountIn: bigint, usdcIn: boolean): bigint {
-  const sqrtLower = sqrtPriceAtTick(TICK_LOWER);
-  const sqrtUpper = sqrtPriceAtTick(TICK_UPPER);
+function grossOut(
+  sqrtPrice: bigint,
+  liquidity: bigint,
+  amountIn: bigint,
+  usdcIn: boolean,
+  sqrtLower: bigint,
+  sqrtUpper: bigint,
+): bigint {
   const q = 1n << 96n;
   if (liquidity === 0n) return 0n;
   if (usdcIn) {
@@ -113,18 +123,31 @@ function maxFee(gross: bigint, minOut: bigint): bigint {
 
 const tierLabel = (fee: number) => `${(fee / 10_000).toFixed(2).replace(/0$/, "").replace(/\.$/, "")}%`;
 
-/** Live maximum bid for USDC ↔ AXIS. Refuses when this pool cannot beat Uniswap v3. */
+/** Live maximum bid for USDC ↔ AXIS. Refuses when this pool cannot beat the best Base rival. */
 export async function quoteAxis(symbolIn: string, symbolOut: string, amountIn: bigint): Promise<LiveQuote> {
   const t0 = performance.now();
   const usdcIn = symbolIn === "USDC";
   const tokenIn = usdcIn ? USDC : AXIS;
   const tokenOut = usdcIn ? AXIS : USDC;
-  const block = await baseClient.getBlock();
-  const blockNumber = block.number ?? undefined;
+  const blockNumber = await baseClient.getBlockNumber();
 
-  const [slot0, liquidity, ...v3] = await Promise.all([
-    baseClient.readContract({ address: STATE_VIEW, abi: stateAbi, functionName: "getSlot0", args: [POOL_ID], blockNumber }),
-    baseClient.readContract({ address: STATE_VIEW, abi: stateAbi, functionName: "getLiquidity", args: [POOL_ID], blockNumber }),
+  const [ours, v4, ...v3] = await Promise.all([
+    baseClient.multicall({
+      allowFailure: false,
+      blockNumber,
+      contracts: [
+        { address: STATE_VIEW, abi: stateAbi, functionName: "getSlot0", args: [POOL_ID] },
+        { address: STATE_VIEW, abi: stateAbi, functionName: "getLiquidity", args: [POOL_ID] },
+      ],
+    }),
+    baseClient.multicall({
+      allowFailure: true,
+      blockNumber,
+      contracts: [
+        { address: STATE_VIEW, abi: stateAbi, functionName: "getSlot0", args: [V4_DEEP] },
+        { address: STATE_VIEW, abi: stateAbi, functionName: "getLiquidity", args: [V4_DEEP] },
+      ],
+    }),
     ...V3_FEES.map(async (fee): Promise<VenueQuote> => {
       try {
         const [out] = await baseClient.readContract({
@@ -141,15 +164,27 @@ export async function quoteAxis(symbolIn: string, symbolOut: string, amountIn: b
     }),
   ]);
 
-  const venues = v3.filter((v) => v.out > 0n).sort((a, b) => (a.out > b.out ? -1 : 1));
+  const [slot0, liquidity] = ours;
+  const venues: VenueQuote[] = [...v3];
+  const [v4Slot, v4Liq] = v4;
+  if (v4Slot.status === "success" && v4Liq.status === "success") {
+    const feePips = Number(v4Slot.result[3]);
+    const gross = grossOut(v4Slot.result[0], v4Liq.result, amountIn, usdcIn, SQRT_MIN, SQRT_MAX);
+    const out = gross - (gross * BigInt(feePips)) / PIPS;
+    if (out > 0n) venues.push({ id: "base-v4-deep", name: "Uniswap v4", detail: tierLabel(feePips), out });
+  }
+  venues.sort((a, b) => (a.out > b.out ? -1 : 1));
+
   const bestOut = venues[0]?.out ?? 0n;
   const inRange = slot0[1] >= TICK_LOWER && slot0[1] < TICK_UPPER;
-  const zeroFeeOut = inRange ? grossOut(slot0[0], liquidity, amountIn, usdcIn) : 0n;
+  const zeroFeeOut = inRange
+    ? grossOut(slot0[0], liquidity, amountIn, usdcIn, sqrtPriceAtTick(TICK_LOWER), sqrtPriceAtTick(TICK_UPPER))
+    : 0n;
   const minOut = bestOut > 0n ? minOutToBeat(bestOut) : 1n;
   const canWin = zeroFeeOut >= minOut && bestOut > 0n;
   const feePips = canWin ? maxFee(zeroFeeOut, minOut) : 0n;
   const fee = (zeroFeeOut * feePips) / PIPS;
-  const blockTime = Number(block.timestamp);
+  const blockTime = Math.floor(Date.now() / 1000);
 
   return {
     amountIn,
@@ -161,8 +196,8 @@ export async function quoteAxis(symbolIn: string, symbolOut: string, amountIn: b
     blockTime,
     status: bestOut === 0n ? "none" : "live",
     latencyMs: performance.now() - t0,
-    venue: venues[0] ? `${venues[0].name} ${venues[0].detail} · Base` : "No Base v3 quote",
-    venues,
+    venue: venues[0] ? `${venues[0].name} ${venues[0].detail} · Base` : "No Base rival",
+    venues: venues.filter((v) => v.out > 0n),
     network: "base",
   };
 }

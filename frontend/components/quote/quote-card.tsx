@@ -18,7 +18,7 @@ import { TokenPicker } from "./token-picker";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 
-const REFRESH_MS = 12_000; // ring length and re-quote interval (about one block)
+const REFRESH_MS = 12_000; // ring length and re-quote interval for live pairs
 const DEBOUNCE_MS = 350;
 const DEFAULT_AMOUNT = "0.1";
 
@@ -49,10 +49,19 @@ function parseAmount(raw: string, decimals: number): bigint | null {
 
 /** Must render inside <Suspense>: it reads ?sell=&buy=&amount= so a quote can be shared as a link. */
 function pairFromUrl(sellParam: string | null, buyParam: string | null): { sell: Token; buy: Token } {
-  const nextSell = tokenBySymbol(sellParam) ?? DEFAULT_SELL;
+  let nextSell = tokenBySymbol(sellParam) ?? DEFAULT_SELL;
   let nextBuy = tokenBySymbol(buyParam) ?? DEFAULT_BUY;
   if (nextBuy.symbol === nextSell.symbol) {
     nextBuy = nextSell.symbol === DEFAULT_SELL.symbol ? DEFAULT_BUY : DEFAULT_SELL;
+  }
+  // The seeded Base position only fills USDC → AXIS.
+  if (isAxisPair(nextSell.symbol, nextBuy.symbol) && nextSell.symbol === "AXIS") {
+    const usdc = tokenBySymbol("USDC");
+    const axis = tokenBySymbol("AXIS");
+    if (usdc && axis) {
+      nextSell = usdc;
+      nextBuy = axis;
+    }
   }
   return { sell: nextSell, buy: nextBuy };
 }
@@ -78,6 +87,7 @@ export function QuoteCard() {
   const [config, setConfig] = useState<FeeConfig | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const reqId = useRef(0);
+  const inFlight = useRef(false);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
   const { address, onSepolia, connecting, connect, switchToSepolia } = useWallet();
@@ -89,7 +99,8 @@ export function QuoteCard() {
     getFeeConfig().then(setConfig, () => {});
   }, []);
 
-  const runQuote = useCallback(async () => {
+  const runQuote = useCallback(async (opts?: { force?: boolean }) => {
+    if (inFlight.current && !opts?.force) return;
     const id = ++reqId.current;
     const key = tradeKey(sell, buy, amount);
     const amountIn = parseAmount(amount, sell.decimals);
@@ -97,6 +108,7 @@ export function QuoteCard() {
       setState({ kind: "idle" });
       return;
     }
+    inFlight.current = true;
     setState((s) => {
       const sameTrade = s.kind !== "idle" && s.key === key;
       const prev =
@@ -114,6 +126,8 @@ export function QuoteCard() {
       if (id !== reqId.current) return;
       const message = e instanceof Error ? (e as { shortMessage?: string }).shortMessage ?? e.message : String(e);
       setState((s) => ({ kind: "error", key, message, prev: s.kind === "loading" && s.key === key ? s.prev : undefined }));
+    } finally {
+      if (id === reqId.current) inFlight.current = false;
     }
   }, [amount, sell, buy, pool]);
 
@@ -138,7 +152,9 @@ export function QuoteCard() {
 
   // Debounced re-quote whenever the trade changes.
   useEffect(() => {
-    const t = setTimeout(runQuote, DEBOUNCE_MS);
+    const t = setTimeout(() => {
+      void runQuote({ force: true });
+    }, DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [runQuote]);
 
@@ -165,17 +181,21 @@ export function QuoteCard() {
     return () => clearTimeout(t);
   }, [sell, buy, amount, pathname, router]);
 
-  // Every pair re-quotes on a timer, including after an error: an Anon-RPC network can drop
-  // out for a while (e.g. Nox "No exit offers TLS tunnels") and should recover on its own.
+  // Restart the countdown ring only after a quote settles (not when a fetch starts).
+  useEffect(() => {
+    if (state.kind !== "ok" && state.kind !== "error") return;
+    setRefreshKey((k) => k + 1);
+  }, [state]);
+
+  // Re-quote on a fixed timer after each settled read. One in-flight quote at a time.
   // No per-block polling: a mixnet round trip (~5 s) is longer than a 4 s poll.
   useEffect(() => {
     if (state.kind !== "ok" && state.kind !== "error") return;
     const t = setTimeout(() => {
-      setRefreshKey((k) => k + 1);
-      runQuote();
+      void runQuote();
     }, REFRESH_MS);
     return () => clearTimeout(t);
-  }, [state, runQuote, sell.symbol, buy.symbol]);
+  }, [state, runQuote]);
 
   const choose = (side: "sell" | "buy", t: Token) => {
     const other = side === "sell" ? buy : sell;
@@ -184,12 +204,14 @@ export function QuoteCard() {
     } else {
       let nextSell = side === "sell" ? t : other;
       let nextBuy = side === "buy" ? t : other;
-      // The live bid is USDC ↔ AXIS. Choosing AXIS puts USDC on the other side.
-      if ((nextSell.symbol === "AXIS" || nextBuy.symbol === "AXIS") && !isAxisPair(nextSell.symbol, nextBuy.symbol)) {
+      // The Base position only beats rivals when selling USDC for AXIS.
+      if (nextSell.symbol === "AXIS" || nextBuy.symbol === "AXIS") {
         const usdc = tokenBySymbol("USDC");
-        if (usdc) {
-          if (nextSell.symbol === "AXIS") nextBuy = usdc;
-          else nextSell = usdc;
+        const axis = tokenBySymbol("AXIS");
+        if (usdc && axis) {
+          nextSell = usdc;
+          nextBuy = axis;
+          if (!/^\d*\.?\d*$/.test(amount) || amount === "" || Number(amount) > 10) setAmount("0.1");
         }
       }
       setSell(nextSell);
@@ -199,6 +221,14 @@ export function QuoteCard() {
   };
 
   const flip = () => {
+    // Keep the AXIS book on the side it can fill. Flipping would sell AXIS out of range.
+    if (isAxisPair(sell.symbol, buy.symbol)) {
+      setSell(tokenBySymbol("USDC") ?? sell);
+      setBuy(tokenBySymbol("AXIS") ?? buy);
+      setState({ kind: "idle" });
+      setReviewing(false);
+      return;
+    }
     setSell(buy);
     setBuy(sell);
     setState({ kind: "idle" });
@@ -253,11 +283,13 @@ export function QuoteCard() {
       : axis && !quoted
         ? { label: "Reading the Base bid…", tone: "off" }
         : axis && quoted
-          ? quoted.bestOut === 0n && quoted.ourOut === 0n
-            ? { label: "No bid", tone: "off" }
-            : quoted.ourOut < quoted.bestOut
-              ? { label: "Rival pays more · no bid", tone: "off" }
-              : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)}`, tone: "off" }
+          ? sell.symbol === "AXIS"
+            ? { label: "Sell USDC for AXIS to bid", tone: "off" }
+            : quoted.bestOut === 0n && quoted.ourOut === 0n
+              ? { label: "No bid", tone: "off" }
+              : quoted.ourOut < quoted.bestOut
+                ? { label: "Rival pays more · no bid", tone: "off" }
+                : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)}`, tone: "off" }
           : !address
             ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : connect, tone: "soft" }
             : !onSepolia
@@ -278,7 +310,13 @@ export function QuoteCard() {
       <div className="mb-5 flex items-center justify-between gap-4">
         <h1 className="text-[40px] leading-none font-semibold tracking-[-0.04em]">Swap</h1>
         <div className="flex items-center gap-1">
-          {quote && pool && <RefreshRing key={refreshKey} durationMs={REFRESH_MS} spinning={!!refreshing} />}
+          {quote && pool && (
+            <RefreshRing
+              key={refreshKey}
+              durationMs={REFRESH_MS}
+              spinning={!!refreshing}
+            />
+          )}
           <SwapSettings bps={slippageBps} onChange={setSlippageBps} />
         </div>
       </div>
@@ -358,7 +396,7 @@ export function QuoteCard() {
         {fresh && <EdgeNote quote={fresh} tokenOut={buy} />}
       </div>
 
-      {state.kind === "error" && state.key === key && <ReadError message={state.message} onRetry={runQuote} />}
+      {state.kind === "error" && state.key === key && <ReadError message={state.message} onRetry={() => void runQuote({ force: true })} />}
 
       <button
         type="button"
