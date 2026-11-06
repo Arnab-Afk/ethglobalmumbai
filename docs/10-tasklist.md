@@ -5,7 +5,7 @@ Status snapshot. Update when something lands.
 | ID | Owner | Task | Package / surface | Status |
 |---|---|---|---|---|
 | A1–A5 | Arnab | fee-core, oracle, SwapVM Extruction, Sepolia deploy | `fee-core`, `oracle`, `swapvm-opcode` | **Done** |
-| **A6** | **Soham** | **1inch Aqua demo (Path B): Anvil mainnet/Base fork → deploy Extruction → ship strategy → one on-chain Aqua swap that moves tokens; keep flat-vs-competitive Foundry compare for the slide** | **`packages/swapvm-opcode`** (`npm run aqua:fork`, `DeployFork.s.sol`, `FlatVsCompetitive.t.sol`) | **Soft remaining** — Path B + unit tests already shipped; need the fork settlement proof for the Aqua prize |
+| **A6** | **Soham** | **1inch Aqua demo (Path B): Anvil mainnet/Base fork → deploy Extruction → ship strategy → one on-chain Aqua swap that moves tokens; keep flat-vs-competitive Foundry compare for the slide** | **`packages/swapvm-opcode`** (`npm run aqua:fork`, `test/AquaFork.t.sol`) | **Done**: ship + swap through the deployed Aqua router on a mainnet fork, real WETH/USDC transfers; flat 30 bp / 5 bp vs competitive on the same capital. Path A still optional |
 | C1 | Arnab / Saish | CRE aggregator scaffold + local simulate | `cre-workflow` | **Done** (scaffold) |
 | C2 | Saish | `cre workflow simulate` + honest deploy/sim write-up | `cre-workflow` | **Done** (simulate + `--broadcast` to Sepolia, Chainlink fair-price check, WETH⇄USDC, Multicall3; see `docs/06`) |
 | C3 | Arnab / Saish | A swap path that reads `QuoteOracle` (proposed: `VenueReader` falls back to it when a venue is far from Chainlink) | `oracle` | **Pending**, needed for the Chainlink track |
@@ -36,7 +36,7 @@ S1–S3 are in this package. S4: the neat app (`frontend/`) reads Sepolia throug
 
 Prize gap only: judges need **on-chain token transfers** (local fork OK) using official Aqua/SwapVM. Path B `CompetitiveFeeExtruction` + Sepolia deploy + Foundry tests are already done by Arnab.
 
-1. `cd packages/swapvm-opcode` → set `FORK_RPC` → `npm run aqua:fork`
-2. Confirm ship + one Aqua swap (pull/push) moves tokens; save tx / script output for the demo
-3. Re-run `forge test` / flat-vs-competitive for the slide if needed
+1. ~~`cd packages/swapvm-opcode` → `npm run aqua:fork`~~ Done: bash runner (macOS/Linux), public mainnet RPC by default
+2. ~~Confirm ship + one Aqua swap moves tokens~~ Done: the runner prints tx hashes and the swap's Transfer events (USDC maker → taker, WETH taker → router → maker)
+3. ~~Flat vs competitive~~ Done on the real router: `npm run test:fork`. Numbers are in `packages/swapvm-opcode/README.md`
 4. Path A native opcode is optional polish, not required to qualify

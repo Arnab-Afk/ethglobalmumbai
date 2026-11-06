@@ -166,14 +166,16 @@ function pipsToSwapVmBps(uint24 pips) pure returns (uint32) {
 
 ## Deliverables
 
-- [ ] Path A: `CompetitiveFee` instruction + registration in our `AquaOpcodes` build
-- [ ] (Optional) Path B: `CompetitiveFeeExtruction` + tests
-- [ ] Example maker program + Aqua allocate script
-- [ ] Foundry tests: quote == swap, stale → fallback, rounding favors taker, composition with XYC
-- [ ] Comparison script: flat-fee program vs competitive → LP revenue delta
+- [ ] Path A: `CompetitiveFee` instruction + registration in our `AquaOpcodes` build (not needed to qualify)
+- [x] Path B: `CompetitiveFeeExtruction` + unit tests (Sepolia deploy in `deployments/sepolia.json`)
+- [x] Example maker program shipped to the live Aqua registry and swapped through the deployed `AquaSwapVMRouter` on a mainnet fork: `npm run aqua:fork`, `test/AquaFork.t.sol`
+- [x] Foundry tests: quote == swap (unit and through the real router), stale → fallback, `minOut` revert. Exact-out reverts (MVP)
+- [x] Comparison: flat 30 bp / flat 5 bp / competitive on the same Aqua capital (`test_Fork_competitiveVsFlat_sameCapital`)
+
+Pinned to **swap-vm v1.0.2** (the deployed router). `main` renumbers the opcodes (Extruction 4, XYCSwap 50). Sepolia has the Aqua registry but no `AquaSwapVMRouter`, so settlement runs on a mainnet fork. Base has both.
 
 ## Judging angle
 
-- Novel SwapVM instruction (or Extruction primitive) any Aqua strategy can drop in
+- A competitive-fee pricing primitive any Aqua maker can ship as a one-instruction program (Path B owns the curve; only Path A would wrap an arbitrary curve)
 - Same capital can run competitive and flat strategies side by side on Aqua
 - Demo: quote just beats best alternative; LP captures surplus vs flat 5 bp / 30 bp
