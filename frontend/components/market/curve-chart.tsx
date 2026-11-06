@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { CurveSample } from "@/lib/market";
+import type { Token } from "@/lib/tokens";
 
 const W = 880;
 const H = 280;
@@ -13,8 +14,19 @@ const fmtSize = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits
 /**
  * Effective competitor price per WETH across trade sizes (log x), with the Chainlink
  * reference as a dashed line. One series, so no legend: both lines are labelled directly.
+ * Both directions use USDC per WETH on the y axis; x is the trade size in tokenIn.
  */
-export function CurveChart({ samples, reference }: { samples: CurveSample[]; reference: number }) {
+export function CurveChart({
+  samples,
+  reference,
+  tokenIn,
+  tokenOut,
+}: {
+  samples: CurveSample[];
+  reference: number;
+  tokenIn: Token;
+  tokenOut: Token;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
 
@@ -33,7 +45,7 @@ export function CurveChart({ samples, reference }: { samples: CurveSample[]; ref
     const y = (price: number) => PAD.top + (1 - (price - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
     const path = samples.map((s, i) => `${i ? "L" : "M"}${x(s.size).toFixed(1)},${y(s.price).toFixed(1)}`).join("");
     const area = `${path}L${x(xs[xs.length - 1]).toFixed(1)},${H - PAD.bottom}L${x(xs[0]).toFixed(1)},${H - PAD.bottom}Z`;
-    const xTicks = [0.05, 0.1, 0.5, 1, 5, 10, 50, 100].filter((t) => t >= xs[0] * 0.999 && t <= xs[xs.length - 1] * 1.001);
+    const xTicks = [0.05, 0.1, 0.5, 1, 5, 10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000, 200_000].filter((t) => t >= xs[0] * 0.999 && t <= xs[xs.length - 1] * 1.001);
     const yTicks = Array.from({ length: 4 }, (_, i) => yMin + ((i + 0.5) * (yMax - yMin)) / 4);
     return { x, y, path, area, xTicks, yTicks };
   }, [samples, reference]);
@@ -115,19 +127,23 @@ export function CurveChart({ samples, reference }: { samples: CurveSample[]; ref
             transform: geo.x(h.size) > W * 0.6 ? "translateX(calc(-100% - 12px))" : "translateX(12px)",
           }}
         >
-          <div className="tnum font-medium">{fmtSize(h.size)} WETH</div>
+          <div className="tnum font-medium">
+            {fmtSize(h.size)} {tokenIn.symbol}
+          </div>
           <dl className="tnum mt-1 space-y-0.5 text-fg-2">
             <div className="flex justify-between gap-3">
               <dt>Best venue pays</dt>
-              <dd className="text-fg">{fmtUsd(h.out)}</dd>
+              <dd className="text-fg">
+                {h.out.toLocaleString("en-US", { maximumFractionDigits: tokenOut.usd ? 2 : 4 })} {tokenOut.symbol}
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt>Per WETH</dt>
+              <dt>USDC per WETH</dt>
               <dd className="text-fg">{fmtUsd(h.price)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt>vs Chainlink</dt>
-              <dd className="text-fg">{(((h.price - reference) / reference) * 100).toFixed(2)}%</dd>
+              <dd className="text-fg">{h.vsFair.toFixed(2)}%</dd>
             </div>
           </dl>
         </div>
