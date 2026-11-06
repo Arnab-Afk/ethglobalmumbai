@@ -1,15 +1,17 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parseUnits } from "viem";
-import { USDC, WETH } from "@/lib/deployments";
-import { fmtAge, fmtAmount } from "@/lib/format";
+import { fmtAge, fmtAmount, fmtSmart } from "@/lib/format";
+import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { PriceCard } from "./price-card";
 import { QuoteDetails } from "./quote-details";
 import { SlippageRow } from "./slippage-row";
-import { TokenPill } from "./token-pill";
+import { TokenPicker } from "./token-picker";
+import { TokenButton } from "./token-pill";
 
 const REFRESH_MS = 12_000; // one Sepolia block
 const DEBOUNCE_MS = 350;
@@ -21,88 +23,135 @@ type State =
   | { kind: "ok"; quote: LiveQuote }
   | { kind: "error"; message: string; prev?: LiveQuote };
 
-function parseAmount(raw: string): bigint | null {
+function parseAmount(raw: string, decimals: number): bigint | null {
   if (!raw || !/^\d*\.?\d*$/.test(raw)) return null;
   try {
-    const v = parseUnits(raw, WETH.decimals);
+    const v = parseUnits(raw, decimals);
     return v > 0n ? v : null;
   } catch {
     return null;
   }
 }
 
-/** USDC ≈ $1 on the demo pair, so a USDC amount doubles as its dollar value. */
-function usd(v: bigint): string {
-  return `$${fmtAmount(v, USDC.decimals, 2)}`;
-}
-
-/** Must render inside <Suspense>: it reads ?amount= so a quote can be shared as a link. */
+/** Must render inside <Suspense>: it reads ?sell=&buy=&amount= so a quote can be shared as a link. */
 export function QuoteCard() {
   const searchParams = useSearchParams();
+  const [sell, setSell] = useState<Token>(() => tokenBySymbol(searchParams.get("sell")) ?? DEFAULT_SELL);
+  const [buy, setBuy] = useState<Token>(() => {
+    const b = tokenBySymbol(searchParams.get("buy")) ?? DEFAULT_BUY;
+    return b.symbol === sell.symbol ? (sell.symbol === DEFAULT_SELL.symbol ? DEFAULT_BUY : DEFAULT_SELL) : b;
+  });
   const [amount, setAmount] = useState(() => {
     const a = searchParams.get("amount");
-    return a && parseAmount(a) !== null ? a : DEFAULT_AMOUNT;
+    return a && /^\d*\.?\d*$/.test(a) ? a : DEFAULT_AMOUNT;
   });
+  const [picking, setPicking] = useState<"sell" | "buy" | null>(null);
   const [slippageBps, setSlippageBps] = useState(5); // 0.05%
   const [state, setState] = useState<State>({ kind: "idle" });
   const [config, setConfig] = useState<FeeConfig | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const reqId = useRef(0);
 
+  const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
+
   useEffect(() => {
     getFeeConfig().then(setConfig, () => {});
   }, []);
 
-  const runQuote = useCallback(async (raw: string) => {
-    const amountIn = parseAmount(raw);
+  const runQuote = useCallback(async () => {
     const id = ++reqId.current;
-    if (amountIn === null) {
+    const amountIn = parseAmount(amount, sell.decimals);
+    if (amountIn === null || !pool) {
       setState({ kind: "idle" });
       return;
     }
     setState((s) => ({ kind: "loading", prev: s.kind === "ok" ? s.quote : "prev" in s ? s.prev : undefined }));
     try {
-      const quote = await getLiveQuote(WETH, USDC, amountIn);
+      const quote = await getLiveQuote(sell, buy, amountIn, pool);
       if (id === reqId.current) setState({ kind: "ok", quote });
     } catch (e) {
       if (id !== reqId.current) return;
       const message = e instanceof Error ? (e as { shortMessage?: string }).shortMessage ?? e.message : String(e);
       setState((s) => ({ kind: "error", message, prev: s.kind === "loading" ? s.prev : undefined }));
     }
-  }, []);
+  }, [amount, sell, buy, pool]);
 
-  // Debounced re-quote on input; keep the URL in sync.
+  // Debounced re-quote whenever the trade changes; keep the URL shareable.
   useEffect(() => {
     const t = setTimeout(() => {
-      runQuote(amount);
+      runQuote();
       const url = new URL(window.location.href);
+      url.searchParams.set("sell", sell.symbol);
+      url.searchParams.set("buy", buy.symbol);
       if (amount) url.searchParams.set("amount", amount);
       else url.searchParams.delete("amount");
       window.history.replaceState(null, "", url);
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [amount, runQuote]);
+  }, [runQuote, sell, buy, amount]);
 
   // Re-quote once per block.
   useEffect(() => {
     if (state.kind !== "ok") return;
     const t = setTimeout(() => {
       setRefreshKey((k) => k + 1);
-      runQuote(amount);
+      runQuote();
     }, REFRESH_MS);
     return () => clearTimeout(t);
-  }, [state, amount, runQuote]);
+  }, [state, runQuote]);
 
-  const quote = state.kind === "ok" ? state.quote : state.kind !== "idle" ? state.prev : undefined;
+  const choose = (side: "sell" | "buy", t: Token) => {
+    const other = side === "sell" ? buy : sell;
+    if (t.symbol === other.symbol) {
+      flip(); // picking the opposite token swaps the sides
+    } else if (side === "sell") {
+      setSell(t);
+    } else {
+      setBuy(t);
+    }
+    setPicking(null);
+  };
+
+  const flip = () => {
+    setSell(buy);
+    setBuy(sell);
+    setState({ kind: "idle" });
+  };
+
+  // A previous quote is only shown while it belongs to the current pair.
+  const quote = pool && state.kind !== "idle" ? (state.kind === "ok" ? state.quote : state.prev) : undefined;
   const loading = state.kind === "loading";
   const hasBest = !!quote && quote.bestOut > 0n;
   const edgePct = hasBest ? (Number(quote.ourOut - quote.bestOut) / Number(quote.bestOut)) * 100 : 0;
+
+  // Dollar values only where one side is a $1 stablecoin.
+  const sellUsd = !quote
+    ? null
+    : sell.usd
+      ? fmtAmount(quote.amountIn, sell.decimals, 2)
+      : buy.usd && hasBest
+        ? fmtAmount(quote.bestOut, buy.decimals, 2)
+        : null;
+  const buyUsd = !quote
+    ? null
+    : buy.usd
+      ? fmtAmount(quote.ourOut, buy.decimals, 2)
+      : sell.usd && hasBest
+        ? fmtAmount((quote.amountIn * quote.ourOut) / quote.bestOut, sell.decimals, 2)
+        : null;
+
+  const amountValid = parseAmount(amount, sell.decimals) !== null;
+  const cta = !pool
+    ? `No pool for ${sell.symbol} → ${buy.symbol} yet`
+    : !amountValid
+      ? "Enter amount"
+      : "Swap pool not deployed on Sepolia";
 
   return (
     <div className="flex w-full max-w-[470px] flex-col gap-2">
       {/* Top row */}
       <div className="flex h-10 items-center justify-between">
-        <FreshnessTab quote={quote} />
+        <FreshnessTab quote={quote} hasPool={!!pool} />
         <span className="flex h-10 items-center gap-2 rounded-lg bg-surface py-1.5 pl-1.5 pr-3.5 text-base font-medium">
           <span className="grid size-7 place-items-center rounded-md bg-[#627eea]">
             <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden>
@@ -113,7 +162,7 @@ export function QuoteCard() {
         </span>
       </div>
 
-      {/* Sell + Buy, with the direction button sitting in the 8px gap */}
+      {/* Sell + Buy, with the flip button sitting in the 8px gap */}
       <div className="relative flex flex-col gap-2">
         <div className="h-[136px] rounded-lg bg-surface p-4">
           <div className="text-base font-medium text-fg-2">Sell</div>
@@ -129,23 +178,28 @@ export function QuoteCard() {
               }}
               className="tnum h-10 min-w-0 flex-1 bg-transparent text-[32px] font-medium tracking-[-1px] text-fg outline-none placeholder:text-fg"
             />
-            <TokenPill token={WETH} />
+            <TokenButton token={sell} onClick={() => setPicking("sell")} />
           </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
-            <span>{hasBest ? usd(quote.bestOut) : "-"}</span>
-            <span className="text-muted">Demo token</span>
-          </div>
+          <div className="tnum mt-2.5 flex h-[18px] items-center text-sm text-fg-2">{sellUsd ? `$${sellUsd}` : "-"}</div>
         </div>
 
-        <span
-          title="Only WETH → USDC has a published competitor curve"
-          className="absolute left-1/2 top-[136px] z-10 grid size-9 -translate-x-1/2 -translate-y-[14px] place-items-center rounded-lg bg-solid text-fg"
-          aria-hidden
+        <button
+          type="button"
+          onClick={flip}
+          aria-label="Switch tokens"
+          className="absolute left-1/2 top-[136px] z-10 grid size-9 -translate-x-1/2 -translate-y-[14px] place-items-center rounded-lg bg-solid text-fg transition-colors hover:bg-[#4a3830]"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16">
-            <path d="M8 3v10m0 0-3.5-3.5M8 13l3.5-3.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+            <path
+              d="M5 2.5v10m0 0L2.5 10M5 12.5 7.5 10M11 13.5v-10m0 0L8.5 6M11 3.5 13.5 6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
-        </span>
+        </button>
 
         <div className="h-[136px] rounded-lg bg-surface p-4">
           <div className="text-base font-medium text-fg-2">Buy</div>
@@ -155,21 +209,18 @@ export function QuoteCard() {
                 loading ? "opacity-50" : ""
               }`}
             >
-              {quote ? fmtAmount(quote.ourOut, USDC.decimals, 6) : "0"}
+              {quote ? fmtSmart(quote.ourOut, buy.decimals, 10) : "0"}
             </div>
-            <TokenPill token={USDC} />
+            <TokenButton token={buy} onClick={() => setPicking("buy")} />
           </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
-            <span>
-              {quote ? usd(quote.ourOut) : "-"}{" "}
-              {hasBest && (
-                <span className={edgePct >= 0 ? "text-win" : "text-lose"} title="vs best competing venue">
-                  ({edgePct >= 0 ? "+" : ""}
-                  {edgePct.toFixed(2)}%)
-                </span>
-              )}
-            </span>
-            <span className="text-muted">Demo token</span>
+          <div className="tnum mt-2.5 flex h-[18px] items-center text-sm text-fg-2">
+            {buyUsd ? `$${buyUsd}` : quote ? "" : "-"}
+            {hasBest && (
+              <span className={`${buyUsd ? "ml-1" : ""} ${edgePct >= 0 ? "text-win" : "text-lose"}`} title="vs best competing venue">
+                ({edgePct >= 0 ? "+" : ""}
+                {edgePct.toFixed(2)}% vs best venue)
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -182,27 +233,44 @@ export function QuoteCard() {
         disabled
         className="h-14 w-full cursor-not-allowed rounded-lg bg-surface text-base font-medium text-muted"
       >
-        {state.kind === "idle" ? "Enter amount" : "Swap pool not deployed on Sepolia"}
+        {cta}
       </button>
 
       {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>}
 
-      {quote && (
+      {quote && pool && (
         <div className="mt-2 flex flex-col gap-2">
-          <PriceCard quote={quote} config={config} loading={loading} refreshKey={refreshKey} refreshMs={REFRESH_MS} />
-          <QuoteDetails quote={quote} config={config} slippageBps={slippageBps} />
+          <PriceCard
+            quote={quote}
+            tokenOut={buy}
+            config={config}
+            loading={loading}
+            refreshKey={refreshKey}
+            refreshMs={REFRESH_MS}
+          />
+          <QuoteDetails quote={quote} tokenIn={sell} tokenOut={buy} pool={pool} config={config} slippageBps={slippageBps} />
         </div>
+      )}
+
+      {picking && (
+        <TokenPicker
+          other={picking === "sell" ? buy : sell}
+          onSelect={(t) => choose(picking, t)}
+          onClose={() => setPicking(null)}
+        />
       )}
     </div>
   );
 }
 
 /** Left tab of the top row: carries the quote's freshness. */
-function FreshnessTab({ quote }: { quote?: LiveQuote }) {
+function FreshnessTab({ quote, hasPool }: { quote?: LiveQuote; hasPool: boolean }) {
   const age = quote ? quote.blockTime - quote.updatedAt : 0;
-  const label = !quote
-    ? "Quote"
-    : { live: "Live", stale: `Stale · ${fmtAge(age)}`, none: "No venue quote" }[quote.status];
+  const label = !hasPool
+    ? "No pool"
+    : !quote
+      ? "Quote"
+      : { live: "Live", stale: `Stale · ${fmtAge(age)}`, none: "No venue curve" }[quote.status];
   const dot = !quote ? "bg-faint" : { live: "bg-win", stale: "bg-warn", none: "bg-faint" }[quote.status];
   return (
     <span className="flex h-10 items-center gap-2 rounded-lg bg-surface pl-3 pr-4 text-base font-medium">
