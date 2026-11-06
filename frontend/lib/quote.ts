@@ -1,7 +1,7 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
 import { SEPOLIA } from "./deployments";
-import { bestMainnetOut, isMainnetPair, mainnetDecimals } from "./mainnet";
+import { bestMainnetOut, isMainnetPair, mainnetDecimals, mainnetVenueQuotes, type VenueQuote } from "./mainnet";
 import type { PoolSide } from "./pools";
 import { rpcFetch, rpcTimeoutMs } from "./rpc";
 import type { Token } from "./tokens";
@@ -120,6 +120,8 @@ export interface LiveQuote {
   latencyMs: number;
   /** Where bestOut was read from. */
   venue: string;
+  /** Every competing venue's output for this exact trade, best first (mainnet pairs only). */
+  venues?: VenueQuote[];
   /** Inventory this quote was priced against, when the screen pins it. */
   reserves?: PoolSide;
 }
@@ -168,11 +170,13 @@ export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bi
 
 async function quoteMainnet(tokenIn: Token, tokenOut: Token, amountIn: bigint): Promise<LiveQuote> {
   const t0 = performance.now();
-  const [bestOut, book, block] = await Promise.all([
-    bestMainnetOut(tokenIn.symbol, tokenOut.symbol, amountIn),
+  const [venueQuotes, book, block] = await Promise.all([
+    mainnetVenueQuotes(tokenIn.symbol, tokenOut.symbol, amountIn),
     inventory(tokenIn.symbol, tokenOut.symbol),
     client.getBlock({ blockTag: "latest" }),
   ]);
+  const venues = venueQuotes.filter((v) => v.out > 0n).sort((a, b) => (b.out > a.out ? 1 : b.out < a.out ? -1 : 0));
+  const bestOut = venues[0]?.out ?? 0n;
   const { reserveIn, reserveOut } = book;
   const updatedAt = block.timestamp;
   const [feePips, ourOut] = await client.readContract({
@@ -193,7 +197,8 @@ async function quoteMainnet(tokenIn: Token, tokenOut: Token, amountIn: bigint): 
     blockTime,
     status,
     latencyMs: performance.now() - t0,
-    venue: "Uniswap v3 mainnet",
+    venue: venues[0] ? `${venues[0].name} ${venues[0].detail} · mainnet` : "No mainnet venue",
+    venues,
     reserves: book,
   };
 }

@@ -12,6 +12,7 @@ import { PriceCard } from "./price-card";
 import { QuoteDetails } from "./quote-details";
 import { SlippageRow } from "./slippage-row";
 import { SwapReview } from "./swap-review";
+import { VenueComparison } from "./venue-comparison";
 import { TokenPicker } from "./token-picker";
 import { TokenButton } from "./token-pill";
 import { useBalances } from "../wallet/use-balances";
@@ -318,6 +319,7 @@ export function QuoteCard() {
             refreshKey={refreshKey}
             refreshMs={REFRESH_MS}
           />
+          <VenueComparison quote={quote} tokenIn={sell} tokenOut={buy} config={config} />
           <QuoteDetails quote={quote} tokenIn={sell} tokenOut={buy} pool={shownPool} config={config} slippageBps={slippageBps} />
         </div>
       )}
