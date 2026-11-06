@@ -5,7 +5,7 @@
 | Track | What we submit | Must-have to qualify | Owner agent |
 |---|---|---|---|
 | 1inch (Aqua / SwapVM) | `CompetitiveFee` instruction + Aqua strategy | Working opcode, used in a program, swap executed against Aqua liquidity | `swapvm-aqua` |
-| Ethereum Foundation | Private quoting + submission around the AMM | Quotes via Anon-RPC, swaps via Frame mempool, side-by-side sandwich comparison | `private-quoting` |
+| Ethereum Foundation (one EF prize per project; judges place us) | Private quoting + submission around the AMM | **Anon-RPC:** "your app routes its RPC reads through Anon-RPC by default." **Alt mempool:** "a link to your admitted transaction on the devnet explorer, or code that submits one", and we can explain the trade-offs. **CROPS:** FOSS license, README with run steps and a `CROPS` section, demo video ≤ 3 min, no trackers. (Checked on the prize page, Nov 6) | `private-quoting` |
 | Chainlink CRE | Quote workflow + `QuoteOracle` | Workflow runs (simulated or deployed) and writes data that contracts consume | `cre-oracle` |
 
 > Re-read each sponsor's official prize description at the event. Requirements (chains, "must use X", submission fields) change between hackathons. Update this table with the exact wording.
