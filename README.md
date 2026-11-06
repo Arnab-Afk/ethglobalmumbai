@@ -23,6 +23,7 @@ Node ≥ 20.12 and [Foundry](https://book.getfoundry.sh/) for the contracts. Eve
 | Integrator SDK | `cd packages/sdk && npm install && npm test`; usage in [packages/sdk/README.md](packages/sdk/README.md) |
 | EIP-8141 frame swap (devnet, chain 1337) | `cd packages/private-quoting && npm install && npm run quote:sdk -- 10`; full flow in [its README](packages/private-quoting/README.md) |
 | CRE workflow (local simulate) | `cd packages/cre-workflow && npm install && npm run simulate:local` |
+| CRE workflow (CRE CLI) | `cd packages/cre-workflow && cre workflow simulate ./workflow -T sepolia-settings` (add `--broadcast` to write to Sepolia; `BROADCAST=1 npm run cre:watch` to repeat) |
 
 Deployed addresses: [deployments/sepolia.json](deployments/sepolia.json) and [packages/private-quoting/web/public/deployment.json](packages/private-quoting/web/public/deployment.json).
 
@@ -52,7 +53,7 @@ The fee engine already works. A real frame swap on our EIP-8141 devnet beat the 
 | Sepolia oracle + Extruction | Deployed and verified. Curve updates and `previewFeePips` work. No fillable pool on Sepolia yet. |
 | EIP-8141 frame swap (`packages/private-quoting`) | Working prototype. The tx above filled against the **mock** oracle. |
 | Client SDK + Sepolia dashboard | `packages/sdk`, `apps/demo` (quote view). |
-| CRE aggregator | Local simulator writes a curve. Live DON deploy is optional for the prototype. |
+| CRE aggregator | `cre workflow simulate --broadcast` writes WETH⇄USDC curves to Sepolia `QuoteOracle` through Chainlink's mock forwarder, after checking every quote against Chainlink ETH/USD. No swap path reads `QuoteOracle` yet (task C3). Live DON deploy is optional. See [docs/06](docs/06-chainlink-cre.md). |
 | Real Uniswap reads inside the swap | **Sepolia v3 pools, live.** `VenueReader` `0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F` reads the four WETH/USDC fee tiers from pool storage. `TradePreview` `0x318589f99F1b560230340C20e2649751B4be098F` runs that quote through fee-core. v4 hook `0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080` is initialized on a dynamic-fee WETH/USDC pool. The 8141 devnet still falls back to `MockQuoteOracle`. |
 
 ### Locked plan

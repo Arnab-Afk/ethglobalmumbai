@@ -7,7 +7,10 @@ Status snapshot. Update when something lands.
 | A1–A5 | Arnab | fee-core, oracle, SwapVM Extruction, Sepolia deploy | `fee-core`, `oracle`, `swapvm-opcode` | **Done** |
 | A6 | Arnab | Aqua fork end-to-end + flat vs competitive LP compare | `swapvm-opcode` | Soft remaining |
 | C1 | Arnab / Saish | CRE aggregator scaffold + local simulate | `cre-workflow` | **Done** (scaffold) |
-| C2 | Saish | `cre workflow simulate` + honest deploy/sim write-up | `cre-workflow` | Pending |
+| C2 | Saish | `cre workflow simulate` + honest deploy/sim write-up | `cre-workflow` | **Done** (simulate + `--broadcast` to Sepolia, Chainlink fair-price check, WETH⇄USDC, Multicall3; see `docs/06`) |
+| C3 | Arnab / Saish | A swap path that reads `QuoteOracle` (proposed: `VenueReader` falls back to it when a venue is far from Chainlink) | `oracle` | **Pending**, needed for the Chainlink track |
+| C4 | Saish | Real Uniswap v3/v4 venues in the CRE handler, on a mainnet fork | `cre-workflow` | Spike done (CRE reads mainnet and fork quoters); build pending |
+| C5 | Saish | Live DON deploy (optional): needs a `QuoteOracle` trusting the production forwarder + workflow-ID check | `cre-workflow` + `oracle` | Blocked on C3 / Arnab |
 | E1–E4 | Soham | Anon-RPC web + frame CLI + DevnetCompetitivePool | `private-quoting` | **Mostly done** (live faucet blocked) |
 | **S1** | **Soham** | **Anon-RPC transport for `@hairline/sdk` (`private` quote mode)** | **`packages/sdk`** | **Done** (`@hairline/sdk/anon`; browser-only, fails closed) |
 | **S2** | **Soham** | **Wire `CompetitiveFeeClient.setFrameSubmitter` → EIP-8141 frame tx** | **`packages/sdk` + `private-quoting`** | **Done** (`@hairline/sdk/frame`; unit-tested, live run blocked on empty faucet) |

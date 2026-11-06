@@ -8,6 +8,8 @@ import { DEFAULT_BUY, DEFAULT_SELL, type Token } from "@/lib/tokens";
 import { CurveChart } from "./curve-chart";
 
 const REFRESH_MS = 12_000;
+/** Curve updates shown before "Show all": the workflow writes one per run, so the list grows fast. */
+const LATEST_UPDATES = 5;
 /** CompetitiveFeeExtruction.maxQuoteAge: older curves are ignored and the pool charges its fallback fee. */
 const MAX_QUOTE_AGE = 120;
 
@@ -30,6 +32,7 @@ export function MarketView() {
   const { tokenIn, tokenOut } = dir;
   const [data, setData] = useState<MarketSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   // Direction currently shown; a read that finishes after the user switched is dropped.
   const shown = useRef(dirKey);
   useEffect(() => {
@@ -51,6 +54,7 @@ export function MarketView() {
   const switchTo = (key: string) => {
     if (key === dirKey) return;
     setData(null);
+    setShowAll(false);
     setDirKey(key);
   };
 
@@ -62,6 +66,11 @@ export function MarketView() {
       clearInterval(t);
     };
   }, [load]);
+
+  const updates = data?.updates ?? [];
+  const visibleUpdates = showAll ? updates : updates.slice(0, LATEST_UPDATES);
+  const hiddenUpdates = updates.length - visibleUpdates.length;
+  const eventsUrl = `${SEPOLIA.explorer}/address/${SEPOLIA.contracts.QuoteOracle}#events`;
 
   const one = data?.samples.find((s) => s.size === data.headlineSize);
   const age = data && data.observedAt ? data.blockTime - data.observedAt : null;
@@ -181,20 +190,22 @@ export function MarketView() {
 
       {/* Updates table */}
       <section className="panel mt-2 overflow-hidden rounded-lg">
-        <div className="flex items-baseline justify-between px-4 pt-4">
-          <h2 className="text-base font-medium">CRE curve updates</h2>
-          <a
-            href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.QuoteOracle}#events`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm text-fg-2 hover:text-fg"
-          >
+        <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4">
+          <h2 className="text-base font-medium">
+            CRE curve updates
+            {updates.length > 0 && (
+              <span className="tnum ml-2 text-sm font-normal text-fg-2">
+                {showAll || hiddenUpdates === 0 ? `${updates.length}` : `latest ${visibleUpdates.length} of ${updates.length}`}
+              </span>
+            )}
+          </h2>
+          <a href={eventsUrl} target="_blank" rel="noreferrer" className="text-sm text-fg-2 hover:text-fg">
             QuoteOracle {shortAddr(SEPOLIA.contracts.QuoteOracle)} ↗
           </a>
         </div>
-        <div className="mt-3 overflow-x-auto">
+        <div className={`mt-3 overflow-x-auto ${showAll ? "max-h-[420px] overflow-y-auto" : ""}`}>
           <table className="tnum w-full min-w-[640px] text-sm">
-            <thead>
+            <thead className="sticky top-0 bg-panel">
               <tr className="border-b border-line text-left text-fg-2">
                 <th className="px-4 py-2.5 font-medium">Observed</th>
                 <th className="px-4 py-2.5 font-medium">Pair</th>
@@ -205,7 +216,7 @@ export function MarketView() {
               </tr>
             </thead>
             <tbody>
-              {data?.updates.map((u) => (
+              {data && visibleUpdates.map((u) => (
                 <tr key={u.tx} className="border-b border-line last:border-0 hover:bg-surface">
                   <td className="px-4 py-3">{fmtAge(data.blockTime - u.observedAt)} ago</td>
                   <td className="px-4 py-3">
@@ -238,6 +249,21 @@ export function MarketView() {
             </tbody>
           </table>
         </div>
+        {updates.length > LATEST_UPDATES && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5 text-sm">
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              aria-expanded={showAll}
+              className="text-fg-2 hover:text-fg"
+            >
+              {showAll ? `Show latest ${LATEST_UPDATES}` : `Show all ${updates.length}`}
+            </button>
+            <a href={eventsUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+              Every report on Etherscan ↗
+            </a>
+          </div>
+        )}
       </section>
     </div>
   );
