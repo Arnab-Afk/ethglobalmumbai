@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Nav } from "@/components/nav";
+import { PrivacyBadge } from "@/components/privacy-badge";
 import { WalletProvider } from "@/components/wallet/wallet-provider";
 import { SEPOLIA } from "@/lib/deployments";
 import "./globals.css";
@@ -42,6 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           >
             Sepolia
           </a>
+          <div className="mt-1">
+            <PrivacyBadge />
+          </div>
         </footer>
       </body>
     </html>
