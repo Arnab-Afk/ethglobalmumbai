@@ -6,7 +6,7 @@ export function FeeDiagram() {
   return (
     <div>
       <SectionHead
-        eyebrow="How it works"
+        eyebrow="Pricing"
         title="Every fee is set at the last moment, for that exact trade."
         note="The fee is the gap between what the pool could pay and what the best venue pays. You get a hair more than the venue; LPs keep the rest."
       />

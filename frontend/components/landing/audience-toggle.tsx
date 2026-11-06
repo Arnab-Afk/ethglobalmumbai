@@ -23,7 +23,7 @@ export function AudienceToggle() {
   return (
     <div>
       <SectionHead
-        eyebrow="Who it's for"
+        eyebrow="Liquidity"
         title="One fee, both sides of the trade."
         note="Traders get at least the best price on the market. LPs earn what flat-fee pools leave behind."
       />
@@ -39,7 +39,7 @@ export function AudienceToggle() {
             ["Price to beat", "Best Uniswap or Sushi pool"],
             ["Sepolia fill", "WETH to USDC, on the demo pool"],
           ]}
-          cta={{ label: "Launch App", href: "/swap" }}
+          cta={{ label: "Launch App", href: "/swap", newTab: true }}
         />
         <Side
           label="Liquidity providers"
@@ -73,7 +73,7 @@ function Side({
   figure: string;
   caption: string;
   rows: [string, string][];
-  cta: { label: string; href: string };
+  cta: { label: string; href: string; newTab?: boolean };
   divider?: boolean;
 }) {
   return (
@@ -97,12 +97,23 @@ function Side({
         ))}
       </dl>
 
-      <Link
-        href={cta.href}
-        className="mt-8 w-fit text-[14px] font-medium text-[#151619] underline decoration-[#151619]/30 underline-offset-4 transition-colors hover:decoration-[#151619]"
-      >
-        {cta.label} →
-      </Link>
+      {cta.newTab ? (
+        <a
+          href={cta.href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-8 w-fit text-[14px] font-medium text-[#151619] underline decoration-[#151619]/30 underline-offset-4 transition-colors hover:decoration-[#151619]"
+        >
+          {cta.label} →
+        </a>
+      ) : (
+        <Link
+          href={cta.href}
+          className="mt-8 w-fit text-[14px] font-medium text-[#151619] underline decoration-[#151619]/30 underline-offset-4 transition-colors hover:decoration-[#151619]"
+        >
+          {cta.label} →
+        </Link>
+      )}
     </section>
   );
 }

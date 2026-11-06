@@ -7,10 +7,10 @@ import { shortAddr } from "@/lib/format";
 import { useWallet } from "../wallet/wallet-provider";
 
 const LINKS = [
-  { href: "/swap", label: "Swap" },
-  { href: "/market", label: "Market" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/about", label: "About" },
+  { href: "#how", label: "Pricing" },
+  { href: "#market", label: "Markets" },
+  { href: "#dashboard", label: "Liquidity" },
+  { href: "#about", label: "FAQ" },
 ];
 
 /**
@@ -42,9 +42,9 @@ export function LandingHeader() {
         </Link>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[15px] font-semibold lg:flex">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
+            <a key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
               {l.label}
-            </Link>
+            </a>
           ))}
         </nav>
 
@@ -67,9 +67,9 @@ export function LandingHeader() {
       {menu && (
         <div className="border-t border-black/5 bg-white px-5 pb-4 lg:hidden">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setMenu(false)} className="flex h-12 items-center text-[17px] font-semibold">
+            <a key={l.href} href={l.href} onClick={() => setMenu(false)} className="flex h-12 items-center text-[17px] font-semibold">
               {l.label}
-            </Link>
+            </a>
           ))}
         </div>
       )}
@@ -123,8 +123,10 @@ function WalletPill({ solid }: { solid: boolean }) {
 /** "Launch App →" button. Dark on light backgrounds, white on dark ones. */
 export function LaunchButton({ dark, className = "" }: { dark?: boolean; className?: string }) {
   return (
-    <Link
+    <a
       href="/swap"
+      target="_blank"
+      rel="noreferrer"
       className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[16px] font-bold transition-colors ${
         dark ? "bg-[#151619] text-white hover:bg-black" : "bg-white text-[#151619] hover:bg-zinc-200"
       } ${className}`}
@@ -133,6 +135,6 @@ export function LaunchButton({ dark, className = "" }: { dark?: boolean; classNa
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden className="ml-10 transition-transform group-hover:translate-x-0.5">
         <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </Link>
+    </a>
   );
 }

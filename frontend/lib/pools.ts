@@ -9,9 +9,9 @@ interface PoolDef {
 }
 
 /**
- * Pairs we can quote. There is no fillable pool on Sepolia yet, so each pair uses fixed
- * reserves. Liquid pairs on the swap screen ignore these and pin inventory to the live
- * mainnet price. Other pairs still use this table.
+ * Fallback inventory for pairs that are not priced from mainnet. Demo WETH → USDC fills on
+ * SepoliaSwapPool; the swap screen reads that pool's real balances. Liquid pairs pin
+ * inventory to the live mainnet price and skip this table.
  */
 const POOLS: PoolDef[] = [{ a: "WETH", b: "USDC", reserveA: 1_000n * 10n ** 18n, reserveB: 27_000_000n * 10n ** 6n }];
 

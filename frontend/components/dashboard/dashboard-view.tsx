@@ -35,7 +35,7 @@ export function DashboardView() {
       <div className="panel mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-4 py-3 text-sm text-fg-2">
         <span className="rounded-md bg-surface-3 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-fg">Replay</span>
         <span>
-          No swaps on-chain yet. Each trade is priced by the deployed fee contract (
+          A replay, separate from live fills. Each trade is priced by the deployed fee contract (
           <a
             className="text-fg hover:underline"
             href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}#code`}
@@ -44,8 +44,17 @@ export function DashboardView() {
           >
             {shortAddr(SEPOLIA.contracts.CompetitiveFeeExtruction)}
           </a>
-          ) via <code className="text-fg">eth_call</code>, 30 s after the competitor curve was posted. Live pool events
-          replace this once swaps land.
+          ) via <code className="text-fg">eth_call</code>, 30 s after the competitor curve was posted. Demo WETH → USDC
+          can fill on{" "}
+          <a
+            className="text-fg hover:underline"
+            href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.SepoliaSwapPool}#code`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            SepoliaSwapPool
+          </a>
+          ; those swaps are not in this chart.
         </span>
       </div>
 

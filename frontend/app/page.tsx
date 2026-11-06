@@ -70,7 +70,7 @@ export default function LandingPage() {
       <LandingHeader />
 
       {/* ───────── Hero: pitch on the left, live swap card on the right ───────── */}
-      <section className="relative overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
+      <section id="swap" className="relative scroll-mt-14 overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
         <HeroBars />
         <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-24 pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16 lg:pt-28 lg:pb-24">
           <div>
@@ -109,17 +109,17 @@ export default function LandingPage() {
       <QuoteTicker />
 
       {/* ───────── How it works ───────── */}
-      <section className="bg-white">
+      <section id="how" className="scroll-mt-14 bg-white">
         <div className={`${CONTAINER} ${SECTION_Y}`}>
           <FeeDiagram />
         </div>
       </section>
 
       {/* ───────── Why it wins: sticky panel + live comparison ───────── */}
-      <section className="mx-auto grid w-full max-w-[1600px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
+      <section id="market" className="mx-auto grid w-full max-w-[1600px] scroll-mt-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
         <div className="hidden lg:block">
           <div className="sticky top-14 flex h-[calc(100vh-56px)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
-            <Eyebrow>Why it wins</Eyebrow>
+            <Eyebrow>Markets</Eyebrow>
             <h2 className="-mt-12 text-[72px] leading-none font-medium tracking-[-0.035em]">A fee that&apos;s never too high…</h2>
             <h2 className="text-[72px] leading-none font-medium tracking-[-0.035em]">…and never too low.</h2>
           </div>
@@ -127,7 +127,7 @@ export default function LandingPage() {
 
         <div className="px-5 py-24 sm:px-10 lg:py-32 lg:pr-16 lg:pl-20">
           <div className="lg:hidden">
-            <Eyebrow>Why it wins</Eyebrow>
+            <Eyebrow>Markets</Eyebrow>
             <h2 className={`mt-4 ${H2}`}>A fee that&apos;s never too high, and never too low.</h2>
           </div>
 
@@ -196,7 +196,7 @@ export default function LandingPage() {
       </section>
 
       {/* ───────── Audiences ───────── */}
-      <section className="bg-white">
+      <section id="dashboard" className="scroll-mt-14 bg-white">
         <div className={`${CONTAINER} ${SECTION_Y}`}>
           <AudienceToggle />
         </div>
@@ -217,7 +217,7 @@ export default function LandingPage() {
       </section>
 
       {/* ───────── FAQ ───────── */}
-      <section className="bg-white">
+      <section id="about" className="scroll-mt-14 bg-white">
         <div className={`${CONTAINER} ${SECTION_Y}`}>
           <Faq />
         </div>

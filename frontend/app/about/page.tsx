@@ -51,10 +51,14 @@ const SURFACES = [
 ];
 
 const CONTRACTS = [
+  { name: "GivenQuotePreview", note: "Sets the fee from a mainnet venue quote", address: SEPOLIA.contracts.GivenQuotePreview },
+  { name: "SepoliaSwapPool", note: "Fills demo WETH → USDC", address: SEPOLIA.contracts.SepoliaSwapPool },
+  { name: "Demo WETH", note: "Mintable token behind the WETH row", address: SEPOLIA.contracts.DemoWETH },
+  { name: "Demo USDC", note: "Mintable token behind the USDC row", address: SEPOLIA.contracts.DemoUSDC },
   { name: "VenueReader", note: "Live Uniswap v3 quotes", address: SEPOLIA.contracts.VenueReader },
   { name: "CompetitiveFeeExtruction", note: "Fee opcode on the live v3 reader", address: SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader },
-  { name: "QuoteOracle", note: "CRE consumer, live curves", address: SEPOLIA.contracts.QuoteOracle },
-  { name: "MockQuoteOracle", note: "Demo price control", address: SEPOLIA.contracts.MockQuoteOracle },
+  { name: "QuoteOracle", note: "CRE consumer, curves shown on Market", address: SEPOLIA.contracts.QuoteOracle },
+  { name: "MockQuoteOracle", note: "Curve used by the dashboard replay", address: SEPOLIA.contracts.MockQuoteOracle },
 ];
 
 const TEAM = [
@@ -191,7 +195,7 @@ export default function AboutPage() {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-sm text-fg-2">All three are verified on Etherscan.</p>
+          <p className="mt-3 text-sm text-fg-2">Each address opens the contract on Etherscan.</p>
         </section>
 
         {/* Team + credit */}
