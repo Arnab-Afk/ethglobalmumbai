@@ -40,7 +40,25 @@ function bookDepth(symbol: string): bigint {
   return symbol === "USDC" || symbol === "USDT" || symbol === "DAI" || symbol === "EURC" ? 1_000_000n : 1_000n;
 }
 
+/** True for the one pair SepoliaSwapPool can fill (either direction; only WETH → USDC beats the venue). */
+export function isSwapPair(symbolIn: string, symbolOut: string): boolean {
+  return (symbolIn === "WETH" && symbolOut === "USDC") || (symbolIn === "USDC" && symbolOut === "WETH");
+}
+
+/** SepoliaSwapPool's real balances: the reserves its quote / swap use. Read fresh every quote. */
+async function poolInventory(symbolIn: string): Promise<PoolSide> {
+  const { DemoWETH, DemoUSDC, SepoliaSwapPool } = SEPOLIA.contracts;
+  const [weth, usdc] = await Promise.all(
+    [DemoWETH, DemoUSDC].map((address) =>
+      client.readContract({ address, abi: erc20Abi, functionName: "balanceOf", args: [SepoliaSwapPool] }),
+    ),
+  );
+  return symbolIn === "WETH" ? { reserveIn: weth, reserveOut: usdc } : { reserveIn: usdc, reserveOut: weth };
+}
+
 async function inventory(symbolIn: string, symbolOut: string): Promise<PoolSide> {
+  // The swap pair prices against the pool's real balances: a pin drifts from the fill once mainnet moves.
+  if (isSwapPair(symbolIn, symbolOut)) return poolInventory(symbolIn);
   // One book per direction. A constant-product pin that beats selling WETH cannot also
   // beat selling USDC, so the reverse side gets its own 0.40% cushion.
   const key = `${symbolIn}/${symbolOut}`;

@@ -15,5 +15,12 @@ export const SEPOLIA = {
     VenueReader: "0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F",
     /** CompetitiveFee.compute for a quote passed in (mainnet v3 output). */
     GivenQuotePreview: "0xbF488B884e7E84a6F87109FC985BbC821EF6393f",
+    /** Sepolia swap demo (docs/team/sepolia-swap.md): mintable demo tokens behind the WETH / USDC rows. */
+    DemoWETH: "0xDb30012EBB4190C6aB2657283766531DA76a5475",
+    DemoUSDC: "0xFD0b2B0B9d44308F396f6aeb6E3eD36893a67b42",
+    /** MockQuoteOracle holding the pool's WETH → USDC curve, written from mainnet Uniswap v3. */
+    SepoliaSwapOracle: "0xEfe745de339040E6182dcCb745f3A7ED7150C5DD",
+    /** DevnetCompetitivePool on dWETH / dUSDC: the pool the confirm button swaps against. */
+    SepoliaSwapPool: "0xE1Fde020143A73d0B0a9E8ba91E3ecD01dCb14EF",
   } satisfies Record<string, Address>,
 } as const;
