@@ -14,7 +14,8 @@ Public resources (start now):
 - Alt mempool site: https://www.altmempool.wtf/
 - Alt mempool docs: https://docs.altmempool.wtf/
 - Public devnet endpoints + faucet: https://docs.altmempool.wtf/guides/devnet/
-- Explorer: https://explorer.altmempool.wtf/
+- Explorer we use: https://eip8141.arnabbhowmik.in/
+- RPC we use: https://eip8141-rpc.arnabbhowmik.in/rpc (`eth_sendFrameTransaction`, chain 1337)
 - Workshop quickstart: https://github.com/forshtat/mempool-workshop
 - Sidecar: https://github.com/forshtat/mempool-workshop-sidecar
 - ethrex eip8141-tracer: https://github.com/forshtat/ethrex/tree/eip8141-tracer
@@ -36,7 +37,8 @@ ANON_RPC_NETWORK=   # from booth or network guide
 ANON_RPC_NOTES=
 FRAME_DEVNET_RPC=
 FRAME_FAUCET_URL=
-FRAME_EXPLORER=https://explorer.altmempool.wtf/
+FRAME_DEVNET_RPC=https://eip8141-rpc.arnabbhowmik.in/rpc
+FRAME_EXPLORER=https://eip8141.arnabbhowmik.in/
 ```
 
 ## Integration sketch for our AMM

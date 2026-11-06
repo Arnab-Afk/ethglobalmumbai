@@ -7,6 +7,10 @@
     "MockQuoteOracle": "0x6F036c93B907099c0623b7312ED2AaFebB39A539",
     "QuoteOracle": "0xe39D6dE0689581C2e681379C206AA3492Dfd73C0",
     "CompetitiveFeeExtruction": "0x23ED7de99DF648f8164c9Ef3bD0657059f6E2187",
+    "CompetitiveFeeExtructionVenueReader": "0xC0a28A08cBfB6Eb93cd36752c7B856741E235628",
+    "CompetitiveFeeHook": "0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080",
+    "VenueReader": "0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F",
+    "TradePreview": "0x318589f99F1b560230340C20e2649751B4be098F",
     "KeystoneForwarderMock": "0x15fC6ae953E024d975e77382eEeC56A9101f9F88",
     "KeystoneForwarderProd": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
     "AquaRegistry": "0x1111113ccf1426a8e30e2bff5e005d929bf6a90a",
@@ -14,6 +18,7 @@
   },
   "program": {
     "competitiveExtruction": "0x201423ed7de99df648f8164c9ef3bd0657059f6e2187",
+    "competitiveExtructionVenueReader": "0x2014c0a28a08cbfb6eb93cd36752c7b856741e235628",
     "note": "SwapVM bytecode: opcode 32 (Extruction) + argsLen 20 + target address"
   },
   "demoCurve": {
@@ -27,7 +32,13 @@
     "MockQuoteOracle": "https://sepolia.etherscan.io/tx/0x99071ed2504004975cc2f4de219361cfeddce04f3fa8b0bfb58e62795d22af90",
     "QuoteOracle": "https://sepolia.etherscan.io/tx/0x19b73309b328508b08517a5b60196f75d2a4e55d29f111d4abfdefd835d9db28",
     "CompetitiveFeeExtruction": "https://sepolia.etherscan.io/tx/0x641c6aeba3e561d89d1df380653b776b73ebde4306951db1a2cfe4ffbf2eac4f",
-    "setCurve": "https://sepolia.etherscan.io/tx/0x64cb8efa5465b9e5f148e1da6c02ac25f3521920f1471186b45a6c1fa610b1e2"
+    "setCurve": "https://sepolia.etherscan.io/tx/0x64cb8efa5465b9e5f148e1da6c02ac25f3521920f1471186b45a6c1fa610b1e2",
+    "VenueReader": "https://sepolia.etherscan.io/tx/0x0e517d570e9d20919f1c084c1403023fe10b8d1ec2b6e072025ee6a6d85b9e0f",
+    "VenueReaderSetV3": "https://sepolia.etherscan.io/tx/0xda36c4392b3a8e6496b17b4bb632e6c5a895e56371ca04ceaebfcc72331c894f",
+    "TradePreview": "https://sepolia.etherscan.io/tx/0x241440c575f279ee603492a5af68ff8d4e222ef4ec6b02f4141da28425c3acf2",
+    "CompetitiveFeeHook": "https://sepolia.etherscan.io/tx/0x04d16eb7b7ca01f7c25d754921aa19f24bb30e4ea17bc8faf5dfa1b0742152a5",
+    "CompetitiveFeeHookInitialize": "https://sepolia.etherscan.io/tx/0x0e55ba23a95f1d58b16ba0bbe59e976bcc3e91037753e3eb64bd323145a47293",
+    "CompetitiveFeeExtructionVenueReader": "https://sepolia.etherscan.io/tx/0x08e9c266787e963900db4cbbf13572bca08e0db7da1c6be3534c39c81d7bf656"
   },
   "verified": true,
   "etherscan": {
@@ -37,8 +48,9 @@
   },
   "notes": [
     "QuoteOracle trusts CRE MockKeystoneForwarder — use with `cre workflow simulate --broadcast`. Switch to KEYSTONE_FORWARDER_PROD via setForwarder for live CRE.",
-    "CompetitiveFeeExtruction reads MockQuoteOracle (demo price control). Point a new Extruction at QuoteOracle when CRE writes live curves.",
+    "CompetitiveFeeExtruction reads MockQuoteOracle (demo price control). CompetitiveFeeExtructionVenueReader reads VenueReader.",
     "Aqua registry/router addresses are canonical vanity addresses (same on all Aqua chains). Wire strategy on a mainnet/Base Anvil fork — not Sepolia.",
-    "Deployer is low on Sepolia ETH after OOG retries — top up before more deploys (~0.015 ETH left)."
+    "VenueReader reads Sepolia Uniswap v3 WETH/USDC pools at fees 100, 500, 3000, and 10000. MockQuoteOracle is the fallback when every pool returns 0. CompetitiveFeeHook is the beforeSwap-only hook on the dynamic-fee USDC/WETH pool (tick spacing 60), initialized at the 0.05% v3 price.",
+    "TradePreview runs VenueReader through fee-core for a demo inventory. It does not hold tokens."
   ]
 }

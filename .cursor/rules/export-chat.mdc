@@ -1,0 +1,15 @@
+---
+description: After a build finishes, export the chat to a text file outside the git repo
+alwaysApply: true
+---
+
+# Export the chat after a build
+
+When a build or implementation task is finished, before the final reply, write a plain-text export of the conversation.
+
+- Path: `C:\Users\arnab\chat-exports\ethglobalmumbai-YYYY-MM-DD.txt`
+- If that file already exists for the same day, add a short suffix (`-2`, `-3`) instead of overwriting.
+- Include user requests and the assistant's replies. Leave out tool traces.
+- Redact `.env` values and private keys. Addresses and transaction hashes stay.
+- Never put this file inside the git repo, and do not commit it.
+- Skip the export when the turn is only a question and no build was finished.

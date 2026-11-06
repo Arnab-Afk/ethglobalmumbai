@@ -14,7 +14,7 @@ Inspired by PropellerHeads' Fynd AMM. **All code in this repo is written fresh d
 
 ## Mentor feedback and the path we are locking
 
-The fee engine already works. A real frame swap on our EIP-8141 devnet beat the best venue: [tx `0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59) paid **29512.45** against a competitor quote of **29500**. The competitor price on that trade came from `MockQuoteOracle`. The next work is to replace that mock with real on-chain reads and add a slippage guard. We are not rebuilding the fee math.
+The fee engine already works. A real frame swap on our EIP-8141 devnet beat the best venue: [tx `0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59) paid **29512.45** against a competitor quote of **29500**. The competitor price on that trade came from `MockQuoteOracle`. Sepolia now reads Uniswap v3 inside the quote, and the devnet pool reverts when it cannot beat the live price. The fee math is unchanged.
 
 ### What we use
 
@@ -32,14 +32,14 @@ The fee engine already works. A real frame swap on our EIP-8141 devnet beat the 
 | EIP-8141 frame swap (`packages/private-quoting`) | Working prototype. The tx above filled against the **mock** oracle. |
 | Client SDK + Sepolia dashboard | `packages/sdk`, `apps/demo` (quote view). |
 | CRE aggregator | Local simulator writes a curve. Live DON deploy is optional for the prototype. |
-| Real Uniswap reads inside the swap | **Not built yet.** This is the next code change. |
+| Real Uniswap reads inside the swap | **Sepolia v3 pools, live.** `VenueReader` `0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F` reads the four WETH/USDC fee tiers from pool storage. `TradePreview` `0x318589f99F1b560230340C20e2649751B4be098F` runs that quote through fee-core. v4 hook `0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080` is initialized on a dynamic-fee WETH/USDC pool. The 8141 devnet still falls back to `MockQuoteOracle`. |
 
-### Locked plan (next few hours)
+### Locked plan
 
-1. **Hour 1.** Add a `VenueReader` that reads Uniswap pool reserves or the v4/v3 quoter on-chain and returns `bestOut`. Keep `MockQuoteOracle` as the fallback on the EIP-8141 devnet, which has no real Uniswap.
-2. **Hour 1–2.** Add `minOut` and `deadline` to `swap()`, plus a live recheck that reverts when we cannot beat `bestOut` or when output is below `minOut`. One test where the price moves and the trade reverts.
-3. **Hour 2–3.** Deploy that reader + pool on **Sepolia** (Uniswap v4 is live there) for the “real price” proof. Keep the 8141 devnet for the frame-transaction proof. Two transaction hashes, two stories.
-4. **Hour 3–4.** A small UI or CLI that shows competitor price, our price, and who won, plus the mempool-prediction script as a bonus slide, not as core protocol.
+1. **VenueReader.** Reads Uniswap v3 pool state on-chain and returns `bestOut`. `MockQuoteOracle` stays the fallback for the EIP-8141 devnet, which has no Uniswap. Deployed on Sepolia in [tx `0x0e51…9e0f`](https://sepolia.etherscan.io/tx/0x0e517d570e9d20919f1c084c1403023fe10b8d1ec2b6e072025ee6a6d85b9e0f). Pools registered in [tx `0xda36…894f`](https://sepolia.etherscan.io/tx/0xda36c4392b3a8e6496b17b4bb632e6c5a895e56371ca04ceaebfcc72331c894f).
+2. **Slippage revert.** `swap(tokenIn, amountIn, minOut, deadline)` reverts on `Expired`, `CannotBeatVenue`, or `InsufficientOutput`. A 3-arg `swap` still works and uses `block.timestamp` as the deadline. Covered by `DevnetCompetitivePool` tests, including a price move that reverts.
+3. **Sepolia price proof.** For 0.1 WETH the reader returned **2,617.147135 USDC**, the same integer as Uniswap's QuoterV2 on the best WETH/USDC tier. `TradePreview` (demo inventory 1000 WETH / 27,000,000 USDC) pays **2,672.735399 USDC** at the 1% fee cap, so we win. Deployed in [tx `0x2414…acf2`](https://sepolia.etherscan.io/tx/0x241440c575f279ee603492a5af68ff8d4e222ef4ec6b02f4141da28425c3acf2). The 8141 frame proof uses our self-hosted node at `https://eip8141-rpc.arnabbhowmik.in/rpc` (chain 1337, explorer https://eip8141.arnabbhowmik.in/). Frame txs are `eth_sendFrameTransaction`. The v4 hook reads `StateView` for the dynamic-fee pool initialized in [tx `0x0e55…7293`](https://sepolia.etherscan.io/tx/0x0e55ba23a95f1d58b16ba0bbe59e976bcc3e91037753e3eb64bd323145a47293).
+4. **CLI.** `node scripts/show-winner.mjs <TradePreview> [amountEth]` prints competitor output, our output, and the winner. `node scripts/mempool-preview.mjs <TradePreview>` is the mempool slide only. It does not set the fee.
 
 ## Documentation map
 

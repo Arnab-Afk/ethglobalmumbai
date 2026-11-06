@@ -10,17 +10,20 @@
 - npm: `@anon-rpc/browser-harness`, `@anon-rpc/browser-extension-harness`
 - Prize: https://ethglobal.com/events/mumbai/prizes/ethereum-foundation
 
-## Frame / EIP-8141 alt-mempool (public demo devnet)
+## Frame / EIP-8141 (self-hosted devnet)
+
+The public forshtat gateway is down. Frame txs and normal txs both go to our node.
+
 | | |
 |---|---|
-| **Gateway (use this for everything)** | `https://altmempoolgateway.forshtat.com/rpc` (alt-mempool `eth_sendFrameTransaction`, canonical `eth_sendRawTransaction`, `eth_*` reads, faucet). Source: mempool-workshop `workshop.config.json5` |
-| Miner / execution (don't call directly) | `https://altmempool.forshtat.com` |
+| **RPC (use this for everything)** | `https://eip8141-rpc.arnabbhowmik.in/rpc` |
+| Frame submission | `eth_sendFrameTransaction` |
+| Normal transactions | `eth_sendRawTransaction` on the same URL |
 | Chain ID | `1337` |
 | Frame-tx codec | npm `@forshtat/hegota-support@0.0.1`, profile `ethrex-eip8141-tracer` |
-| Explorer | https://explorer.altmempool.wtf |
-| Docs | https://docs.altmempool.wtf/guides/devnet/ |
+| Explorer | https://eip8141.arnabbhowmik.in/ |
+| Public devnet (not in use) | `https://altmempoolgateway.forshtat.com/rpc`, explorer https://explorer.altmempool.wtf |
 | Workshop | https://github.com/forshtat/mempool-workshop |
-| Sidecar | https://github.com/forshtat/mempool-workshop-sidecar |
 
 Funding (corrected 2026-11-06): there **is** a faucet, the `skandha_explorer_faucet` RPC method or the **Faucet** button in the explorer (1 ETH, once per address per hour). It was empty on Nov 6; ask the EF booth. **Do not use the shared genesis key**: the workshop's AGENTS.md forbids it. Transfers to new accounts need a non-zero state-gas limit.
 
