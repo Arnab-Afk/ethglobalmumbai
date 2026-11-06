@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadError } from "./read-error";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
@@ -272,7 +273,7 @@ export function QuoteCard() {
       </div>
 
       {state.kind === "error" && (
-        <p className="mt-3 rounded-2xl bg-lose/10 px-4 py-3 text-[13px] text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>
+        <ReadError message={state.message} onRetry={runQuote} />
       )}
 
       {quote && shownPool && (

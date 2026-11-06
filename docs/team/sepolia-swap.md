@@ -12,7 +12,7 @@ Sepolia's real WETH (`0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14`) and USDC (`0x
 
 Deploy fresh demo tokens. Keep the symbols `WETH` and `USDC` in the UI so `frontend/lib/mainnet.ts` still reads mainnet. Only the Sepolia addresses change.
 
-One pool has one book. A book pinned to beat selling WETH cannot also beat selling USDC. The first swap is **WETH → USDC, amount 0.1**. The reverse reverts with `CannotBeatVenue`. That is expected.
+One pool has one book. A book pinned to beat selling WETH cannot also beat selling USDC. The first swap is **WETH → USDC, amount 0.1**. The reverse has no curve (`bestOut` is 0), so the pool does not revert: it fills USDC → WETH at the 0.30% fallback fee. That is why the button only enables WETH → USDC.
 
 ## Do not
 
@@ -52,7 +52,7 @@ Copy the shape of `src/cli/deploy.ts`. Change only what is listed here.
    - oracle = the new MockQuoteOracle
    - config = feeFloor `500`, feeCap `10000`, fallbackFee `3000`, undercutBps `1`, maxQuoteAge `3600`
 6. Gas for every create and every mint: `8000000`. A `1000000` gas limit ran out of gas on the devnet mint. Pass `--gas-limit` before `--create` if you use `cast send`.
-7. Build the init code the same way `deploy.ts` does: `artifact(name)` plus `encodeDeployData`. Run the script from `packages/private-quoting` so the Solidity artifacts resolve.
+7. Build the init code the same way `deploy.ts` does: `artifact(name)` plus `encodeDeployData`. Run the script from `packages/private-quoting` so the Solidity artifacts resolve. Run `npm run build:contracts` first: `contracts/out` is git-ignored, and a stale copy without the 4-argument `swap` makes the swap revert with empty data.
 
 ### 3. Seed reserves to the same formula the screen uses
 
@@ -111,8 +111,8 @@ The four return values are `amountOut`, `feePips`, `bestOut`, `zeroFeeOut`.
 
 Pass:
 
-- `bestOut` is within a few cents of the mainnet quote for 0.1 WETH (about 22.3 USDC, 6 decimals, so around `22300000`). It must not be near `2600000000` (the dead Sepolia pool).
-- `feePips` is between `500` and `10000`, and it is not `3000` unless you have checked that 3000 is the real competitive fee rather than the fallback. Fallback means the curve is missing or older than `maxQuoteAge`.
+- `bestOut` is within about 10 cents of the mainnet quote (it moves between reads, so compare two reads taken at the same moment) for 0.1 WETH (about 223 USDC, 6 decimals, so around `223000000`). It must not be near `2600000000` (the dead Sepolia pool).
+- `feePips` is between `500` and `10000` (it can sit at the `10000` cap), and it is not `3000` unless you have checked that 3000 is the real competitive fee rather than the fallback. Fallback means the curve is missing or older than `maxQuoteAge`.
 - `amountOut` > `bestOut`.
 
 If this call fails, do not start the button. Fix the curve or the reserves and call `quote` again.
@@ -200,6 +200,12 @@ Open `http://localhost:3000/?sell=WETH&buy=USDC&amount=0.1`.
 
 The token is mintable by anyone. Replace the two addresses with the ones in Saish's PR. Use your own wallet address as `to`. This sends a transaction, so the wallet must be on Sepolia and hold a little ETH for gas.
 
+Etherscan has no Write tab until the contracts are verified. Until then, open the token on Etherscan, click **Add Custom ABI**, paste `[{"type":"function","name":"mint","stateMutability":"nonpayable","inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"outputs":[]}]`, and use the **Custom → Write Contract** tab. `amount` is raw units: `1000000000000000000` is 1 dWETH.
+
+The pool's curve goes stale after `maxQuoteAge` (1 hour) and the fee falls back to 0.30%. Run `npx tsx src/cli/deploy-sepolia.ts --curve-only --send` from `packages/private-quoting` right before testing or recording.
+
+Use Chrome. Brave Shields can block the Nox mixnet, which shows as "Couldn't reach Sepolia" on the swap card.
+
 ```powershell
 cast send <DemoWETH> "mint(address,uint256)" <yourWallet> 1000000000000000000 --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key <your key>
 ```
@@ -217,7 +223,7 @@ One WETH is enough. The test spends 0.1.
 7. After the second receipt, the page shows a Sepolia Etherscan link and the receipt status is success.
 8. On Etherscan, the `Swap` event has `tokenIn` = Demo WETH, `amountIn` = 0.1 WETH, and `amountOut` equal to the **You get** figure within the slippage you selected (default 0.05%).
 9. Your Demo WETH balance dropped by 0.1. Your Demo USDC balance rose by `amountOut`.
-10. Sell USDC for WETH with amount `200`. The button may still say **No pool to fill on Sepolia**. If Saish enabled it and the wallet sends, the pool reverts `CannotBeatVenue`. Record that revert as a pass for this test. Do not file it as a broken WETH → USDC swap.
+10. Sell USDC for WETH with amount `200`. The button may still say **No pool to fill on Sepolia**. The expected result is that the button stays disabled. If it was enabled and the wallet sends, the pool fills at the 0.30% fallback fee instead of reverting. Record which one you saw. Do not file it as a broken WETH → USDC swap.
 
 ### Failures to send back to Saish, unchanged
 

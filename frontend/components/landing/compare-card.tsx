@@ -15,14 +15,24 @@ const usd = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2,
 export function CompareCard() {
   const [trades, setTrades] = useState<ReplayTrade[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [tab, setTab] = useState(1);
 
   useEffect(() => {
+    let live = true;
     priceTrades(SIZES).then(
-      (r) => setTrades(r.trades),
-      () => setFailed(true),
+      (r) => live && (setTrades(r.trades), setFailed(false)),
+      () => {
+        // The private connection can need a moment to start: try again shortly.
+        if (!live) return;
+        setFailed(true);
+        setTimeout(() => live && setAttempt((a) => a + 1), 6_000);
+      },
     );
-  }, []);
+    return () => {
+      live = false;
+    };
+  }, [attempt]);
 
   const t = trades?.[tab];
   const rows = t
@@ -89,7 +99,7 @@ export function CompareCard() {
           ) : (
             <tr>
               <td colSpan={4} className="py-10 text-center text-[#8A847E]">
-                {failed ? "Couldn't reach Sepolia." : "Pricing on Sepolia…"}
+                {failed ? "Couldn't reach Sepolia, retrying…" : "Pricing on Sepolia…"}
               </td>
             </tr>
           )}
