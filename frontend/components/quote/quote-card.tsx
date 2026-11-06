@@ -3,19 +3,20 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
-import { fmtAge, fmtAmount, fmtSmart } from "@/lib/format";
+import { fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
 import { isMainnetPair, mainnetClient } from "@/lib/mainnet";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
-import { PriceCard } from "./price-card";
 import { QuoteDetails } from "./quote-details";
-import { SlippageRow } from "./slippage-row";
+import { RefreshRing } from "./refresh-ring";
+import { DEFAULT_SLIPPAGE_BPS, SwapSettings } from "./slippage-row";
 import { SwapReview } from "./swap-review";
 import { VenueComparison } from "./venue-comparison";
-import { TokenPicker } from "./token-picker";
 import { TokenButton } from "./token-pill";
+import { TokenPicker } from "./token-picker";
 import { useBalances } from "../wallet/use-balances";
+import { useWallet } from "../wallet/wallet-provider";
 
 const REFRESH_MS = 12_000; // ring length; the quote itself re-runs on each new block
 const DEBOUNCE_MS = 350;
@@ -50,7 +51,7 @@ export function QuoteCard() {
     return a && /^\d*\.?\d*$/.test(a) ? a : DEFAULT_AMOUNT;
   });
   const [picking, setPicking] = useState<"sell" | "buy" | null>(null);
-  const [slippageBps, setSlippageBps] = useState(5); // 0.05%
+  const [slippageBps, setSlippageBps] = useState(DEFAULT_SLIPPAGE_BPS);
   const [state, setState] = useState<State>({ kind: "idle" });
   const [config, setConfig] = useState<FeeConfig | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -58,6 +59,7 @@ export function QuoteCard() {
   const reqId = useRef(0);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
+  const { address, onSepolia, connecting, connect, switchToSepolia } = useWallet();
   const balances = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
@@ -146,16 +148,17 @@ export function QuoteCard() {
   const quote = pool && state.kind !== "idle" ? (state.kind === "ok" ? state.quote : state.prev) : undefined;
   const loading = state.kind === "loading";
   const hasBest = !!quote && quote.bestOut > 0n;
-  const edgePct = hasBest ? (Number(quote.ourOut - quote.bestOut) / Number(quote.bestOut)) * 100 : 0;
 
   // Dollar values only where one side is a $1 stablecoin.
   const sellUsd = !quote
     ? null
     : sell.usd
       ? fmtAmount(quote.amountIn, sell.decimals, 2)
-      : buy.usd && hasBest
-        ? fmtAmount(quote.bestOut, buy.decimals, 2)
-        : null;
+      : buy.usd
+        ? fmtAmount(quote.ourOut, buy.decimals, 2)
+        : hasBest
+          ? fmtAmount(quote.bestOut, buy.decimals, 2)
+          : null;
   const buyUsd = !quote
     ? null
     : buy.usd
@@ -168,165 +171,153 @@ export function QuoteCard() {
   const quoted = quote && pool && amountIn !== null ? quote : undefined;
   const shownPool = quoted?.reserves ?? pool;
 
-  if (reviewing && quoted && shownPool) {
-    return (
-      <SwapReview
-        quote={quoted}
-        sell={sell}
-        buy={buy}
-        amount={amount}
-        pool={shownPool}
-        config={config}
-        slippageBps={slippageBps}
-        onBack={() => setReviewing(false)}
-      />
-    );
-  }
-
-  type Cta = { label: string; onClick?: () => void };
-  const cta: Cta = !pool
-    ? { label: `No pool for ${sell.symbol} → ${buy.symbol} yet` }
+  type Action = { label: string; onClick?: () => void; tone: "primary" | "soft" | "warn" | "off" };
+  const action: Action = !pool
+    ? { label: `No ${sell.symbol} → ${buy.symbol} pool yet`, tone: "off" }
     : amountIn === null
-      ? { label: "Enter amount" }
-      : !quoted
-        ? { label: loading ? "Finding price…" : "Enter amount" }
-        : { label: "Swap", onClick: () => setReviewing(true) };
+      ? { label: "Enter an amount", tone: "off" }
+      : !address
+        ? { label: connecting ? "Connecting…" : "Connect wallet", onClick: connecting ? undefined : connect, tone: "soft" }
+        : !onSepolia
+          ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
+          : !quoted
+            ? { label: loading ? "Checking the best venue…" : "Enter an amount", tone: "off" }
+            : { label: "Review quote", onClick: () => setReviewing(true), tone: "primary" };
+
+  const actionTone = {
+    primary: "bg-white text-black hover:bg-white/90",
+    soft: "bg-white text-black hover:bg-white/90",
+    warn: "bg-[#3a2a14] text-warn hover:bg-[#4a3518]",
+    off: "cursor-not-allowed bg-white/[0.06] text-white/35",
+  }[action.tone];
 
   return (
-    <div className="flex w-full max-w-[470px] flex-col gap-2">
-      {/* Top row */}
-      <div className="flex h-10 items-center justify-between">
-        <FreshnessTab quote={quote} hasPool={!!pool} />
-        <span className="flex h-10 items-center gap-2 panel rounded-lg py-1.5 pl-1.5 pr-3.5 text-base font-medium">
-          <span className="grid size-7 place-items-center rounded-md bg-[#627eea]">
-            <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden>
-              <path d="M5 0 0 8.3l5 3L10 8.3 5 0Zm0 12.3L0 9.3 5 16l5-6.7-5 3Z" fill="#fff" />
-            </svg>
-          </span>
-          Sepolia
-        </span>
+    <div className="w-full max-w-[460px]">
+      <div className="mb-3 flex h-9 items-center justify-between px-1">
+        <span className="text-[15px] font-semibold text-white">Swap</span>
+        <div className="flex items-center gap-1">
+          {quote && pool && <RefreshRing key={refreshKey} durationMs={REFRESH_MS} spinning={loading} />}
+          <SwapSettings bps={slippageBps} onChange={setSlippageBps} />
+        </div>
       </div>
 
-      {/* Sell + Buy, with the flip button sitting in the 8px gap */}
-      <div className="relative flex flex-col gap-2">
-        <div className="panel h-[136px] rounded-lg p-4">
-          <div className="text-base font-medium text-fg-2">Sell</div>
-          <div className="mt-2 flex h-10 items-center gap-3">
+      <div className="rounded-[28px] bg-[#161618] p-1 shadow-[0_30px_80px_rgb(0_0_0/0.45)] ring-1 ring-white/10">
+        <section className="rounded-[22px] px-4 pt-4 pb-5">
+          <label htmlFor="sell-amount" className="text-[14px] font-medium text-white/45">
+            You pay
+          </label>
+          <div className="mt-3 flex items-center gap-3">
             <input
+              id="sell-amount"
               inputMode="decimal"
-              aria-label="Amount to sell"
+              autoComplete="off"
               placeholder="0"
               value={amount}
               onChange={(e) => {
                 const v = e.target.value.replace(",", ".");
                 if (/^\d*\.?\d*$/.test(v)) setAmount(v);
               }}
-              className="tnum h-10 min-w-0 flex-1 bg-transparent text-[32px] font-medium tracking-[-1px] text-fg outline-none placeholder:text-fg"
+              className={`tnum min-w-0 flex-1 bg-transparent font-medium tracking-[-0.04em] text-white outline-none placeholder:text-white/25 ${amountSize(amount)}`}
               suppressHydrationWarning
             />
             <TokenButton token={sell} onClick={() => setPicking("sell")} />
           </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
-            <span>{sellUsd ? `$${sellUsd}` : "-"}</span>
+          <div className="tnum mt-3 flex h-5 items-center justify-between gap-3 text-[13px] text-white/40">
+            <span className="text-[#7aa2ff]">{sellUsd ? `$${sellUsd}` : ""}</span>
             {sellBal !== undefined && (
-              <button
-                type="button"
-                onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
-                className="transition-colors hover:text-fg"
-                title="Use full balance"
-              >
+              <span className="flex items-center gap-2">
                 {fmtSmart(sellBal, sell.decimals)} {sell.symbol}
-              </button>
+                {sellBal > 0n && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
+                    className="rounded-full bg-white/10 px-2 py-0.5 text-[12px] font-semibold text-white/70 transition-colors hover:text-white"
+                  >
+                    Max
+                  </button>
+                )}
+              </span>
             )}
           </div>
+        </section>
+
+        <div className="relative z-10 -my-3.5 flex justify-center">
+          <button
+            type="button"
+            onClick={flip}
+            aria-label="Switch tokens"
+            className="grid size-9 place-items-center rounded-xl border-4 border-[#161618] bg-[#2a2a2e] text-white/80 transition-colors hover:bg-[#34343a] hover:text-white"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+              <path d="M8 3v10M8 13l-3.2-3.2M8 13l3.2-3.2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={flip}
-          aria-label="Switch tokens"
-          className="absolute left-1/2 top-[136px] z-10 grid size-9 -translate-x-1/2 -translate-y-[14px] place-items-center rounded-lg border border-line-hi bg-solid text-fg transition-colors hover:border-accent/60 hover:text-accent-hi"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
-            <path
-              d="M5 2.5v10m0 0L2.5 10M5 12.5 7.5 10M11 13.5v-10m0 0L8.5 6M11 3.5 13.5 6"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        <div className="panel h-[136px] rounded-lg p-4">
-          <div className="text-base font-medium text-fg-2">Buy</div>
-          <div className="mt-2 flex h-10 items-center gap-3">
-            <div
-              className={`tnum min-w-0 flex-1 truncate text-[32px] font-medium leading-10 tracking-[-1px] transition-opacity ${
-                loading ? "opacity-50" : ""
-              }`}
-            >
-              {quote ? fmtSmart(quote.ourOut, buy.decimals, 10) : "0"}
-            </div>
+        <section className="rounded-[22px] bg-white/[0.035] px-4 pt-5 pb-4">
+          <div className="text-[14px] font-medium text-white/45">You receive</div>
+          <div className="mt-3 flex items-center gap-3">
+            <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 8) : "0"} dim={!quote || loading} />
             <TokenButton token={buy} onClick={() => setPicking("buy")} />
           </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
-            <span>
-              {buyUsd ? `$${buyUsd}` : quote ? "" : "-"}
-              {hasBest && (
-                <span className={`${buyUsd ? "ml-1" : ""} ${edgePct >= 0 ? "text-win" : "text-lose"}`} title="vs best competing venue">
-                  ({edgePct >= 0 ? "+" : ""}
-                  {edgePct.toFixed(2)}% vs best venue)
-                </span>
-              )}
-            </span>
+          <div className="tnum mt-3 flex h-5 items-center justify-between gap-3 text-[13px] text-white/40">
+            <span className="text-[#7aa2ff]">{buyUsd ? `$${buyUsd}` : ""}</span>
             {buyBal !== undefined && (
               <span>
                 {fmtSmart(buyBal, buy.decimals)} {buy.symbol}
               </span>
             )}
           </div>
-        </div>
+        </section>
       </div>
 
-      <SlippageRow bps={slippageBps} onChange={setSlippageBps} />
-
-      {/* Swap opens the confirm step. Filling still needs a pool on Sepolia. */}
-      {cta.onClick ? (
-        <button type="button" onClick={cta.onClick} className="btn-primary h-14 w-full rounded-lg text-base font-medium">
-          {cta.label}
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className="panel h-14 w-full cursor-not-allowed rounded-lg text-base font-medium text-muted"
-        >
-          {cta.label}
-        </button>
+      {state.kind === "error" && (
+        <p className="mt-3 rounded-2xl bg-lose/10 px-4 py-3 text-[13px] text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>
       )}
 
-      {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t price this trade: {state.message}</p>}
-
       {quote && shownPool && (
-        <div className="mt-2 flex flex-col gap-2">
-          <PriceCard
+        <>
+          <QuoteDetails
             quote={quote}
+            tokenIn={sell}
             tokenOut={buy}
+            pool={shownPool}
             config={config}
+            slippageBps={slippageBps}
             loading={loading}
-            refreshKey={refreshKey}
-            refreshMs={REFRESH_MS}
           />
           <VenueComparison quote={quote} tokenIn={sell} tokenOut={buy} config={config} />
-          <QuoteDetails quote={quote} tokenIn={sell} tokenOut={buy} pool={shownPool} config={config} slippageBps={slippageBps} />
-        </div>
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={action.onClick}
+        disabled={!action.onClick}
+        className={`mt-3 h-[52px] w-full rounded-2xl text-[16px] font-semibold transition-colors ${actionTone}`}
+      >
+        {action.label}
+      </button>
+
+      {reviewing && quoted && shownPool && (
+        <SwapReview
+          quote={quoted}
+          sell={sell}
+          buy={buy}
+          amount={amount}
+          sellUsd={sellUsd}
+          buyUsd={buyUsd}
+          pool={shownPool}
+          config={config}
+          slippageBps={slippageBps}
+          onClose={() => setReviewing(false)}
+        />
       )}
 
       {picking && (
         <TokenPicker
           other={picking === "sell" ? buy : sell}
+          current={picking === "sell" ? sell : buy}
           onSelect={(t) => choose(picking, t)}
           onClose={() => setPicking(null)}
         />
@@ -335,19 +326,18 @@ export function QuoteCard() {
   );
 }
 
-/** Left tab of the top row: carries the quote's freshness. */
-function FreshnessTab({ quote, hasPool }: { quote?: LiveQuote; hasPool: boolean }) {
-  const age = quote ? quote.blockTime - quote.updatedAt : 0;
-  const label = !hasPool
-    ? "No pool"
-    : !quote
-      ? "Quote"
-      : { live: "Live", stale: `Stale · ${fmtAge(age)}`, none: "No venue curve" }[quote.status];
-  const dot = !quote ? "bg-faint" : { live: "bg-win", stale: "bg-warn", none: "bg-faint" }[quote.status];
+/** Amount text steps down for long numbers instead of truncating digits. */
+function amountSize(text: string) {
+  return text.length <= 7 ? "text-[42px]" : text.length <= 11 ? "text-[32px]" : "text-[24px]";
+}
+
+function ReceiveAmount({ text, dim }: { text: string; dim: boolean }) {
   return (
-    <span className="flex h-10 items-center gap-2 panel rounded-lg pl-3 pr-4 text-base font-medium">
-      <span className={`size-2 rounded-full ${dot}`} />
-      {label}
+    <span
+      className={`tnum min-w-0 flex-1 truncate font-medium tracking-[-0.04em] transition-colors ${amountSize(text)} ${dim ? "text-white/25" : "text-white"}`}
+      title={text}
+    >
+      {text}
     </span>
   );
 }

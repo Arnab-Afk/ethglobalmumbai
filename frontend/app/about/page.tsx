@@ -81,7 +81,7 @@ export default function AboutPage() {
             that exact trade and charges the most it can while still beating it.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <Link href="/" className="btn-primary flex h-11 items-center rounded-lg px-5 text-base font-medium">
+            <Link href="/swap" className="btn-primary flex h-11 items-center rounded-lg px-5 text-base font-medium">
               Get a quote
             </Link>
             <Link href="/dashboard" className="panel flex h-11 items-center rounded-lg px-5 text-base font-medium hover:bg-surface-2">

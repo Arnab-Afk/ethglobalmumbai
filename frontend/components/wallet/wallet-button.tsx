@@ -25,15 +25,15 @@ export function WalletButton() {
           type="button"
           onClick={connect}
           disabled={connecting}
-          className="btn-primary h-9 rounded-lg px-4 text-sm font-medium disabled:opacity-70"
+          className="h-8 rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-ink transition-colors hover:bg-accent-hi disabled:opacity-70"
         >
-          {connecting ? "Connecting…" : "Connect"}
+          {connecting ? "Connecting…" : "Connect wallet"}
         </button>
       ) : !onSepolia ? (
         <button
           type="button"
           onClick={switchToSepolia}
-          className="flex h-9 items-center gap-2 rounded-lg border border-warn/40 bg-warn/10 px-3 text-sm font-medium text-warn"
+          className="flex h-8 items-center gap-2 rounded-full border border-warn/40 bg-warn/10 px-3.5 text-[14px] font-semibold text-warn"
         >
           <span className="size-1.5 rounded-full bg-warn" />
           Switch to Sepolia
@@ -43,7 +43,7 @@ export function WalletButton() {
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex h-9 items-center gap-2 rounded-lg px-2 text-base font-medium transition-colors hover:bg-surface"
+          className="flex h-8 items-center gap-2 rounded-full border border-line-hi pr-3.5 pl-1 text-[14px] font-medium transition-colors hover:bg-surface-2"
         >
           <Avatar address={address} />
           <span className="tnum">{shortAddr(address)}</span>
@@ -51,12 +51,12 @@ export function WalletButton() {
       )}
 
       {open && address && (
-        <div className="panel absolute right-0 top-11 z-40 w-48 rounded-lg bg-panel p-1 text-sm shadow-xl shadow-black/50">
+        <div className="absolute right-0 top-11 z-40 w-52 rounded-2xl border border-line-hi bg-panel p-1.5 text-[14px] shadow-xl shadow-black/50">
           <a
             href={`${SEPOLIA.explorer}/address/${address}`}
             target="_blank"
             rel="noreferrer"
-            className="block rounded-md px-3 py-2 text-fg-2 hover:bg-surface-2 hover:text-fg"
+            className="block rounded-xl px-3 py-2.5 text-fg-2 hover:bg-surface-2 hover:text-fg"
           >
             View on Etherscan ↗
           </a>
@@ -66,7 +66,7 @@ export function WalletButton() {
               disconnect();
               setOpen(false);
             }}
-            className="block w-full rounded-md px-3 py-2 text-left text-fg-2 hover:bg-surface-2 hover:text-fg"
+            className="block w-full rounded-xl px-3 py-2.5 text-left text-fg-2 hover:bg-surface-2 hover:text-fg"
           >
             Disconnect
           </button>
@@ -74,7 +74,7 @@ export function WalletButton() {
       )}
 
       {error && (
-        <p className="panel absolute right-0 top-11 z-40 w-64 rounded-lg bg-panel px-3 py-2 text-sm text-lose shadow-xl shadow-black/50">
+        <p className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-line-hi bg-panel px-3.5 py-2.5 text-[14px] text-lose shadow-xl shadow-black/50">
           {error}
         </p>
       )}

@@ -4,9 +4,9 @@
  * Colour follows the pool, never its rank.
  */
 export const SERIES = [
-  { key: "hairline", label: "Hairline", color: "#e8580f" },
-  { key: "flat30", label: "Flat 30 bp", color: "#4a7fe6" },
-  { key: "flat5", label: "Flat 5 bp", color: "#2a9d80" },
+  { key: "hairline", label: "Hairline", color: "#8572e6" },
+  { key: "flat30", label: "Flat 30 bp", color: "#c4862a" },
+  { key: "flat5", label: "Flat 5 bp", color: "#26967b" },
 ] as const;
 
 export type SeriesKey = (typeof SERIES)[number]["key"];

@@ -1,18 +1,18 @@
 import type { Token } from "@/lib/tokens";
 
-/** Pill button that opens the token picker. */
+/** Token selector pill: icon, symbol, chevron. Opens the token picker. */
 export function TokenButton({ token, onClick }: { token: Token; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={`Select token, current ${token.symbol}`}
-      className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line pl-0.5 pr-2.5 text-base font-medium transition-colors hover:bg-surface"
+      className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#2c2c30] py-1 pr-2.5 pl-1 text-[16px] font-semibold tracking-[-0.02em] text-white transition-colors hover:bg-[#3a3a40]"
     >
-      <TokenIcon token={token} />
+      <TokenIcon token={token} size={28} />
       {token.symbol}
-      <svg width="10" height="10" viewBox="0 0 10 10" className="ml-0.5 text-fg-2" aria-hidden>
-        <path d="M2 3.5h6L5 7 2 3.5Z" fill="currentColor" />
+      <svg width="14" height="14" viewBox="0 0 16 16" className="text-fg-2" aria-hidden>
+        <path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
   );

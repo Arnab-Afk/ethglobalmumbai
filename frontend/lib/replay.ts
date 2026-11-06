@@ -86,31 +86,36 @@ function pool(amountIn: bigint, feePips: number, bestOut: bigint): PoolResult {
 
 export async function runReplay(): Promise<Replay> {
   const t0 = performance.now();
-  const address = SEPOLIA.contracts.CompetitiveFeeExtruction;
+  const { trades, curveTime, evalTime } = await priceTrades(tradeSizes());
 
-  // 1. When was the competitor curve written? (a plain read; the fee will be the stale fallback)
-  const [, , curveTime] = await client.readContract({
-    address,
-    abi,
-    functionName: "previewFeePips",
-    args: [TOKEN_IN, TOKEN_OUT, 10n ** 18n, RESERVE_IN, RESERVE_OUT],
+  const sum = (k: "hairline" | "flat30" | "flat5") => ({
+    revenue: trades.reduce((a, t) => a + t[k].revenue, 0),
+    won: trades.filter((t) => t[k].won).length,
   });
-  if (curveTime === 0n) throw new Error("MockQuoteOracle has no curve for the replay pair");
+  const edges = trades.filter((t) => t.hairline.won && t.bestOut > 0).map((t) => t.hairline.out - t.bestOut);
+
+  return {
+    trades,
+    curveTime,
+    evalTime,
+    totals: { hairline: sum("hairline"), flat30: sum("flat30"), flat5: sum("flat5") },
+    worstEdge: edges.length ? Math.min(...edges) : 0,
+    latencyMs: performance.now() - t0,
+  };
+}
+
+/**
+ * Price trades of the given sizes (WETH) through the deployed fee contract, as of 30 s after the
+ * competitor curve was posted, and compare each against flat 30 bp and 5 bp pools.
+ */
+export async function priceTrades(sizes: number[]): Promise<{ trades: ReplayTrade[]; curveTime: number; evalTime: number }> {
+  // 1. When was the competitor curve written? Shared by every caller on the page.
+  const curveTime = await getCurveTime();
   const evalTime = curveTime + BigInt(QUOTE_DELAY_S);
 
-  // 2. Price every trade as of evalTime, all in one batched request.
-  const sizes = tradeSizes();
-  const quotes = await Promise.all(
-    sizes.map((size) =>
-      client.readContract({
-        address,
-        abi,
-        functionName: "previewFeePips",
-        args: [TOKEN_IN, TOKEN_OUT, toWei(size), RESERVE_IN, RESERVE_OUT],
-        blockOverrides: { time: evalTime },
-      }),
-    ),
-  );
+  // 2. Price every trade as of evalTime. Each size is cached, so components asking for the same
+  //    size share one call, and the rest go out together in one batched request.
+  const quotes = await Promise.all(sizes.map((size) => quoteAt(size, evalTime)));
 
   const trades: ReplayTrade[] = sizes.map((size, i) => {
     const [feePips, bestOut] = quotes[i];
@@ -126,18 +131,45 @@ export async function runReplay(): Promise<Replay> {
     };
   });
 
-  const sum = (k: "hairline" | "flat30" | "flat5") => ({
-    revenue: trades.reduce((a, t) => a + t[k].revenue, 0),
-    won: trades.filter((t) => t[k].won).length,
-  });
-  const edges = trades.filter((t) => t.hairline.won && t.bestOut > 0).map((t) => t.hairline.out - t.bestOut);
+  return { trades, curveTime: Number(curveTime), evalTime: Number(evalTime) };
+}
 
-  return {
-    trades,
-    curveTime: Number(curveTime),
-    evalTime: Number(evalTime),
-    totals: { hairline: sum("hairline"), flat30: sum("flat30"), flat5: sum("flat5") },
-    worstEdge: edges.length ? Math.min(...edges) : 0,
-    latencyMs: performance.now() - t0,
-  };
+// Several landing components price trades at once; the public RPC rate-limits, so share the work.
+const CACHE_MS = 60_000;
+let curveCache: { at: number; value: Promise<bigint> } | undefined;
+const quoteCache = new Map<string, Promise<readonly [number, bigint, bigint]>>();
+
+function getCurveTime(): Promise<bigint> {
+  if (curveCache && Date.now() - curveCache.at < CACHE_MS) return curveCache.value;
+  const value = client
+    .readContract({
+      address: SEPOLIA.contracts.CompetitiveFeeExtruction,
+      abi,
+      functionName: "previewFeePips",
+      args: [TOKEN_IN, TOKEN_OUT, 10n ** 18n, RESERVE_IN, RESERVE_OUT],
+    })
+    .then(([, , t]) => {
+      if (t === 0n) throw new Error("MockQuoteOracle has no curve for the replay pair");
+      return t;
+    });
+  value.catch(() => (curveCache = undefined)); // don't cache failures
+  curveCache = { at: Date.now(), value };
+  return value;
+}
+
+function quoteAt(size: number, evalTime: bigint): Promise<readonly [number, bigint, bigint]> {
+  const key = `${evalTime}:${size}`;
+  let p = quoteCache.get(key);
+  if (!p) {
+    p = client.readContract({
+      address: SEPOLIA.contracts.CompetitiveFeeExtruction,
+      abi,
+      functionName: "previewFeePips",
+      args: [TOKEN_IN, TOKEN_OUT, toWei(size), RESERVE_IN, RESERVE_OUT],
+      blockOverrides: { time: evalTime },
+    });
+    p.catch(() => quoteCache.delete(key)); // retry on the next call if it failed
+    quoteCache.set(key, p);
+  }
+  return p;
 }

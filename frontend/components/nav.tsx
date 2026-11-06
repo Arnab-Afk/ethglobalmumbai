@@ -5,55 +5,63 @@ import { usePathname } from "next/navigation";
 import { WalletButton } from "./wallet/wallet-button";
 
 const LINKS = [
-  { href: "/", label: "Quote", ready: true },
-  { href: "/market", label: "Market", ready: true },
-  { href: "/dashboard", label: "Dashboard", ready: true },
-  { href: "/about", label: "About", ready: true },
+  { href: "/swap", label: "Swap" },
+  { href: "/market", label: "Market" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/about", label: "About" },
 ];
 
+/** App header: wordmark left, links centered, network + wallet on the right. */
 export function Nav() {
   const pathname = usePathname();
 
   return (
-    <header className="grid h-14 grid-cols-[1fr_auto_1fr] items-center px-5">
-      <Link href="/" className="flex items-center gap-2 justify-self-start" aria-label="Hairline home">
-        <Mark />
-        <span className="text-[19px] font-semibold tracking-[-0.03em]">
-          Hair<span className="font-normal text-fg-2">line</span>
-        </span>
-      </Link>
+    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#07070a]/70 backdrop-blur-xl">
+      <div className="relative flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
+        <Link href="/" className="text-[18px] font-semibold tracking-[-0.03em] text-fg" aria-label="Hairline home">
+          Hairline
+        </Link>
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 sm:flex">
+          {LINKS.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex h-8 items-center rounded-xl px-3 text-[15px] font-medium transition-colors ${
+                  active ? "text-fg" : "text-muted hover:text-fg"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-      <nav className="flex h-9 items-center panel rounded-full p-1 text-sm">
-        {LINKS.map((l) =>
-          l.ready ? (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`flex h-7 items-center rounded-full px-3 transition-colors ${
-                pathname === l.href ? "bg-surface-3 font-medium text-fg" : "text-fg-2 hover:text-fg"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ) : (
-            <span key={l.href} title="Coming soon" className="flex h-7 cursor-default items-center px-3 text-faint">
-              {l.label}
-            </span>
-          ),
-        )}
+        <div className="flex items-center gap-2">
+          <span className="hidden h-8 items-center gap-2 rounded-full border border-line-hi px-3 text-[14px] font-medium text-fg-2 md:flex">
+            <span className="size-2 rounded-full bg-accent" aria-hidden />
+            Sepolia
+          </span>
+          <WalletButton />
+        </div>
+      </div>
+
+      {/* Phone: links in a scrollable row under the bar */}
+      <nav className="flex gap-1 overflow-x-auto px-3 pb-2 sm:hidden">
+        {LINKS.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`flex h-8 shrink-0 items-center rounded-full px-3 text-[14px] font-medium ${
+              pathname === l.href ? "bg-surface-3 text-fg" : "text-muted"
+            }`}
+          >
+            {l.label}
+          </Link>
+        ))}
       </nav>
-
-      <WalletButton />
     </header>
-  );
-}
-
-/** Two offset bars: the competitor's price, and ours just above it. */
-function Mark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-      <rect x="2" y="10" width="8" height="10" rx="2" fill="var(--fg-2)" fillOpacity=".55" />
-      <rect x="12" y="2" width="8" height="18" rx="2" fill="var(--accent)" />
-    </svg>
   );
 }
