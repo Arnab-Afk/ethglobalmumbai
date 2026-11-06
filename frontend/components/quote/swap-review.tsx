@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import type { Hex } from "viem";
 import { SEPOLIA } from "@/lib/deployments";
 import { fmtAmount, fmtSmart } from "@/lib/format";
+import { isMintableDemo, mintAmount, mintData } from "@/lib/mint";
 import type { PoolSide } from "@/lib/pools";
 import { pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { allowance, approveData, deadlineIn, poolQuote, simulateSwap, swapData, txUrl, waitForReceipt, type SwapArgs } from "@/lib/swap";
+import { canFillOnSepolia, feeStatusNote, fillFootnote, fillMode, quoteHonestyBanner } from "@/lib/trade";
 import type { Token } from "@/lib/tokens";
+import { StatusBanner } from "./status-banner";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 import { TokenIcon } from "./token-pill";
@@ -37,20 +40,27 @@ export function SwapReview({
   onClose: () => void;
 }) {
   const wallet = useWallet();
-  const balances = useBalances([sell]);
+  const { balances, refresh: refreshBalances } = useBalances([sell]);
   const sellBal = balances[sell.address];
   const minOut = (quote.ourOut * BigInt(10_000 - slippageBps)) / 10_000n;
   const hasBest = quote.bestOut > 0n;
   const edge = quote.ourOut - quote.bestOut;
-  const fallback = quote.status !== "live";
+  const mode = fillMode(sell, buy);
+  const canSwap = canFillOnSepolia(sell, buy);
   const shortBalance = sellBal !== undefined && quote.amountIn > sellBal;
+  const canMint = canSwap && isMintableDemo(sell) && !!wallet.address && wallet.onSepolia;
   const receiveText = fmtSmart(quote.ourOut, buy.decimals, 8);
+  const honesty = quoteHonestyBanner({
+    mode,
+    status: quote.status,
+    maxQuoteAge: config?.maxQuoteAge,
+    ageSeconds: quote.status === "stale" ? quote.blockTime - quote.updatedAt : undefined,
+  });
 
-  const canSwap = sell.symbol === "WETH" && buy.symbol === "USDC" && sell.address === SEPOLIA.contracts.DemoWETH;
   const [step, setStep] = useState<"approve" | "swap" | "done">("approve");
   const [busy, setBusy] = useState<string>();
   const [swapError, setSwapError] = useState<string>();
-  const [txs, setTxs] = useState<{ approve?: Hex; swap?: Hex }>({});
+  const [txs, setTxs] = useState<{ approve?: Hex; swap?: Hex; mint?: Hex }>({});
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -69,6 +79,25 @@ export function SwapReview({
     };
   }, [canSwap, wallet.address, wallet.onSepolia, sell.address, quote.amountIn]);
 
+  async function mint() {
+    if (!wallet.address) return;
+    setSwapError(undefined);
+    setBusy("Mint in wallet…");
+    try {
+      const qty = mintAmount(sell);
+      const hash = await wallet.send({ to: sell.address, data: mintData(wallet.address, qty) });
+      setTxs((t) => ({ ...t, mint: hash }));
+      setBusy("Minting demo tokens…");
+      const r = await waitForReceipt(hash);
+      if (r.status !== "success") throw new Error("Mint reverted");
+      refreshBalances();
+    } catch (e) {
+      setSwapError(friendlyWalletError(e));
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
   async function approve() {
     setSwapError(undefined);
     setBusy("Approve in wallet…");
@@ -80,7 +109,7 @@ export function SwapReview({
       if (r.status !== "success") throw new Error("Approve reverted");
       setStep("swap");
     } catch (e) {
-      setSwapError(e instanceof Error ? e.message : String(e));
+      setSwapError(friendlyWalletError(e));
     } finally {
       setBusy(undefined);
     }
@@ -101,11 +130,11 @@ export function SwapReview({
       if (pq.amountOut < minOut) {
         throw new Error(
           `The pool pays ${fmtSmart(pq.amountOut, buy.decimals)} ${buy.symbol}, below your minimum ${fmtSmart(minOut, buy.decimals)}. ` +
-            "Its competitor curve has drifted from mainnet; refresh it (deploy-sepolia --curve-only) and try again.",
+            "Its competitor curve has drifted from mainnet; refresh the curve and try again.",
         );
       }
       const revert = await simulateSwap(wallet.address, args);
-      if (revert) throw new Error(`The swap would revert: ${revert}`);
+      if (revert) throw new Error(friendlyRevert(revert));
       setBusy("Swap in wallet…");
       const hash = await wallet.send({ to: SEPOLIA.contracts.SepoliaSwapPool, data: swapData(args) });
       setTxs((t) => ({ ...t, swap: hash }));
@@ -113,11 +142,11 @@ export function SwapReview({
       const r = await waitForReceipt(hash);
       if (r.status !== "success") {
         const why = await simulateSwap(wallet.address, args, r.blockNumber - 1n);
-        throw new Error(`Swap reverted${why ? `: ${why}` : ""}`);
+        throw new Error(why ? friendlyRevert(why) : "Swap reverted on-chain");
       }
       setStep("done");
     } catch (e) {
-      setSwapError(e instanceof Error ? e.message : String(e));
+      setSwapError(friendlyWalletError(e));
     } finally {
       setBusy(undefined);
     }
@@ -128,7 +157,7 @@ export function SwapReview({
       "Fee",
       <>
         {pipsToPercent(quote.feePips)}
-        <span className="text-[#8A847E]"> · {fallback ? "fallback, no competitor quote" : "set last for this trade"}</span>
+        <span className="text-[#8A847E]"> · {feeStatusNote(quote.status, hasBest)}</span>
       </>,
     ],
     [
@@ -147,7 +176,14 @@ export function SwapReview({
     ["Max slippage", `${slippageBps / 100}%`],
   ];
   if (config) rows.push(["Fee range", `${pipsToPercent(config.feeFloor)} - ${pipsToPercent(config.feeCap)}`]);
-  rows.push(["Pool", `${fmtAmount(pool.reserveIn, sell.decimals, 0)} ${sell.symbol} / ${fmtAmount(pool.reserveOut, buy.decimals, 0)} ${buy.symbol}`]);
+  rows.push([
+    "Pool",
+    canSwap
+      ? `${fmtAmount(pool.reserveIn, sell.decimals, 0)} ${sell.symbol} / ${fmtAmount(pool.reserveOut, buy.decimals, 0)} ${buy.symbol}`
+      : mode === "base-bid"
+        ? "AXIS/USDC on Base (quote only)"
+        : "Quote book · no Sepolia fill",
+  ]);
 
   type Confirm = { label: string; onClick?: () => void; tone: "primary" | "soft" | "off" };
   let confirm: Confirm;
@@ -159,16 +195,21 @@ export function SwapReview({
       onClick: wallet.switching ? undefined : () => void wallet.switchToSepolia(),
       tone: "soft",
     };
-  } else if (shortBalance) {
-    confirm = { label: `Insufficient ${sell.symbol}`, tone: "off" };
   } else if (!canSwap) {
-    confirm = { label: "No pool to fill on Sepolia", tone: "off" };
+    confirm = {
+      label: mode === "base-bid" ? "Base bid · no fill in this app" : "Quote only · no Sepolia fill",
+      tone: "off",
+    };
+  } else if (shortBalance) {
+    confirm = canMint
+      ? { label: `Mint demo ${sell.symbol}`, onClick: mint, tone: "soft" }
+      : { label: `Insufficient ${sell.symbol}`, tone: "off" };
   } else if (busy) {
     confirm = { label: busy, tone: "off" };
   } else if (step === "approve") {
     confirm = { label: "Approve", onClick: approve, tone: "primary" };
   } else if (step === "swap") {
-    confirm = { label: "Swap", onClick: swap, tone: "primary" };
+    confirm = { label: "Swap on Sepolia", onClick: swap, tone: "primary" };
   } else {
     confirm = { label: "Swapped", tone: "off" };
   }
@@ -184,7 +225,7 @@ export function SwapReview({
       <div className="w-full max-w-[460px] rounded-t-[28px] bg-white p-3 text-[#111] shadow-[0_24px_70px_rgb(40_28_96/0.28)] sm:rounded-[28px]">
         <div className="flex items-center justify-between px-2 pt-1 pb-3">
           <h2 id="review-title" className="text-[16px] font-semibold tracking-[-0.02em]">
-            Review quote
+            {canSwap ? "Review swap" : "Review quote"}
           </h2>
           <button
             type="button"
@@ -217,14 +258,28 @@ export function SwapReview({
           ))}
         </dl>
 
-        {shortBalance && (
-          <p className="mt-4 px-3 text-[13px] text-[#8A847E]">
-            Wallet balance is {fmtSmart(sellBal ?? 0n, sell.decimals)} {sell.symbol}. The quote still stands.
+        {honesty && (
+          <div className="px-1">
+            <StatusBanner tone={honesty.tone} text={honesty.text} />
+          </div>
+        )}
+
+        {shortBalance && canSwap && (
+          <p className="mt-3 px-3 text-[13px] text-[#8A847E]">
+            Wallet holds {fmtSmart(sellBal ?? 0n, sell.decimals)} {sell.symbol}.{" "}
+            {canMint
+              ? `Demo ${sell.symbol} is publicly mintable on Sepolia. Mint below, then approve and swap.`
+              : "The quote still stands."}
           </p>
         )}
 
-        {(txs.approve || txs.swap || swapError) && (
+        {(txs.mint || txs.approve || txs.swap || swapError) && (
           <div className="tnum mt-3 flex flex-col gap-1 px-3 text-[13px]">
+            {txs.mint && (
+              <a href={txUrl(txs.mint)} target="_blank" rel="noreferrer" className="text-[#5B46C7] hover:underline">
+                Mint {txs.mint.slice(0, 10)}… ↗
+              </a>
+            )}
             {txs.approve && (
               <a href={txUrl(txs.approve)} target="_blank" rel="noreferrer" className="text-[#5B46C7] hover:underline">
                 Approve {txs.approve.slice(0, 10)}… ↗
@@ -257,14 +312,31 @@ export function SwapReview({
           {confirm.label}
         </button>
 
-        <p className="px-3 py-3 text-center text-[12px] leading-[1.5] text-[#8A847E]">
-          {canSwap
-            ? "The fee is GivenQuotePreview on the live mainnet Uniswap v3 price. The swap fills on Sepolia against SepoliaSwapPool."
-            : "Priced by previewFeePips on Sepolia. No pool there can take this pair, so the swap stops here."}
-        </p>
+        <p className="px-3 py-3 text-center text-[12px] leading-[1.5] text-[#8A847E]">{fillFootnote(mode)}</p>
       </div>
     </div>
   );
+}
+
+function friendlyWalletError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  if (/user rejected|rejected the request|4001/i.test(raw)) return "Request rejected in wallet.";
+  if (/insufficient funds|gas/i.test(raw)) return "Not enough Sepolia ETH for gas.";
+  return raw;
+}
+
+function friendlyRevert(revert: string): string {
+  if (/CannotBeatVenue/i.test(revert)) {
+    return "Pool output no longer beats the venue (curve or reserves drifted). Refresh the quote and try a smaller size.";
+  }
+  if (/InsufficientOutput/i.test(revert)) {
+    return "Pool output is below your minOut. Increase slippage or refresh the quote.";
+  }
+  if (/Expired/i.test(revert)) return "Deadline passed. Open review again and confirm promptly.";
+  if (/BadToken/i.test(revert)) return "This token is not the demo pair SepoliaSwapPool accepts.";
+  if (/ERC20InsufficientBalance/i.test(revert)) return "Not enough demo token balance. Mint, then try again.";
+  if (/ERC20InsufficientAllowance/i.test(revert)) return "Allowance too low. Approve again.";
+  return `The swap would revert: ${revert}`;
 }
 
 function Leg({ label, amount, token, usd }: { label: string; amount: string; token: Token; usd: string | null }) {
