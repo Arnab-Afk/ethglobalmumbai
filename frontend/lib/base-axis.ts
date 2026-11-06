@@ -2,13 +2,15 @@ import { createPublicClient, http, parseAbi } from "viem";
 import { base } from "viem/chains";
 import type { VenueQuote } from "./mainnet";
 import type { LiveQuote } from "./quote";
+import { rpcFetch, rpcTimeoutMs } from "./rpc";
 
 /** Live AXIS/USDC pool on Base. Quotes are reads. This module never sends a transaction. */
 const RPC = process.env.BASE_RPC_URL || "https://base.publicnode.com";
 
+// Reads go through Anon-RPC like every other read in the app.
 export const baseClient = createPublicClient({
   chain: base,
-  transport: http(RPC, { batch: true, retryCount: 2 }),
+  transport: http(RPC, { batch: true, retryCount: 0, fetchFn: rpcFetch, timeout: rpcTimeoutMs }),
 });
 
 const AXIS = "0x5bE75e3b0aFf5D1A042A5363Ae36AcB1d6d755ea";

@@ -50,10 +50,12 @@ This is a stretch for a pure AMM demo. Keep the AMM core unchanged and add priva
 - `frontend/`: the Sepolia swap app; reads go through `lib/rpc.ts`.
 
 ## Tests
-- Quote via Anon-RPC == quote via a normal RPC (same block)
-- Private-path swap is not visible to the searcher before inclusion
-- Public-path swap gets sandwiched on the fork (proves the demo isn't staged)
-- Trader output ≥ `Q_best` on the private path
+What exists:
+- `packages/private-quoting`: forge tests incl. fuzz "trader output ≥ `Q_best`" and a price move that reverts the swap.
+- `packages/sdk`: vitest for the client (private mode throws without `anonFetch`, never falls back) and the frame submitter (atomic-batch flags, account nonce, `eth_sendFrameTransaction`). `packages/private-quoting` vitest covers the wire round-trip.
+- Live proof: admitted frame tx [`0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59).
+
+Not automated: Anon-RPC quote == plain-RPC quote at the same block. Anon-RPC is browser-only, so this was checked by hand (222.97 USDC both ways). The searcher/sandwich tests were dropped with the sandwich demo (public alt mempool).
 
 ## Judging angle
 - Privacy is load-bearing: the competitive-fee promise breaks without it, and the demo shows that directly.

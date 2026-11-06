@@ -6,7 +6,6 @@ import { formatUnits, parseUnits } from "viem";
 import { fmtAmount, fmtSmart } from "@/lib/format";
 import { isAxisPair } from "@/lib/base-axis";
 import { getPool } from "@/lib/pools";
-import { isMainnetPair, mainnetClient } from "@/lib/mainnet";
 import { getFeeConfig, getLiveQuote, pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { QuoteDetails } from "./quote-details";
@@ -19,7 +18,7 @@ import { TokenPicker } from "./token-picker";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 
-const REFRESH_MS = 12_000; // ring length; the quote itself re-runs on each new block
+const REFRESH_MS = 12_000; // ring length and re-quote interval (about one block)
 const DEBOUNCE_MS = 350;
 const DEFAULT_AMOUNT = "0.1";
 
@@ -166,23 +165,10 @@ export function QuoteCard() {
     return () => clearTimeout(t);
   }, [sell, buy, amount, pathname, router]);
 
-  // Liquid pairs follow mainnet blocks, which is where those pools actually trade.
-  useEffect(() => {
-    if (!isMainnetPair(sell.symbol, buy.symbol)) return;
-    const unwatch = mainnetClient.watchBlockNumber({
-      pollingInterval: 4_000,
-      onBlockNumber() {
-        setRefreshKey((k) => k + 1);
-        runQuote();
-      },
-    });
-    return unwatch;
-  }, [runQuote, sell.symbol, buy.symbol]);
-
-  // Other pairs re-quote on a timer, including after an error: an Anon-RPC network can drop
+  // Every pair re-quotes on a timer, including after an error: an Anon-RPC network can drop
   // out for a while (e.g. Nox "No exit offers TLS tunnels") and should recover on its own.
+  // No per-block polling: a mixnet round trip (~5 s) is longer than a 4 s poll.
   useEffect(() => {
-    if (isMainnetPair(sell.symbol, buy.symbol)) return;
     if (state.kind !== "ok" && state.kind !== "error") return;
     const t = setTimeout(() => {
       setRefreshKey((k) => k + 1);

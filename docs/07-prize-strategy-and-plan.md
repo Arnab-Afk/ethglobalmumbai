@@ -47,7 +47,7 @@ Full per-person breakdown: [09-team-assignments.md](09-team-assignments.md).
 ## Demo script (≈3 min)
 
 1. **Problem (20s):** a 30 bp flat pool loses a trade; a 5 bp pool wins it but leaves 25 bp on the table.
-2. **Live (90s):** move a mock competitor's price → CRE updates curve → quote our pool via 1inch/SwapVM → fee jumps/drops, trader still gets best price. Then the same swap on the public path (sandwiched, trader loses) vs the private path via Frame mempool (no sandwich, trader ≥ best venue).
+2. **Live (90s):** move a mock competitor's price → CRE updates curve → quote our pool via 1inch/SwapVM → fee jumps/drops, trader still gets best price. Show the privacy badge (reads via Nox) and the frame swap on the devnet explorer: one atomic `[VERIFY, mint, approve, swap]` tx, trader ≥ best venue. (The public-vs-private sandwich comparison was dropped: the alt mempool is public, see docs/05.)
 3. **Numbers (40s):** replay N trades: LP revenue vs. flat 5 bp and 30 bp pools; trader execution never worse than best venue.
 4. **Why it matters (30s):** one primitive, any AMM, any Aqua strategy.
 

@@ -31,7 +31,7 @@ The fee rule is a small, pure function (see [02-fee-algorithm.md](02-fee-algorit
 | Surface | Role in the story |
 |---|---|
 | **1inch SwapVM opcode on Aqua** | *Core.* A new instruction makers can drop into any SwapVM program, so any Aqua liquidity strategy can price competitively. |
-| **Private & competitive quoting (EF)** | Quotes via Anon-RPC and swaps via the Frame mempool, so the competitive price reaches the trader without leaking intent or getting sandwiched. |
+| **Private & competitive quoting (EF)** | Quotes via Anon-RPC and swaps via the Frame mempool, so the quote request doesn't leak intent, and a front-run makes the atomic frame batch revert (`minOut`) instead of filling worse. The alt mempool itself is public. |
 | **Chainlink CRE workflow** | Supplies the "best competing venue" input: fetches quotes off-chain, reaches DON consensus, and writes a quote curve on-chain. |
 
 ## What's novel vs. what's borrowed

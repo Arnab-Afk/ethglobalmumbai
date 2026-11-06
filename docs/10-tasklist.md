@@ -16,6 +16,7 @@ Status snapshot. Update when something lands.
 | **S2** | **Soham** | **Wire `CompetitiveFeeClient.setFrameSubmitter` → EIP-8141 frame tx** | **`packages/sdk` + `private-quoting`** | **Done** (`neat3-sdk/frame`; unit-tested, live run blocked on empty faucet) |
 | **S3** | **Soham** | **Integrator README / 5-minute quote example for judges** | **`packages/sdk`** | **Done** (`packages/sdk/README.md`) |
 | **S4** | **Soham** | **Demo app imports SDK: reads via Anon-RPC by default** | **`packages/sdk` → `frontend/`** | **Done** (`frontend/lib/rpc.ts`, Nox default; footer badge) |
+| **S5** | **Soham** | **Mainnet competitor reads and Base AXIS reads through Anon-RPC too (no direct reads left); mainnet block polling replaced by the 12 s re-quote timer** | **`frontend/lib/mainnet.ts`, `base-axis.ts`, `quote-card.tsx`** | **Done in code; check Nox reaches the mainnet and Base URLs in Chrome** |
 | D1–D5 | Ishika | Mock pools, dashboard, deploy-all, video, submissions | `apps/demo` | Pending |
 
 ## Soham — client SDK (detail)
