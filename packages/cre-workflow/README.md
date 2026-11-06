@@ -32,12 +32,15 @@ Sepolia `QuoteOracle`: `0xe39D6dE0689581C2e681379C206AA3492Dfd73C0` (see `deploy
 ## CRE simulate (Saish / booth)
 
 1. Install CRE CLI + bun; `cre login` (see `docs/team/saish-cre.md`).
-2. From repo root (paths may vary by CLI version):
+2. `npm install` in this directory (the workflow compiles against `node_modules` here).
+3. Run from **this directory** (`project.yaml` lives here; target `sepolia-settings`):
 
 ```sh
-cre workflow simulate ./packages/cre-workflow/workflow
-cre workflow simulate ./packages/cre-workflow/workflow --broadcast
+cre workflow simulate ./workflow -T sepolia-settings                # dry run, no transaction
+cre workflow simulate ./workflow -T sepolia-settings --broadcast    # real Sepolia tx via the mock forwarder
 ```
+
+`--broadcast` needs `CRE_ETH_PRIVATE_KEY` (a funded Sepolia key, 64 hex chars, no `0x`) in `./.env`, which is gitignored.
 
 The WASM handler currently aggregates **mock-xyk** venues only (deterministic across DON nodes). Live Uni reads are in the Node simulator until EVM-read wiring lands in the CRE handler.
 
