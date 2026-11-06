@@ -1,0 +1,23 @@
+# cre workflow simulate ./workflow -T sepolia-settings --broadcast   (CRE CLI v1.39.0, cre-sdk 1.23.0)
+# Real Sepolia tx through the CRE mock forwarder 0x15fC6ae953E024d975e77382eEeC56A9101f9F88 into QuoteOracle 0xe39D6dE0689581C2e681379C206AA3492Dfd73C0
+✓ Workflow compiled
+2026-11-06T13:24:27Z [USER LOG] cre-workflow: pair 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14 → 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+2026-11-06T13:24:28Z [USER LOG] cre-workflow:   Chainlink feed 0x694A…5306 price=2219.7104 age=45m
+2026-11-06T13:24:28Z [USER LOG] cre-workflow:   in 0.1 → mock-a=221.261 mock-b=221.8489 | best mock-b 221.8489
+2026-11-06T13:24:28Z [USER LOG] cre-workflow:   in 1 → mock-a=2208.6472 mock-b=2217.4924 | best mock-b 2217.4924
+2026-11-06T13:24:28Z [USER LOG] cre-workflow:   in 10 → mock-a=21697.8581 mock-b=22075.6829 | best mock-b 22075.6829
+2026-11-06T13:24:28Z [USER LOG] cre-workflow:   → publishing 3 of 3 buckets
+2026-11-06T13:24:28Z [USER LOG] cre-workflow: encoded 1 curve(s), payload=0x0000000000000000…
+2026-11-06T13:24:37Z [USER LOG] cre-workflow: writeReport status=SUCCESS receiver=SUCCESS txHash=0x48f2f57781b1afcf89b0e8c02caf22e54c53370eb8ba40f25beb2bcf05a3aaa2
+✓ Workflow Simulation Result:
+
+# Verification (cast, Sepolia public RPC)
+# receipt: status SUCCESS, block 12075222, gasUsed 1,261,942
+# forwarder ReportProcessed(receiver=QuoteOracle, result=true); 1 QuoteOracle event
+# QuoteOracle.observedAt(WETH, USDC) = 1793951667
+# QuoteOracle.getBestOut(WETH, USDC, amountIn):
+#   0.1 ETH -> 221.848974 USDC
+#   1 ETH   -> 2217.492426 USDC
+#   5 ETH   -> 11043.354883 USDC   (interpolated between the 1 and 10 ETH points)
+#   10 ETH  -> 22075.682956 USDC
+#   20 ETH  -> 0                   (above the last point: pool uses its fallback fee)
