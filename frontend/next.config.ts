@@ -2,7 +2,6 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const repoRoot = path.join(__dirname, "..");
-const sdkDist = path.join(repoRoot, "packages/sdk/dist");
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -17,10 +16,12 @@ const nextConfig: NextConfig = {
   transpilePackages: ["neat3-sdk"],
   turbopack: {
     root: repoRoot,
+    // Relative to turbopack.root. An absolute Windows path makes Turbopack throw
+    // "windows imports are not implemented yet" and the swap page returns 500.
     resolveAlias: {
-      "neat3-sdk/anon": path.join(sdkDist, "anon.js"),
-      "neat3-sdk/frame": path.join(sdkDist, "frame.js"),
-      "neat3-sdk": path.join(sdkDist, "index.js"),
+      "neat3-sdk/anon": "../packages/sdk/dist/anon.js",
+      "neat3-sdk/frame": "../packages/sdk/dist/frame.js",
+      "neat3-sdk": "../packages/sdk/dist/index.js",
     },
     rules: {
       "*.css": {

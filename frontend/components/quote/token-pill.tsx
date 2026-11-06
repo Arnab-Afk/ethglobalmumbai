@@ -45,6 +45,20 @@ export function TokenIcon({ token, size = 30 }: { token: Token; size?: number })
 }
 
 const MARKS: Record<string, ReactNode> = {
+  // Official Axis Robotics logomark, the mark on the Base token.
+  AXIS: (
+    <>
+      <circle cx="16" cy="16" r="16" fill="#000" />
+      <g transform="translate(3.2 3.2) scale(0.32)">
+        <path d="M42.3297 10V70H37.6543V10H42.3297Z" fill="#fff" />
+        <path d="M70 42.3304L10 42.3304L10 37.6551L70 37.6551V42.3304Z" fill="#fff" />
+        <path d="M52.9839 67.1464L22.9839 15.1849L27.0329 12.8472L57.0329 64.8087L52.9839 67.1464Z" fill="#fff" />
+        <path d="M27.5008 56.8311L48.4731 20.8233L52.5131 23.1764L31.5408 59.1841L27.5008 56.8311Z" fill="#fff" />
+        <path d="M13.3295 52.999L64.3074 22.986L66.6794 27.0149L15.7015 57.028L13.3295 52.999Z" fill="#fff" />
+        <path d="M23.1781 27.4936L59.171 48.4807L56.816 52.5196L20.8231 31.5324L23.1781 27.4936Z" fill="#fff" />
+      </g>
+    </>
+  ),
   WETH: (
     <>
       <circle cx="16" cy="16" r="16" fill="#627EEA" />

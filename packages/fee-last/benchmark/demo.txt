@@ -1,0 +1,15 @@
+fork block 53998203
+lp wallet 0x44bC268D6f10DfB004c5b9afe91648b1c7c8b6D9
+trader wallet 0x10E951fA67B511D044803c7757DA445Ddf646f6d
+uniswap v3 1.00 bps  22.282429 USDC
+uniswap v3 5.00 bps  22.278348 USDC
+uniswap v3 30.00 bps  22.166831 USDC
+uniswap v3 100.00 bps  22.033064 USDC
+best rival 22.282429 USDC at 1.00 bps
+lp deposited 534.831001 WETH and 1194051.308321 USDC
+lp wallet after deposit 4465.168998 WETH and 13805948.691679 USDC
+pool zero-fee output, read from the pool 22.284807 USDC
+trader receives 22.284674 USDC at 0.06 bps
+advantage over best rival 0.002245 USDC
+lp withdrew 534.841001 WETH and 1194029.023618 USDC
+lp wallet after withdraw 5000.009999 WETH and 14999977.715297 USDC

@@ -4,9 +4,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { fmtAmount, fmtSmart } from "@/lib/format";
+import { isAxisPair } from "@/lib/base-axis";
 import { getPool } from "@/lib/pools";
 import { isMainnetPair, mainnetClient } from "@/lib/mainnet";
-import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import { getFeeConfig, getLiveQuote, pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { QuoteDetails } from "./quote-details";
 import { ReadError } from "./read-error";
@@ -194,10 +195,19 @@ export function QuoteCard() {
     const other = side === "sell" ? buy : sell;
     if (t.symbol === other.symbol) {
       flip(); // picking the opposite token swaps the sides
-    } else if (side === "sell") {
-      setSell(t);
     } else {
-      setBuy(t);
+      let nextSell = side === "sell" ? t : other;
+      let nextBuy = side === "buy" ? t : other;
+      // The live bid is USDC ↔ AXIS. Choosing AXIS puts USDC on the other side.
+      if ((nextSell.symbol === "AXIS" || nextBuy.symbol === "AXIS") && !isAxisPair(nextSell.symbol, nextBuy.symbol)) {
+        const usdc = tokenBySymbol("USDC");
+        if (usdc) {
+          if (nextSell.symbol === "AXIS") nextBuy = usdc;
+          else nextSell = usdc;
+        }
+      }
+      setSell(nextSell);
+      setBuy(nextBuy);
     }
     setPicking(null);
   };
@@ -246,6 +256,7 @@ export function QuoteCard() {
 
   const amountIn = parseAmount(amount, sell.decimals);
   const quoted = fresh && pool && amountIn !== null ? fresh : undefined;
+  const axis = isAxisPair(sell.symbol, buy.symbol);
   const shownPool = quoted?.reserves ?? pool;
 
   type Action = { label: string; onClick?: () => void; tone: "primary" | "soft" | "warn" | "off" };
@@ -253,13 +264,21 @@ export function QuoteCard() {
     ? { label: `No ${sell.symbol} → ${buy.symbol} pool yet`, tone: "off" }
     : amountIn === null
       ? { label: "Enter an amount", tone: "off" }
-        : !address
-        ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : connect, tone: "soft" }
-        : !onSepolia
-          ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
-          : !quoted
-            ? { label: "Checking the best venue…", tone: "off" }
-            : { label: "Swap", onClick: () => setReviewing(true), tone: "primary" };
+      : axis && !quoted
+        ? { label: "Reading the Base bid…", tone: "off" }
+        : axis && quoted
+          ? quoted.bestOut === 0n && quoted.ourOut === 0n
+            ? { label: "No bid", tone: "off" }
+            : quoted.ourOut < quoted.bestOut
+              ? { label: "Rival pays more · no bid", tone: "off" }
+              : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)}`, tone: "off" }
+          : !address
+            ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : connect, tone: "soft" }
+            : !onSepolia
+              ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
+              : !quoted
+                ? { label: "Checking the best venue…", tone: "off" }
+                : { label: "Swap", onClick: () => setReviewing(true), tone: "primary" };
 
   const actionTone = {
     primary: "bg-[#2F6BFF] text-white hover:bg-[#245BE0]",

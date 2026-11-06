@@ -22,12 +22,13 @@ Node ≥ 20.12 and [Foundry](https://book.getfoundry.sh/) for the contracts. Eve
 |---|---|
 | App (Sepolia quote, market, dashboard) | `cd frontend && npm install && npm run dev` → http://localhost:3000 |
 | Fee math and contracts | `cd packages/fee-core && forge test` (same in `oracle`, `swapvm-opcode`, `v4-hook`) |
+| Base fee-last hook, router, and AXIS pool | `cd packages/fee-last && forge test` |
 | Integrator SDK | `cd packages/sdk && npm install && npm test`; usage in [packages/sdk/README.md](packages/sdk/README.md) |
 | EIP-8141 frame swap (devnet, chain 1337) | `cd packages/private-quoting && npm install && npm run quote:sdk -- 10`; full flow in [its README](packages/private-quoting/README.md) |
 | CRE workflow (local simulate) | `cd packages/cre-workflow && npm install && npm run simulate:local` |
 | CRE workflow (CRE CLI) | `cd packages/cre-workflow && cre workflow simulate ./workflow -T sepolia-settings` (add `--broadcast` to write to Sepolia; `BROADCAST=1 npm run cre:watch` to repeat) |
 
-Deployed addresses: [deployments/sepolia.json](deployments/sepolia.json) and [packages/private-quoting/web/public/deployment.json](packages/private-quoting/web/public/deployment.json).
+Deployed addresses: [deployments/sepolia.json](deployments/sepolia.json), [deployments/base.json](deployments/base.json), and [packages/private-quoting/web/public/deployment.json](packages/private-quoting/web/public/deployment.json).
 
 ## CROPS
 
@@ -57,6 +58,7 @@ The fee engine already works. A real frame swap on our EIP-8141 devnet beat the 
 | Client SDK + Sepolia dashboard | `packages/sdk`, `apps/demo` (quote view). |
 | CRE aggregator | `cre workflow simulate --broadcast` writes WETH⇄USDC curves to Sepolia `QuoteOracle` through Chainlink's mock forwarder, after checking every quote against Chainlink ETH/USD. No swap path reads `QuoteOracle` yet (task C3). Live DON deploy is optional. See [docs/06](docs/06-chainlink-cre.md). |
 | Real Uniswap reads inside the swap | **Sepolia v3 pools, live.** `VenueReader` `0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F` reads the four WETH/USDC fee tiers from pool storage. `TradePreview` `0x318589f99F1b560230340C20e2649751B4be098F` runs that quote through fee-core. v4 hook `0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080` is initialized on a dynamic-fee WETH/USDC pool. The 8141 devnet still falls back to `MockQuoteOracle`. |
+| Base fee-last pool (`packages/fee-last`) | **Live on Base.** Hook `0x8efBdAed7Da3dB6250d4cD66b47aF20596C9aAC4`, router `0xE1275AbA5f2215B03CC389B6E594AC8b078Aef07`, and an AXIS/USDC pool at fee 0. The depositing wallet withdraws through `0x93F95e100dcd0BeaB52457EF11A5C8A14F044dE4`. Addresses are in [deployments/base.json](deployments/base.json). |
 
 ### Locked plan
 

@@ -1,0 +1,31 @@
+{
+  "chain": "base",
+  "chainId": 8453,
+  "rpc": "https://mainnet.base.org",
+  "deployer": "0x2B0aEf51883f8cFD8bd618Ab959B332a093CEeB2",
+  "contracts": {
+    "PoolManager": "0x498581fF718922c3f8e6A244956aF099B2652b2b",
+    "FeeLastHook": "0x8efBdAed7Da3dB6250d4cD66b47aF20596C9aAC4",
+    "FeeLastRouter": "0xE1275AbA5f2215B03CC389B6E594AC8b078Aef07",
+    "FeeLastPosition": "0x93F95e100dcd0BeaB52457EF11A5C8A14F044dE4",
+    "AxisBuyer": "0x88911119C93433414038f9CB298f7C51C50Cf7A8"
+  },
+  "pool": {
+    "token0": { "symbol": "AXIS", "address": "0x5bE75e3b0aFf5D1A042A5363Ae36AcB1d6d755ea", "decimals": 18 },
+    "token1": { "symbol": "USDC", "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "decimals": 6 },
+    "fee": 0,
+    "tickSpacing": 1,
+    "tickLower": -296999,
+    "tickUpper": -296939,
+    "poolId": "0x2202177fdd95fe55e32170a1a94261f111b5c3cd3318f7805deca8d792ac01c9",
+    "hooks": "0x8efBdAed7Da3dB6250d4cD66b47aF20596C9aAC4"
+  },
+  "txs": {
+    "hook": "0xb2285e70912d6b0f2a8d1457385ffc3e69b87420d479cb754606f4a3e06851f0",
+    "router": "0xc8ec3c1d81d5c5404092583328bc88c4ce7b5efefc262f5c627ef7c806563ca6",
+    "setRouter": "0xce03a4ad6d4e0bcb32d04230a9e7030b54cf24b8f230e588224f5e1e46298a78",
+    "buyAxis": "0x349d59ffe75a5fe463ae2fb7d9d690f9ed906ecf6eea2d188a27ee17d8d06692",
+    "initialize": "0x046118f0563cd5109ddacd791ef83030494d49e708a8834f07b1b59cb65d2861",
+    "deposit": "0xf7f7911ca7733881340f1420248277cc5933db3c9619cde41244de742fb9271f"
+  }
+}

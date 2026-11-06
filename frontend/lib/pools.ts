@@ -1,3 +1,4 @@
+import { isAxisPair } from "./base-axis";
 import { isMainnetPair } from "./mainnet";
 import type { Token } from "./tokens";
 
@@ -23,7 +24,9 @@ export interface PoolSide {
 /** Reserves oriented for tokenIn → tokenOut, or undefined if we have no pool for the pair. */
 export function getPool(tokenIn: Token, tokenOut: Token): PoolSide | undefined {
   // Unlocks the form. The quote replaces this with the pinned mainnet book.
-  if (isMainnetPair(tokenIn.symbol, tokenOut.symbol)) return { reserveIn: 1n, reserveOut: 1n };
+  if (isAxisPair(tokenIn.symbol, tokenOut.symbol) || isMainnetPair(tokenIn.symbol, tokenOut.symbol)) {
+    return { reserveIn: 1n, reserveOut: 1n };
+  }
   for (const p of POOLS) {
     if (p.a === tokenIn.symbol && p.b === tokenOut.symbol) return { reserveIn: p.reserveA, reserveOut: p.reserveB };
     if (p.b === tokenIn.symbol && p.a === tokenOut.symbol) return { reserveIn: p.reserveB, reserveOut: p.reserveA };

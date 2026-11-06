@@ -1,5 +1,6 @@
 import { createPublicClient, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
+import { isAxisPair, quoteAxis } from "./base-axis";
 import { SEPOLIA } from "./deployments";
 import { bestMainnetOut, isMainnetPair, mainnetDecimals, mainnetVenueQuotes, type VenueQuote } from "./mainnet";
 import type { PoolSide } from "./pools";
@@ -124,6 +125,8 @@ export interface LiveQuote {
   venues?: VenueQuote[];
   /** Inventory this quote was priced against, when the screen pins it. */
   reserves?: PoolSide;
+  /** Set when the numbers come from the live Base AXIS/USDC pool. */
+  network?: "base";
 }
 
 let configPromise: Promise<FeeConfig> | undefined;
@@ -162,8 +165,9 @@ export function outAfterFee(amountIn: bigint, reserveIn: bigint, reserveOut: big
   return (reserveOut * afterFee) / (reserveIn + afterFee);
 }
 
-/** Quote one exact-in trade. Liquid pairs use live mainnet v3; the rest use Sepolia VenueReader. */
+/** Quote one exact-in trade. AXIS/USDC is the live Base pool. Liquid pairs use mainnet v3. The rest use Sepolia. */
 export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bigint, pool: PoolSide): Promise<LiveQuote> {
+  if (isAxisPair(tokenIn.symbol, tokenOut.symbol)) return quoteAxis(tokenIn.symbol, tokenOut.symbol, amountIn);
   if (isMainnetPair(tokenIn.symbol, tokenOut.symbol)) return quoteMainnet(tokenIn, tokenOut, amountIn);
   return quoteSepolia(tokenIn, tokenOut, amountIn, pool);
 }

@@ -1,0 +1,23 @@
+{
+  "chainId": 8453,
+  "rpcUrl": "https://mainnet.base.org",
+  "uniswapV3Quoter": "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a",
+  "uniswapV3Factory": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
+  "poolManager": "0x498581fF718922c3f8e6A244956aF099B2652b2b",
+  "stateView": "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71",
+  "pairs": [
+    {
+      "tokenIn": {
+        "symbol": "WETH",
+        "address": "0x4200000000000000000000000000000000000006",
+        "decimals": 18
+      },
+      "tokenOut": {
+        "symbol": "USDC",
+        "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "decimals": 6
+      },
+      "v3Fees": [100, 500, 3000, 10000]
+    }
+  ]
+}

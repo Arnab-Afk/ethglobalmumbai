@@ -7,7 +7,7 @@ import { TOKENS, type Token } from "@/lib/tokens";
 import { useBalances } from "../wallet/use-balances";
 import { TokenIcon } from "./token-pill";
 
-const QUICK = ["WETH", "USDC", "USDT", "DAI"];
+const QUICK = ["AXIS", "USDC", "WETH", "USDT"];
 
 /**
  * Token modal: search, quick picks, then the list with balances. `other` is the token on the
@@ -118,10 +118,10 @@ export function TokenPicker({
           </div>
         </div>
 
-        <div className="mt-4 border-t border-line px-5 pt-3 pb-1 text-[13px] font-medium text-muted">Tokens on Sepolia</div>
+        <div className="mt-4 border-t border-line px-5 pt-3 pb-1 text-[13px] font-medium text-muted">Tokens</div>
         <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-3" role="listbox" aria-label="Tokens">
           {results.map((t, i) => {
-            const pairable = t.symbol === other.symbol || !!getPool(t, other);
+            const pairable = t.symbol === other.symbol || t.symbol === "AXIS" || !!getPool(t, other);
             const bal = balances[t.address];
             const selected = t.symbol === current.symbol;
             return (
@@ -138,7 +138,8 @@ export function TokenPicker({
                   <span className="min-w-0 flex-1">
                     <span className="block text-[16px] leading-5 font-medium">{t.name}</span>
                     <span className="tnum mt-0.5 block text-[13px] leading-5 text-muted">
-                      {t.symbol} <span className="text-faint">{shortAddr(t.address)}</span>
+                      {t.symbol}{" "}
+                      <span className="text-faint">{t.chain ? `on ${t.chain}` : shortAddr(t.address)}</span>
                     </span>
                   </span>
                   <span className="text-right">

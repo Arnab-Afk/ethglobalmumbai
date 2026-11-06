@@ -9,6 +9,8 @@ export interface Token {
   usd?: boolean;
   /** Icon background. */
   color: string;
+  /** Chain this row is priced on, when it is not Sepolia. */
+  chain?: string;
 }
 
 // Sepolia token contracts. symbol / decimals / name were read from each contract on 2026-11-06.
@@ -23,6 +25,7 @@ export const TOKENS: Token[] = [
   { symbol: "EURC", name: "Euro Coin", address: "0x08210F9170F89Ab7658F0B5E3fF39b0E03C594D4", decimals: 6, color: "#3b6fd8" },
   { symbol: "UNI", name: "Uniswap", address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", decimals: 18, color: "#e8378d" },
   { symbol: "WBTC", name: "Wrapped BTC", address: "0x29f2D40B0605204364af54EC677bD022dA425d03", decimals: 8, color: "#f09242" },
+  { symbol: "AXIS", name: "AXIS", address: "0x5bE75e3b0aFf5D1A042A5363Ae36AcB1d6d755ea", decimals: 18, color: "#000000", chain: "Base" },
 ];
 
 export function tokenBySymbol(symbol: string | null | undefined): Token | undefined {

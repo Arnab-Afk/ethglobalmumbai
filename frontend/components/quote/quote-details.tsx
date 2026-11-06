@@ -32,14 +32,15 @@ export function QuoteDetails({
   const [open, setOpen] = useState(false);
   const [allPools, setAllPools] = useState(false);
   const [inverted, setInverted] = useState(false);
-  const onMainnet = quote.venues !== undefined;
+  const onBase = quote.network === "base";
+  const onMainnet = !onBase && quote.venues !== undefined;
   const previewAddress = onMainnet
     ? SEPOLIA.contracts.GivenQuotePreview
     : SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader;
 
   const out = tokenOut.symbol;
-  const rate = (quote.ourOut * 10n ** BigInt(tokenIn.decimals)) / quote.amountIn; // tokenOut per 1 tokenIn
-  const inverse = (quote.amountIn * 10n ** BigInt(tokenOut.decimals)) / quote.ourOut; // tokenIn per 1 tokenOut
+  const rate = quote.amountIn === 0n ? 0n : (quote.ourOut * 10n ** BigInt(tokenIn.decimals)) / quote.amountIn;
+  const inverse = quote.ourOut === 0n ? 0n : (quote.amountIn * 10n ** BigInt(tokenOut.decimals)) / quote.ourOut;
   const minOut = (quote.ourOut * BigInt(10_000 - slippageBps)) / 10_000n;
   const lpKeeps = quote.zeroFeeOut - quote.ourOut;
   const hasBest = quote.bestOut > 0n;
@@ -51,16 +52,18 @@ export function QuoteDetails({
       k: "Fee",
       v: (
         <>
-          {pipsToPercent(quote.feePips)}
+          {pipsToPercent(quote.feePips, onBase ? 4 : 2)}
           <span className="text-muted">
             {" "}
             · {fmtSmart(lpKeeps, tokenOut.decimals, 4)} {out} to LPs
           </span>
         </>
       ),
-      hint: fallback
-        ? "No fresh competitor quote, so the pool charges its fixed fallback fee."
-        : "Set last, for this exact trade: the most the pool can charge while still paying you more than the best venue.",
+      hint: onBase && quote.ourOut < quote.bestOut
+        ? "This size cannot beat the best Base pool, so there is no bid."
+        : fallback
+          ? "No fresh competitor quote, so the pool charges its fixed fallback fee."
+          : "Set last, for this exact trade: the most the pool can charge while still paying you more than the best venue.",
     },
     {
       k: "Best venue",
@@ -77,7 +80,9 @@ export function QuoteDetails({
       ) : (
         <span className="text-muted">No quote for this size</span>
       ),
-      hint: "What the best competing venue pays for this trade, from the competitor price curve on Sepolia.",
+      hint: onBase
+        ? "What the best Uniswap v3 pool on Base pays for this exact trade, read at this block."
+        : "What the best competing venue pays for this trade, from the competitor price curve on Sepolia.",
     },
     {
       k: "Minimum received",
@@ -87,14 +92,22 @@ export function QuoteDetails({
     { k: "Max slippage", v: `${slippageBps / 100}%` },
     {
       k: "Quote age",
-      v: quote.status === "none" ? "—" : `${fmtAge(quote.blockTime - quote.updatedAt)}${config ? ` of ${config.maxQuoteAge}s` : ""}`,
-      hint: "How old the competitor price curve is. Past the limit, the pool falls back to a fixed fee.",
+      v: onBase
+        ? "This block"
+        : quote.status === "none"
+          ? "—"
+          : `${fmtAge(quote.blockTime - quote.updatedAt)}${config ? ` of ${config.maxQuoteAge}s` : ""}`,
+      hint: onBase
+        ? "Rivals and this pool were read at the same Base block."
+        : "How old the competitor price curve is. Past the limit, the pool falls back to a fixed fee.",
     },
   ];
-  if (config) rows.push({ k: "Fee range", v: `${pipsToPercent(config.feeFloor)} – ${pipsToPercent(config.feeCap)}` });
+  if (config && !onBase) rows.push({ k: "Fee range", v: `${pipsToPercent(config.feeFloor)} – ${pipsToPercent(config.feeCap)}` });
   rows.push({
     k: "Pool",
-    v: `${fmtAmount(pool.reserveIn, tokenIn.decimals, 0)} ${tokenIn.symbol} / ${fmtAmount(pool.reserveOut, tokenOut.decimals, 0)} ${out}`,
+    v: onBase
+      ? "AXIS/USDC on Base"
+      : `${fmtAmount(pool.reserveIn, tokenIn.decimals, 0)} ${tokenIn.symbol} / ${fmtAmount(pool.reserveOut, tokenOut.decimals, 0)} ${out}`,
   });
   rows.push({ k: "Priced in", v: `${Math.round(quote.latencyMs)} ms` });
 
@@ -151,12 +164,16 @@ export function QuoteDetails({
           )}
 
           <a
-            href={`${SEPOLIA.explorer}/address/${previewAddress}#readContract`}
+            href={
+              onBase
+                ? "https://basescan.org/address/0x8efBdAed7Da3dB6250d4cD66b47aF20596C9aAC4"
+                : `${SEPOLIA.explorer}/address/${previewAddress}#readContract`
+            }
             target="_blank"
             rel="noreferrer"
             className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#6B6560] transition-colors hover:text-[#151619]"
           >
-            {onMainnet ? "Verify the fee preview on Etherscan" : "Verify previewFeePips on Etherscan"}
+            {onBase ? "Hook on Basescan" : onMainnet ? "Verify the fee preview on Etherscan" : "Verify previewFeePips on Etherscan"}
             <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden>
               <path d="M2 7 7 2M3 2h4v4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
             </svg>

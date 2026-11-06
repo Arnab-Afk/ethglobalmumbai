@@ -1,0 +1,16 @@
+fork block 53979948
+hook 0xF251C51765953d0052ccA0E7474dae228f996Ac4
+router 0x2e234DAe75C793f67A35089C9d99245E1C58470b
+pool 0xeb003f39425442afd85df05dec88f03827a8ceac82af65b4dae4d27bed229a66
+price copied from v3 1 bps, tick -199243, liquidity 813702533870463136 copied from v3 5 bps
+range [-199860, -198600], edge 100 pips
+dir | size | best rival | gross | quote at 1 bps edge | rank | rank if edge is 1 unit
+WETH->USDC | 0.010000 WETH | 22.253515 USDC @ 1.00 bps | gross 22.255908 USDC | 22.255753 USDC @ 0.07 bps | 1/5 | 1/5
+WETH->USDC | 0.100000 WETH | 222.524858 USDC @ 5.00 bps | gross 222.557921 USDC | 222.547239 USDC @ 0.48 bps | 1/5 | 1/5
+WETH->USDC | 1.000000 WETH | 2225.132517 USDC @ 5.00 bps | gross 2225.463096 USDC | 2225.356274 USDC @ 0.48 bps | 1/5 | 1/5
+WETH->USDC | 10.000000 WETH | 22239.676878 USDC @ 5.00 bps | gross 22243.025348 USDC | 22241.913197 USDC @ 0.50 bps | 1/5 | 1/5
+USDC->WETH | 20.000000 USDC | 0.008985 WETH @ 1.00 bps | gross 0.008986 WETH | 0.008986 WETH @ 0.06 bps | 1/5 | 1/5
+USDC->WETH | 200.000000 USDC | 0.089848 WETH @ 1.00 bps | gross 0.089863 WETH | 0.089857 WETH @ 0.67 bps | 1/5 | 1/5
+USDC->WETH | 2000.000000 USDC | 0.897895 WETH @ 1.00 bps | gross 0.898590 WETH | 0.897985 WETH @ 6.73 bps | 1/5 | 1/5
+USDC->WETH | 20000.000000 USDC | 8.974050 WETH @ 5.00 bps | gross 8.981693 WETH | 8.974947 WETH @ 7.51 bps | 1/5 | 1/5
+ranked first on 8 of 8 requested swaps
