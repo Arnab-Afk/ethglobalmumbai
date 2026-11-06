@@ -1,5 +1,6 @@
 import { formatUnits } from "viem";
 import { bestOutPerBucket } from "./buildCurve.js";
+import type { FeedReading } from "./sanity.js";
 import type { VenueQuote } from "./types.js";
 
 /** One size bucket: every venue's quote, plus the venue that paid the most. */
@@ -40,6 +41,14 @@ function formatAmount(value: bigint, decimals: number | undefined, maxFractionDi
   return trimmed ? `${whole}.${trimmed}` : whole!;
 }
 
+/** e.g. `Chainlink feed 0x694A…5306 price=2217.9 age=49m` (age from nowSec). */
+export function formatFeedLine(feedAddress: string, feed: FeedReading, nowSec: bigint): string {
+  const ageSec = nowSec > feed.updatedAt ? nowSec - feed.updatedAt : 0n;
+  const age = ageSec >= 60n ? `${ageSec / 60n}m` : `${ageSec}s`;
+  const short = `${feedAddress.slice(0, 6)}…${feedAddress.slice(-4)}`;
+  return `Chainlink feed ${short} price=${formatAmount(feed.answer, feed.decimals, 4)} age=${age}`;
+}
+
 /**
  * One log line per bucket, e.g.
  *   `in 1 → mock-a=2961.1357 mock-b=2900 | best mock-a 2961.1357`
@@ -57,7 +66,7 @@ export function formatBucketLines(summaries: BucketSummary[], opts: FormatOption
       .join(" ");
     const best = s.winner
       ? `best ${s.winner} ${formatAmount(s.bestOut, opts.decimalsOut, digits)}`
-      : "best none (all venues returned 0)";
+      : "best none (no accepted quote)";
     return `in ${formatAmount(s.amountIn, opts.decimalsIn, digits)} → ${quotes} | ${best}`;
   });
 }

@@ -30,9 +30,22 @@ export interface PairConfig {
   /** Exact-in size buckets (atomic units as decimal strings). */
   amountsIn: string[];
   venues: VenueConfig[];
-  /** Optional token decimals, used only to print readable logs. */
+  /** Token decimals: readable logs, and required by `sanity` to compute fair output. */
   decimalsIn?: number;
   decimalsOut?: number;
+  /** Optional Chainlink fair-price check (see src/sanity.ts). */
+  sanity?: SanityConfig;
+}
+
+export interface SanityConfig {
+  /** Chainlink AggregatorV3 feed pricing 1 tokenIn in tokenOut (e.g. ETH/USD for WETH→USDC). */
+  feed: Address;
+  /** Reject quotes more than this far above fair (bps). */
+  maxAboveBps: number;
+  /** End the curve when the best quote is this far below fair (bps). */
+  maxBelowBps: number;
+  /** Skip the pair when the feed round is older than this (seconds). */
+  maxFeedAgeSec: number;
 }
 
 export interface WorkflowConfig {

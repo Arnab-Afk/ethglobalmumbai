@@ -1,6 +1,7 @@
 import type { PublicClient } from "viem";
-import { buildCurveUpdate } from "./buildCurve.js";
-import { type BucketSummary, summarizeBuckets } from "./describeCurve.js";
+import { readFeed } from "./feed.js";
+import { finalizePair, type PairResult } from "./finalizePair.js";
+import type { FeedReading } from "./sanity.js";
 import type { CurveUpdate, PairConfig, VenueConfig, VenueQuote } from "./types.js";
 import { quoteMockXyk } from "./venues/mockXyk.js";
 import { quoteUniv2 } from "./venues/univ2.js";
@@ -55,15 +56,23 @@ export async function quotePairCurve(
   observedAt: bigint,
   client?: PublicClient,
 ): Promise<CurveUpdate> {
-  return (await quotePairDetailed(pair, observedAt, client)).update;
+  const result = await quotePairDetailed(pair, observedAt, client);
+  if (!result.update) {
+    throw new Error(`pair ${pair.tokenIn}->${pair.tokenOut}: nothing to publish (${result.stopReason})`);
+  }
+  return result.update;
 }
 
-/** Same as quotePairCurve, plus every venue's quote and the winner per bucket (for logs). */
+/**
+ * Same as quotePairCurve, plus every venue's quote and the winner per bucket (for logs).
+ * When the pair has a `sanity` config, reads the Chainlink feed and applies the check;
+ * `update` is then null if no bucket is trustworthy.
+ */
 export async function quotePairDetailed(
   pair: PairConfig,
   observedAt: bigint,
   client?: PublicClient,
-): Promise<{ update: CurveUpdate; buckets: BucketSummary[] }> {
+): Promise<PairResult & { feed?: FeedReading }> {
   const venues = activeVenues(pair.venues);
   if (venues.length === 0) throw new Error("no venues after exclude filter");
 
@@ -78,12 +87,10 @@ export async function quotePairDetailed(
     quotesByBucket.push(row);
   }
 
-  const update = buildCurveUpdate({
-    tokenIn: pair.tokenIn,
-    tokenOut: pair.tokenOut,
-    observedAt,
-    amountsIn,
-    quotesByBucket,
-  });
-  return { update, buckets: summarizeBuckets(amountsIn, quotesByBucket) };
+  let feed: FeedReading | undefined;
+  if (pair.sanity) {
+    if (!client) throw new Error("sanity check needs an RPC client to read the Chainlink feed");
+    feed = await readFeed(client, pair.sanity.feed);
+  }
+  return { ...finalizePair(pair, amountsIn, quotesByBucket, observedAt, feed), feed };
 }

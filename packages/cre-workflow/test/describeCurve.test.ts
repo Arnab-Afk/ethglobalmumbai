@@ -63,6 +63,6 @@ describe("formatBucketLines", () => {
 
   it("says so when no venue quoted", () => {
     const lines = formatBucketLines(summarizeBuckets([5n], [[{ venueId: "v", amountOut: 0n }]]));
-    expect(lines[0]).toBe("in 5 → v=0 | best none (all venues returned 0)");
+    expect(lines[0]).toBe("in 5 → v=0 | best none (no accepted quote)");
   });
 });
