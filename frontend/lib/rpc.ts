@@ -1,4 +1,4 @@
-import { ANON_NETWORKS, createAnonFetch, type AnonFetch, type AnonNetwork } from "@lastlook/sdk/anon";
+import { ANON_NETWORKS, createAnonFetch, type AnonFetch, type AnonNetwork } from "@hairline/sdk/anon";
 
 /**
  * Every app read (quotes, balances, market history) goes through this one fetch, and by default that is

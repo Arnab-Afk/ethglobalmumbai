@@ -7,7 +7,7 @@ npm install
 npm run dev        # builds ../packages/sdk first, then serves http://localhost:3000
 ```
 
-**Private reads.** Every RPC read the app makes (quotes, balances, market history) goes through Anon-RPC via `@lastlook/sdk/anon` (`lib/rpc.ts`), and the footer shows the state. There is no fallback to a plain fetch. Set `NEXT_PUBLIC_ANON_RPC` to pick the network:
+**Private reads.** Every RPC read the app makes (quotes, balances, market history) goes through Anon-RPC via `@hairline/sdk/anon` (`lib/rpc.ts`), and the footer shows the state. There is no fallback to a plain fetch. Set `NEXT_PUBLIC_ANON_RPC` to pick the network:
 
 | Value | Meaning |
 |---|---|

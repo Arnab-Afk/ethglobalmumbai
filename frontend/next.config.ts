@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
-    // Repo root, so Turbopack follows the file: link to ../packages/sdk (@lastlook/sdk).
+    // Repo root, so Turbopack follows the file: link to ../packages/sdk (@hairline/sdk).
     root: path.join(__dirname, ".."),
     rules: {
       "*.css": {
