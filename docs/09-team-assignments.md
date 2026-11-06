@@ -41,7 +41,7 @@ Work is ordered by difficulty: Arnab owns the hardest and most central pieces, S
 3. Searcher bot on a local fork/devnet that sandwiches public-path swaps against our own pool.
 4. Side-by-side script: trader output and LP fee, public vs private, over N trades → JSON for Ishika's dashboard.
 5. Stretch: sealed RFQ with signed firm quotes (fee-core TS reference); any on-chain check agreed with Arnab first.
-6. **Client SDK (`packages/sdk` / `@lastlook/sdk`) — assigned to Soham.** Scaffold exists (`CompetitiveFeeClient`). Finish:
+6. **Client SDK (`packages/sdk` / `@hairline/sdk`) — assigned to Soham.** Scaffold exists (`CompetitiveFeeClient`). Finish:
    - **S1** Anon-RPC transport when `defaultQuoteMode: "private"`
    - **S2** Wire `setFrameSubmitter` to EIP-8141 frame builder
    - **S3** Integrator README so judges/others quote in &lt;5 min
