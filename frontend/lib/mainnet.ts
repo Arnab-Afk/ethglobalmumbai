@@ -1,12 +1,14 @@
 import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { mainnet } from "viem/chains";
+import { rpcFetch, rpcTimeoutMs } from "./rpc";
 
 /** Mainnet Uniswap v3 is where these pairs actually trade. Sepolia's pools sit still. */
 export const MAINNET_RPC = "https://ethereum-rpc.publicnode.com";
 
+// These reads carry the exact pair and size, so they go through Anon-RPC like every other read.
 export const mainnetClient = createPublicClient({
   chain: mainnet,
-  transport: http(MAINNET_RPC, { batch: { wait: 20 }, retryCount: 2 }),
+  transport: http(MAINNET_RPC, { batch: { wait: 20 }, retryCount: 0, fetchFn: rpcFetch, timeout: rpcTimeoutMs }),
 });
 
 const QUOTER_V2 = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e" as const;
