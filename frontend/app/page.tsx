@@ -19,7 +19,7 @@ const REPO = "https://github.com/Arnab-Afk/ethglobalmumbai";
 const PRINCIPLES = [
   { t: "Never too high", d: "A fee above the market sends the trade to a cheaper venue, and LPs earn nothing." },
   { t: "Never too low", d: "A fee below what the market allows hands the difference to someone else." },
-  { t: "Never on a stale price", d: "If the competitor quote is old or missing, Hairline falls back to a fixed fee." },
+  { t: "Never on a stale price", d: "If the competitor quote is old or missing, neat falls back to a fixed fee." },
 ];
 
 const SURFACES = [
@@ -54,7 +54,7 @@ const SURFACES = [
     cardSub: "Quote reads are private. The devnet swap is one atomic frame.",
     rows: [
       ["Reads", "Anon-RPC"],
-      ["Hairline paid", "29,512.45"],
+      ["neat paid", "29,512.45"],
       ["Best venue", "29,500.00"],
       ["Tx", `${FRAME_TX.slice(0, 6)}…${FRAME_TX.slice(-4)}`],
     ],
@@ -77,11 +77,11 @@ export default function LandingPage() {
             <h1 className="text-[58px] leading-[0.98] font-semibold tracking-[-0.055em] sm:text-[84px] xl:text-[100px]">
               Best price.
               <br />
-              Every swap.
+              Served neat.
             </h1>
             <p className="mt-8 max-w-[440px] text-[18px] leading-[1.5] font-medium text-[#1C1C1C]/80">
-              Hairline checks the best price you could get anywhere else, then beats it. You receive more. Liquidity
-              providers earn what a flat fee would have missed.
+              neat reads what the best venue would pay you, then pours its fee right up to that line and stops.
+              You still get more than anywhere else. LPs keep the rest, and not a drop goes to waste.
             </p>
             <div className="mt-8">
               <LaunchButton dark />
@@ -120,21 +120,21 @@ export default function LandingPage() {
         <div className="hidden lg:block">
           <div className="sticky top-14 flex h-[calc(100vh-56px)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
             <Eyebrow>Markets</Eyebrow>
-            <h2 className="-mt-12 text-[72px] leading-none font-medium tracking-[-0.035em]">A fee that&apos;s never too high…</h2>
-            <h2 className="text-[72px] leading-none font-medium tracking-[-0.035em]">…and never too low.</h2>
+            <h2 className="-mt-12 text-[72px] leading-none font-medium tracking-[-0.035em]">Poured to the line…</h2>
+            <h2 className="text-[72px] leading-none font-medium tracking-[-0.035em]">…not a drop over.</h2>
           </div>
         </div>
 
         <div className="px-5 py-24 sm:px-10 lg:py-32 lg:pr-16 lg:pl-20">
           <div className="lg:hidden">
             <Eyebrow>Markets</Eyebrow>
-            <h2 className={`mt-4 ${H2}`}>A fee that&apos;s never too high, and never too low.</h2>
+            <h2 className={`mt-4 ${H2}`}>Poured to the line, not a drop over.</h2>
           </div>
 
           <div className="mt-12 max-w-[640px] lg:mt-0">
             <h3 className="text-[28px] leading-[1.2] font-medium tracking-[-0.02em]">See the whole market before you price</h3>
             <p className="mt-3 max-w-[46ch] text-[16px] leading-[1.6] text-[#6B6560]">
-              For every size, Hairline knows what the best venue pays. Pick a trade and compare it with flat-fee pools.
+              For every size, neat knows what the best venue pays. Pick a trade and compare it with flat-fee pools.
             </p>
             <div className="mt-8">
               <CompareCard />
@@ -229,7 +229,7 @@ export default function LandingPage() {
         <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
           <Eyebrow tone="dark">Live on Sepolia</Eyebrow>
           <h2 className="mt-4 mb-12 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px] md:mb-20">
-            Get the best price on every swap.
+            Every swap, served neat.
           </h2>
           <LaunchButton />
         </div>
@@ -238,7 +238,7 @@ export default function LandingPage() {
       {/* ───────── Footer ───────── */}
       <footer className={`${CONTAINER} grid gap-12 py-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]`}>
         <div>
-          <div className="text-[22px] font-semibold tracking-[-0.03em]">Hairline</div>
+          <div className="text-[22px] font-semibold tracking-[-0.03em]">neat</div>
           <p className="mt-2 max-w-[34ch] text-[15px] leading-[1.5] text-[#6B6560]">
             Inspired by PropellerHeads&apos; Fynd. All code written during ETHGlobal Mumbai.
           </p>

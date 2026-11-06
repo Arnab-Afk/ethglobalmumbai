@@ -28,7 +28,7 @@ export function DashboardView() {
     <div className="w-full max-w-[960px]">
       <h1 className="text-[40px] font-semibold leading-tight tracking-[-0.03em]">Dashboard</h1>
       <p className="mt-1 text-base text-fg-2">
-        LP revenue on the same {TRADE_COUNT} trades: Hairline&apos;s per-trade fee against flat{" "}
+        LP revenue on the same {TRADE_COUNT} trades: neat&apos;s per-trade fee against flat{" "}
         {FLAT_30BP / 100} bp and {FLAT_5BP / 100} bp pools.
       </p>
 
@@ -63,7 +63,7 @@ export function DashboardView() {
       {/* Stat cards */}
       <div className="mt-2 grid gap-2 sm:grid-cols-3">
         <Stat
-          label="Hairline LP revenue"
+          label="neat LP revenue"
           value={tot ? fmtUsd(tot.hairline.revenue) : "—"}
           sub={
             tot ? (
@@ -128,9 +128,9 @@ export function DashboardView() {
         {data && atCap > 0 && (
           <p className="mt-3 border-t border-line pt-3 text-sm text-fg-2">
             <span className="mr-1.5 inline-block size-1.5 rounded-full bg-warn align-middle" />
-            Hairline&apos;s fee hit its {pipsToPercent(10_000)} cap on {atCap} of {TRADE_COUNT} trades: the competitor curve
+            neat&apos;s fee hit its {pipsToPercent(10_000)} cap on {atCap} of {TRADE_COUNT} trades: the competitor curve
             on <code className="text-fg">MockQuoteOracle</code> leaves more than 1% on the table, so every pool wins the
-            same trades. A tighter competitor would show flat 30 bp losing trades Hairline still wins.
+            same trades. A tighter competitor would show flat 30 bp losing trades neat still wins.
           </p>
         )}
       </section>
@@ -145,9 +145,9 @@ export function DashboardView() {
                 <th className="px-4 py-2.5 font-medium">#</th>
                 <th className="px-4 py-2.5 text-right font-medium">Size</th>
                 <th className="px-4 py-2.5 text-right font-medium">Best venue</th>
-                <th className="px-4 py-2.5 text-right font-medium">Hairline fee</th>
-                <th className="px-4 py-2.5 text-right font-medium">Hairline pays</th>
-                <th className="px-4 py-2.5 text-right font-medium">LP · Hairline</th>
+                <th className="px-4 py-2.5 text-right font-medium">neat fee</th>
+                <th className="px-4 py-2.5 text-right font-medium">neat pays</th>
+                <th className="px-4 py-2.5 text-right font-medium">LP · neat</th>
                 <th className="px-4 py-2.5 text-right font-medium">LP · 30 bp</th>
                 <th className="px-4 py-2.5 text-right font-medium">LP · 5 bp</th>
               </tr>

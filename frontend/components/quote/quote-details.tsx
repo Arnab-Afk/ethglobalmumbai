@@ -10,7 +10,7 @@ import type { Token } from "@/lib/tokens";
 
 /**
  * Under the swap button: the rate (click to invert) and the fee, expanding into the full
- * breakdown. The Hairline-specific part is "vs best venue": the fee was set last against it.
+ * breakdown. The neat-specific part is "vs best venue": the fee was set last against it.
  */
 export function QuoteDetails({
   quote,
@@ -169,7 +169,7 @@ export function QuoteDetails({
 
 const SHOWN_POOLS = 5;
 
-/** Every pool we priced for this exact trade. Hairline first, then the others, best output first. */
+/** Every pool we priced for this exact trade. neat first, then the others, best output first. */
 function PoolList({ quote, decimals, all, onToggle }: { quote: LiveQuote; decimals: number; all: boolean; onToggle: () => void }) {
   const venues = (quote.venues ?? []).filter((v) => v.out > 0n);
   if (venues.length === 0) return null;
@@ -186,7 +186,7 @@ function PoolList({ quote, decimals, all, onToggle }: { quote: LiveQuote; decima
     <div>
       <div className="text-[13px] font-medium text-[#8A8680]">Other pools</div>
       <ol className="tnum mt-3 space-y-2.5">
-        <PoolRow label="Hairline" detail={pipsToPercent(quote.feePips)} value={fmtSmart(ours, decimals)} width={width(ours)} fill="#3B6CFF" />
+        <PoolRow label="neat" detail={pipsToPercent(quote.feePips)} value={fmtSmart(ours, decimals)} width={width(ours)} fill="#3B6CFF" />
         {shown.map((v) => (
           <PoolRow key={v.id} label={v.name} detail={v.detail} value={fmtSmart(v.out, decimals)} width={width(v.out)} fill="#4A453F" />
         ))}

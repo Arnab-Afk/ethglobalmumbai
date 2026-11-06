@@ -48,8 +48,8 @@ export function LandingHeader() {
       }`}
     >
       <div className={`relative ${CONTAINER} flex h-14 items-center justify-between`}>
-        <Link href="/" onClick={toTop} className="text-[18px] font-extrabold tracking-[-0.03em]" aria-label="Hairline home">
-          Hairline
+        <Link href="/" onClick={toTop} className="text-[18px] font-extrabold tracking-[-0.03em]" aria-label="neat home">
+          neat
         </Link>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[15px] font-semibold lg:flex">
           {LINKS.map((l) => (

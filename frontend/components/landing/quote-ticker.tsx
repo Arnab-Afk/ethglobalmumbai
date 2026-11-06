@@ -21,7 +21,7 @@ export function QuoteTicker() {
   if (trades && trades.length === 0) return null;
 
   return (
-    <div className="group relative flex h-14 items-center overflow-hidden bg-[#151619] text-white" aria-label="Hairline quotes by trade size">
+    <div className="group relative flex h-14 items-center overflow-hidden bg-[#151619] text-white" aria-label="neat quotes by trade size">
       {/* Fixed label */}
       <div className="relative z-10 flex h-full shrink-0 items-center gap-2 bg-[#151619] pr-6 pl-5 font-mono text-[11px] tracking-[0.14em] text-white/60 uppercase shadow-[16px_0_24px_#151619] sm:pl-10">
         <span className="relative flex size-2">

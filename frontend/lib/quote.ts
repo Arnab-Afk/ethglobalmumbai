@@ -104,7 +104,7 @@ export type QuoteStatus =
 
 export interface LiveQuote {
   amountIn: bigint;
-  /** What the trader gets from Hairline after our fee. */
+  /** What the trader gets from neat after our fee. */
   ourOut: bigint;
   /** Our output at zero fee. ourOut + lpKeeps = zeroFeeOut. */
   zeroFeeOut: bigint;

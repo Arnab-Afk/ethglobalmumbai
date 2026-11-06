@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Hairline: graphite surfaces, ivory type, one lavender accent, 1px hairline edges. */
+/* neat: graphite surfaces, ivory type, one lavender accent, 1px hairline edges. */
 :root {
   --bg: #07070a;
   --fg: #f4f1ea;

@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hairline - best price, every swap",
+  title: "neat - best price, served neat",
   description:
-    "Hairline checks the best price you could get anywhere else, then beats it. You receive more. Liquidity providers earn what a flat fee would have missed.",
+    "neat reads what the best venue would pay you, then pours its fee right up to that line and stops. You still get more than anywhere else; LPs keep the rest.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

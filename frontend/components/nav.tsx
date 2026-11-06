@@ -26,9 +26,9 @@ export function Nav() {
         <Link
           href="/"
           className={`text-[18px] font-semibold tracking-[-0.03em] ${light ? "text-[#151619]" : "text-fg"}`}
-          aria-label="Hairline home"
+          aria-label="neat home"
         >
-          Hairline
+          neat
         </Link>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 sm:flex">
           {LINKS.map((l) => {

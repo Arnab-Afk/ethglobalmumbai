@@ -4,7 +4,7 @@ import { SEPOLIA } from "@/lib/deployments";
 import { shortAddr } from "@/lib/format";
 
 export const metadata: Metadata = {
-  title: "About · Hairline",
+  title: "About · neat",
   description: "An AMM that charges the most it can while always being the best price. How it works and where it's deployed.",
 };
 
@@ -74,7 +74,7 @@ export default function AboutPage() {
       <div className="w-full max-w-[960px]">
         {/* Hero */}
         <section className="max-w-[640px]">
-          <p className="text-sm font-medium text-accent">Hairline</p>
+          <p className="text-sm font-medium text-accent">neat</p>
           <h1 className="mt-2 text-[44px] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[56px]">
             Best price,
             <br />
@@ -115,9 +115,9 @@ export default function AboutPage() {
             <div className="text-sm text-fg-2">Worked example · docs/02-fee-algorithm.md</div>
             <p className="tnum mt-2 text-base leading-relaxed">
               Sell <b className="font-medium">10 ETH</b> into a 1,000 ETH / 3,000,000 USDC pool. The best venue pays{" "}
-              <b className="font-medium">29,610 USDC</b>; at zero fee we&apos;d pay 29,702.97. Hairline charges{" "}
+              <b className="font-medium">29,610 USDC</b>; at zero fee we&apos;d pay 29,702.97. neat charges{" "}
               <b className="font-medium text-accent">≈ 0.306%</b> and still pays the trader at least 29,612.96. A flat
-              0.05% pool would have earned 5 bp on the same trade; Hairline earns about 30.
+              0.05% pool would have earned 5 bp on the same trade; neat earns about 30.
             </p>
           </div>
         </section>

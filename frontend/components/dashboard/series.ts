@@ -4,7 +4,7 @@
  * Colour follows the pool, never its rank.
  */
 export const SERIES = [
-  { key: "hairline", label: "Hairline", color: "#8572e6" },
+  { key: "hairline", label: "neat", color: "#8572e6" },
   { key: "flat30", label: "Flat 30 bp", color: "#c4862a" },
   { key: "flat5", label: "Flat 5 bp", color: "#26967b" },
 ] as const;

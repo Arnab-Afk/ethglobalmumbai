@@ -9,7 +9,7 @@ const SIZES = [1, 10, 30, 45];
 const usd = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 
 /**
- * Tabbed comparison: for a few trade sizes, what the best venue, Hairline and two flat-fee pools pay.
+ * Tabbed comparison: for a few trade sizes, what the best venue, neat and two flat-fee pools pay.
  * Priced live through the deployed fee contract (same replay as the Dashboard).
  */
 export function CompareCard() {
@@ -38,7 +38,7 @@ export function CompareCard() {
   const rows = t
     ? [
         { name: "Best venue", out: t.bestOut, kept: null, won: true, fee: "—", venue: true, hl: false },
-        { name: "Hairline", out: t.hairline.out, kept: t.hairline.revenue, won: t.hairline.won, fee: pipsToPercent(t.feePips), venue: false, hl: true },
+        { name: "neat", out: t.hairline.out, kept: t.hairline.revenue, won: t.hairline.won, fee: pipsToPercent(t.feePips), venue: false, hl: true },
         { name: "Flat 30 bp", out: t.flat30.out, kept: t.flat30.revenue, won: t.flat30.won, fee: "0.30%", venue: false, hl: false },
         { name: "Flat 5 bp", out: t.flat5.out, kept: t.flat5.revenue, won: t.flat5.won, fee: "0.05%", venue: false, hl: false },
       ]
@@ -110,7 +110,7 @@ export function CompareCard() {
         {t && !t.hairline.won
           ? "Too big to win: even at zero fee the venue pays more, so no pool takes this trade."
           : t
-            ? `On ${SIZES[tab]} WETH, Hairline pays ${usd(edge)} USDC more than the venue and LPs keep ${usd(t.hairline.revenue)}. A flat 0.30% fee would keep ${usd(t.flat30.revenue)}.`
+            ? `On ${SIZES[tab]} WETH, neat pays ${usd(edge)} USDC more than the venue and LPs keep ${usd(t.hairline.revenue)}. A flat 0.30% fee would keep ${usd(t.flat30.revenue)}.`
             : "Green beats the best venue. Same Sepolia replay as the dashboard."}
       </p>
     </div>

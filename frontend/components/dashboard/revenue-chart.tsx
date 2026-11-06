@@ -54,7 +54,7 @@ export function RevenueChart({ trades }: { trades: ReplayTrade[] }) {
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}
         role="img"
-        aria-label="Cumulative LP revenue for Hairline, a flat 30 bp pool and a flat 5 bp pool across the replayed trades"
+        aria-label="Cumulative LP revenue for neat, a flat 30 bp pool and a flat 5 bp pool across the replayed trades"
       >
         {geo.yTicks.map((v) => (
           <g key={v}>
@@ -71,7 +71,7 @@ export function RevenueChart({ trades }: { trades: ReplayTrade[] }) {
           </text>
         ))}
 
-        {/* Lines (Hairline drawn last so it sits on top), with direct labels at the end */}
+        {/* Lines (neat drawn last so it sits on top), with direct labels at the end */}
         {[...geo.paths].reverse().map((p) => (
           <g key={p.key}>
             <path d={p.d} fill="none" stroke={p.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
