@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Mascot } from "@/components/mascot";
 import { Nav } from "@/components/nav";
 import { WalletProvider } from "@/components/wallet/wallet-provider";
 import { SEPOLIA } from "@/lib/deployments";
@@ -44,8 +43,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             Sepolia
           </a>
         </footer>
-        {/* Mascot sits in the bottom-left gutter; hidden where it would crowd the card. */}
-        <Mascot className="pointer-events-none fixed bottom-0 left-[4vw] -z-10 hidden w-[300px] xl:block" />
       </body>
     </html>
   );
