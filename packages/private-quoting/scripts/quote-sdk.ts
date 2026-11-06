@@ -1,5 +1,5 @@
 /**
- * Quote the deployed devnet pool through @hairline/sdk, the same way an integrator would.
+ * Quote the deployed devnet pool through neat3-sdk, the same way an integrator would.
  *   npm run quote:sdk -- [amountWeth] [--swap]
  * Addresses come from web/public/deployment.json (committed). `--swap` also sends approve + swap as one
  * EIP-8141 frame tx, signed by the devnet key in .devnet-state.json, which must hold ETH and dWETH.

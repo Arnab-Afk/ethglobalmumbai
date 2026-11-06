@@ -22,7 +22,7 @@ npm run deploy    # dWETH, dUSDC, MockQuoteOracle, pool; writes web/public/deplo
 npm run swap -- --mode frame  --amount 10   # frame tx → alt-mempool; prints JSON incl. tx hash
 npm run swap -- --mode legacy --amount 10   # 3 legacy txs → canonical mempool (comparison)
 npm run curve -- 29500                      # move the mock competitor's price (dUSDC for 10 dWETH)
-npm run quote:sdk -- 10 [--swap]            # same quote (and optional frame swap) through @hairline/sdk
+npm run quote:sdk -- 10 [--swap]            # same quote (and optional frame swap) through neat3-sdk
 npm run web       # open the printed localhost URL; pick Tor / Nym / Nox and quote
 ```
 
@@ -40,7 +40,7 @@ Env overrides: `FRAME_GATEWAY_RPC`, `FRAME_EXPLORER`, `FRAME_PRIVATE_KEY` (else 
 ## Not done yet
 
 - Live run: blocked while the devnet faucet is empty (Nov 6). Run `fund` → `deploy` → `swap --mode frame`, then put the explorer link in the submission.
-- Anon-RPC networks, tried in Chrome on Nov 6 (reads of the Sepolia pool decimals through `@hairline/sdk/anon`): **nox** 5 s, **nym** 46 s on a cold start, **tor-js** timed out after 140 s (the upstream demo gateway is down). On this page, nym reached the network but the devnet gateway answered "JSON is not a valid request object", so use nox here; nym works against the public Sepolia endpoints used by `frontend/`.
+- Anon-RPC networks, tried in Chrome on Nov 6 (reads of the Sepolia pool decimals through `neat3-sdk/anon`): **nox** 5 s, **nym** 46 s on a cold start, **tor-js** timed out after 140 s (the upstream demo gateway is down). On this page, nym reached the network but the devnet gateway answered "JSON is not a valid request object", so use nox here; nym works against the public Sepolia endpoints used by `frontend/`.
 - No automated test compares a live Anon-RPC quote with a plain-RPC quote at the same block. The SDK tests use mocks; the two were checked by eye (222.97 USDC both ways).
 - The sandwich-bot comparison was dropped from the plan: a public alt-mempool can't show "private path not sandwiched". See docs/05.
 - Stretch idea that really needs the alt-mempool: a *staked* sender whose VERIFY frame reads the pool's reserves (non-sender storage, which the canonical mempool rejects and the alt-mempool allows once staked). A front-run then makes the tx invalid before inclusion, so the trader pays no gas for a failed swap.
