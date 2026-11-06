@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Hairline: graphite surfaces, ivory type, one orange accent, 1px hairline edges. */
+/* Hairline: graphite surfaces, ivory type, one lavender accent, 1px hairline edges. */
 :root {
   --bg: #09090a;
   --fg: #f4f1ea;
@@ -14,10 +14,10 @@
   --line-hi: rgb(255 255 255 / 0.13);
   --solid: #17171a; /* opaque tone for elements that overlap others */
   --panel: #121214; /* modals */
-  --accent: #ff6a1f; /* orange */
-  --accent-hi: #ff8c4f;
-  --accent-lo: #d9480a;
-  --accent-ink: #1a0a02;
+  --accent: #ab9ff2; /* lavender */
+  --accent-hi: #c9c0fa;
+  --accent-lo: #8572e6;
+  --accent-ink: #1c1530;
   --win: #8fd3a6;
   --lose: #f08a7a;
   --warn: #e9a85a;
@@ -43,7 +43,7 @@
   --color-win: var(--win);
   --color-lose: var(--lose);
   --color-warn: var(--warn);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -57,7 +57,7 @@ body {
   isolation: isolate;
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-manrope), system-ui, sans-serif;
   font-weight: 450;
 }
 
@@ -72,7 +72,7 @@ body::after {
 }
 body::before {
   background:
-    radial-gradient(55% 45% at 50% -6%, rgb(255 122 50 / 0.08), transparent 70%),
+    radial-gradient(55% 45% at 50% -6%, rgb(171 159 242 / 0.09), transparent 70%),
     repeating-linear-gradient(90deg, rgb(255 255 255 / 0.028) 0 1px, transparent 1px 88px),
     repeating-linear-gradient(0deg, rgb(255 255 255 / 0.028) 0 1px, transparent 1px 88px);
   background-position: center top;
@@ -96,15 +96,51 @@ body::after {
     inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
-/* Primary button: orange, dark ink, 1px top highlight. */
+/* Primary button: lavender, dark ink, 1px top highlight. */
 .btn-primary {
-  background: linear-gradient(180deg, #ff9257 0%, #ff6a1f 55%, #e2500f 100%);
+  background: linear-gradient(180deg, #c4baf8 0%, #ab9ff2 55%, #9585ec 100%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.35),
     0 0 0 1px rgb(0 0 0 / 0.4),
-    0 8px 24px -10px rgb(255 106 31 / 0.45);
+    0 8px 24px -10px rgb(171 159 242 / 0.45);
   color: var(--accent-ink);
 }
 .btn-primary:hover {
   filter: brightness(1.05);
+}
+
+@keyframes hairline-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hairline-ticker {
+  animation: hairline-ticker 28s linear infinite;
+}
+
+/* Hero staircase bars: stretch sideways from their left edge, like Loopscale's. */
+@keyframes hairline-bar {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(var(--bar-scale, 1.5));
+  }
+}
+
+.hairline-bar {
+  transform-origin: left center;
+  animation: hairline-bar 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hairline-bar,
+  .hairline-ticker {
+    animation: none;
+  }
 }

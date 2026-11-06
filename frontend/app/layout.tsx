@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Nav } from "@/components/nav";
+import { Geist_Mono, Manrope } from "next/font/google";
 import { WalletProvider } from "@/components/wallet/wallet-provider";
-import { SEPOLIA } from "@/lib/deployments";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Manrope is the one sans font across the landing page and every app screen.
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
@@ -23,26 +22,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <WalletProvider>
-          <Nav />
-          <main className="flex flex-1 flex-col">{children}</main>
-        </WalletProvider>
-        <footer className="pb-5 pt-4 text-center text-xs text-muted">
-          ETHGlobal Mumbai · Inspired by PropellerHeads&apos; Fynd · Contracts on{" "}
-          <a
-            href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-accent hover:underline"
-          >
-            Sepolia
-          </a>
-        </footer>
+        <WalletProvider>{children}</WalletProvider>
       </body>
     </html>
   );
