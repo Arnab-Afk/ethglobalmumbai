@@ -43,24 +43,24 @@ const SURFACES = [
       ["Pair", "WETH → USDC"],
       ["Reference", "Chainlink ETH/USD"],
       ["Contract", shortAddr(SEPOLIA.contracts.QuoteOracle)],
-      ["Status", "Live on Sepolia"],
+      ["Status", "Curve on Sepolia"],
     ],
     link: { label: "See the market", href: "/market", internal: true },
     track: "Chainlink · CRE",
-    desc: "The workflow quotes venues off-chain and writes a price curve on-chain. The Market page shows that curve. The dashboard replay uses a separate demo curve. A missing or stale quote falls back to 0.30%.",
+    desc: "The workflow quotes venues off-chain and writes a price curve on-chain. The Market page shows that curve. The dashboard replay uses a separate MockQuoteOracle curve. A missing or stale quote falls back to 0.30%.",
   },
   {
     card: "Anon-RPC + Frame",
-    cardSub: "Quote reads are private. The devnet swap is one atomic frame.",
+    cardSub: "Quote reads are private. Frame fill proven on EIP-8141 devnet.",
     rows: [
-      ["Reads", "Anon-RPC"],
+      ["Reads", "Anon-RPC (live)"],
       ["neat paid", "29,512.45"],
       ["Best venue", "29,500.00"],
       ["Tx", `${FRAME_TX.slice(0, 6)}…${FRAME_TX.slice(-4)}`],
     ],
-    link: { label: "View transaction", href: `https://eip8141.arnabbhowmik.in/tx/${FRAME_TX}` },
+    link: { label: "View frame tx", href: `https://eip8141.arnabbhowmik.in/tx/${FRAME_TX}` },
     track: "Ethereum Foundation",
-    desc: "Every quote in this app is read over Anon-RPC. On the EIP-8141 devnet the swap went out as one frame transaction with minOut set to the quote, so a front-run reverts the whole batch.",
+    desc: "Sepolia quote reads go over Anon-RPC. Wallet fills in this app use a normal SepoliaSwapPool tx. Private frame submission was proven once on the EIP-8141 devnet with minOut set to the quote.",
   },
 ];
 
@@ -84,14 +84,14 @@ export default function LandingPage() {
               get more. LPs keep the rest.
             </p>
             <div className="mt-14 grid max-w-[480px] grid-cols-2 gap-x-8 border-t border-black/15 pt-8">
-              <Stat value="3.1×" label="vs a flat 0.30% pool" />
-              <Stat value="+$6.10" label="ahead on the closest trade" />
+              <Stat value="3.1×" label="LP revenue vs flat 0.30% · 40-trade replay" />
+              <Stat value="+$6.10" label="worst trader edge in that replay" />
             </div>
             <Link
               href="/dashboard"
               className="mt-5 inline-block font-mono text-[12px] tracking-[0.14em] text-[#1C1C1C]/60 uppercase hover:text-[#1C1C1C]"
             >
-              See the 40-trade replay →
+              Open the Sepolia eth_call replay →
             </Link>
           </div>
 
@@ -223,7 +223,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-[#151619] text-white">
         <BlockPattern />
         <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
-          <Eyebrow tone="dark">Live on Sepolia</Eyebrow>
+          <Eyebrow tone="dark">Live on mainnet</Eyebrow>
           <h2 className="mt-4 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px]">
             Every swap, served neat.
           </h2>
@@ -235,7 +235,7 @@ export default function LandingPage() {
         <div>
           <div className="text-[22px] font-semibold tracking-[-0.03em]">neat</div>
           <p className="mt-2 max-w-[34ch] text-[15px] leading-[1.5] text-[#6B6560]">
-            Inspired by PropellerHeads&apos; Fynd. All code written during ETHGlobal Mumbai.
+            An AMM that sets its fee last, against live mainnet venues.
           </p>
         </div>
         <FooterCol
@@ -248,10 +248,7 @@ export default function LandingPage() {
         />
         <FooterCol
           title="Learn"
-          links={[
-            { label: "About", href: "/about" },
-            { label: "Repository", href: REPO, external: true },
-          ]}
+          links={[{ label: "Repository", href: REPO, external: true }]}
         />
         <FooterCol
           title="Contracts"

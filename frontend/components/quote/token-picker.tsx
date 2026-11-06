@@ -27,7 +27,7 @@ export function TokenPicker({
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const balances = useBalances(TOKENS);
+  const { balances } = useBalances(TOKENS);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

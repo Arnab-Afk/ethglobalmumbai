@@ -5,8 +5,8 @@ import type { ReplayTrade } from "@/lib/replay";
 import { SERIES, fmtUsd } from "./series";
 
 const W = 880;
-const H = 300;
-const PAD = { top: 16, right: 96, bottom: 34, left: 72 };
+const H = 280;
+const PAD = { top: 16, right: 88, bottom: 34, left: 64 };
 
 /** Cumulative LP revenue per pool across the replayed trade stream. */
 export function RevenueChart({ trades }: { trades: ReplayTrade[] }) {
@@ -58,25 +58,31 @@ export function RevenueChart({ trades }: { trades: ReplayTrade[] }) {
       >
         {geo.yTicks.map((v) => (
           <g key={v}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={geo.y(v)} y2={geo.y(v)} stroke="var(--line)" />
-            <text x={PAD.left - 10} y={geo.y(v) + 4} textAnchor="end" fontSize="12" fill="var(--muted)" className="tnum">
+            <line x1={PAD.left} x2={W - PAD.right} y1={geo.y(v)} y2={geo.y(v)} stroke="#E4DFF8" />
+            <text x={PAD.left - 10} y={geo.y(v) + 4} textAnchor="end" fontSize="11" fill="#8A847E" className="tnum">
               {fmtUsd(v, 0)}
             </text>
           </g>
         ))}
-        <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="var(--line-hi)" />
+        <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#D4CFE8" />
         {geo.xTicks.map((i) => (
-          <text key={i} x={geo.x(i)} y={H - PAD.bottom + 20} textAnchor="middle" fontSize="12" fill="var(--muted)" className="tnum">
-            {i === 0 ? "Trade 0" : i}
+          <text key={i} x={geo.x(i)} y={H - PAD.bottom + 20} textAnchor="middle" fontSize="11" fill="#8A847E" className="tnum">
+            {i === 0 ? "0" : i}
           </text>
         ))}
 
-        {/* Lines (neat drawn last so it sits on top), with direct labels at the end */}
         {[...geo.paths].reverse().map((p) => (
           <g key={p.key}>
-            <path d={p.d} fill="none" stroke={p.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-            <circle cx={geo.x(geo.n)} cy={geo.y(p.end)} r="4" fill={p.color} stroke="var(--bg)" strokeWidth="2" />
-            <text x={geo.x(geo.n) + 10} y={geo.y(p.end) + 4} fontSize="12" fill="var(--fg-2)">
+            <path
+              d={p.d}
+              fill="none"
+              stroke={p.color}
+              strokeWidth={p.key === "hairline" ? 2.25 : 1.75}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            <circle cx={geo.x(geo.n)} cy={geo.y(p.end)} r="3.5" fill={p.color} stroke="#F4F1FE" strokeWidth="2" />
+            <text x={geo.x(geo.n) + 8} y={geo.y(p.end) + 3.5} fontSize="11" fill="#6B6560">
               {p.label}
             </text>
           </g>
@@ -84,15 +90,15 @@ export function RevenueChart({ trades }: { trades: ReplayTrade[] }) {
 
         {hover && (
           <g pointerEvents="none">
-            <line x1={geo.x(hover)} x2={geo.x(hover)} y1={PAD.top} y2={H - PAD.bottom} stroke="var(--line-hi)" />
+            <line x1={geo.x(hover)} x2={geo.x(hover)} y1={PAD.top} y2={H - PAD.bottom} stroke="#C9C0FA" />
             {geo.paths.map((p) => (
               <circle
                 key={p.key}
                 cx={geo.x(hover)}
                 cy={geo.y(geo.cum[p.key][hover])}
-                r="4.5"
+                r="4"
                 fill={p.color}
-                stroke="var(--bg)"
+                stroke="#F4F1FE"
                 strokeWidth="2"
               />
             ))}
@@ -102,23 +108,23 @@ export function RevenueChart({ trades }: { trades: ReplayTrade[] }) {
 
       {hover && t && (
         <div
-          className="panel pointer-events-none absolute top-2 z-10 w-56 rounded-lg bg-panel px-3 py-2 text-sm shadow-xl shadow-black/40"
+          className="pointer-events-none absolute top-2 z-10 w-48 rounded-xl bg-white px-3 py-2 text-[12px] shadow-[0_8px_24px_rgb(40_28_96/0.12)] ring-1 ring-black/[0.06]"
           style={{
             left: `${(geo.x(hover) / W) * 100}%`,
-            transform: geo.x(hover) > W * 0.55 ? "translateX(calc(-100% - 12px))" : "translateX(12px)",
+            transform: geo.x(hover) > W * 0.55 ? "translateX(calc(-100% - 10px))" : "translateX(10px)",
           }}
         >
-          <div className="tnum font-medium">
-            After trade {hover} · {t.size} WETH
+          <div className="tnum font-medium text-[#151619]">
+            Trade {hover} · {t.size} WETH
           </div>
-          <dl className="tnum mt-1 space-y-0.5">
+          <dl className="tnum mt-1.5 space-y-0.5">
             {geo.paths.map((p) => (
               <div key={p.key} className="flex items-center justify-between gap-3">
-                <dt className="flex items-center gap-1.5 text-fg-2">
-                  <span className="inline-block size-2 rounded-sm" style={{ background: p.color }} />
+                <dt className="flex items-center gap-1.5 text-[#6B6560]">
+                  <span className="inline-block size-1.5 rounded-full" style={{ background: p.color }} />
                   {p.label}
                 </dt>
-                <dd>{fmtUsd(geo.cum[p.key][hover])}</dd>
+                <dd className="text-[#151619]">{fmtUsd(geo.cum[p.key][hover])}</dd>
               </div>
             ))}
           </dl>

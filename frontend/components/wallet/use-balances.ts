@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getTokenBalance } from "@/lib/quote";
 import type { Token } from "@/lib/tokens";
 import { useWallet } from "./wallet-provider";
@@ -8,13 +8,22 @@ import { useWallet } from "./wallet-provider";
 const REFRESH_MS = 24_000; // every other block is plenty for balances
 
 /** Balances of the given tokens for the connected wallet on Sepolia; empty when not connected. */
-export function useBalances(tokens: Token[]): Record<string, bigint> {
+export function useBalances(tokens: Token[]): {
+  balances: Record<string, bigint>;
+  refresh: () => void;
+} {
   const { address, onSepolia } = useWallet();
   const [balances, setBalances] = useState<Record<string, bigint>>({});
+  const [tick, setTick] = useState(0);
   const key = tokens.map((t) => t.address).join(",");
 
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+
   useEffect(() => {
-    if (!address || !onSepolia) return;
+    if (!address || !onSepolia) {
+      setBalances({});
+      return;
+    }
     let cancelled = false;
     const load = () =>
       Promise.all(tokens.map((t) => getTokenBalance(t, address).then((b) => [t.address, b] as const))).then(
@@ -29,7 +38,7 @@ export function useBalances(tokens: Token[]): Record<string, bigint> {
     };
     // `key` stands in for `tokens` so a new array with the same tokens doesn't refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, onSepolia, key]);
+  }, [address, onSepolia, key, tick]);
 
-  return address && onSepolia ? balances : {};
+  return { balances: address && onSepolia ? balances : {}, refresh };
 }

@@ -32,7 +32,7 @@ export function AudienceToggle() {
         <Side
           label="Traders"
           statement="You're paid at least what the best venue pays."
-          figure={edge === null ? "—" : `+$${edge.toFixed(2)}`}
+          figure={edge === null ? "-" : `+$${edge.toFixed(2)}`}
           caption="more than the best venue on a 10 WETH sell, from the Sepolia replay"
           rows={[
             ["Quotes", "Private, over Anon-RPC"],

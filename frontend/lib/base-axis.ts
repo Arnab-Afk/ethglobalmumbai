@@ -199,5 +199,6 @@ export async function quoteAxis(symbolIn: string, symbolOut: string, amountIn: b
     venue: venues[0] ? `${venues[0].name} ${venues[0].detail} · Base` : "No Base rival",
     venues: venues.filter((v) => v.out > 0n),
     network: "base",
+    pricing: "base",
   };
 }

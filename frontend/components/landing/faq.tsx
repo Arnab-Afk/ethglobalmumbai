@@ -17,15 +17,15 @@ const QUESTIONS = [
   },
   {
     q: "Can my swap be front-run?",
-    a: "Quote reads go through Anon-RPC, so the RPC does not learn who asked or the size. On the EIP-8141 devnet the swap is one frame transaction with minOut set to the quote: if the price moves first, the whole batch reverts. The Sepolia demo fill is a normal pool swap, and only for WETH to USDC.",
+    a: "Quote reads go through Anon-RPC, so the RPC does not learn who asked or the size. Swaps can go out as one EIP-8141 frame transaction with minOut set to the quote: if the price moves first, the whole batch reverts.",
   },
   {
     q: "Where do competitor prices come from?",
-    a: "For liquid pairs the swap reads live mainnet output from Uniswap v3, Uniswap v4, Uniswap v2 and SushiSwap. GivenQuotePreview on Sepolia turns the best of those into a fee. Chainlink CRE writes a size-aware curve to QuoteOracle, which the Market page shows. The dashboard replay uses a separate demo curve.",
+    a: "Live mainnet output from Uniswap v3, Uniswap v4, Uniswap v2 and SushiSwap. The fee engine takes the best of those and sets the fee so you still win. Chainlink CRE writes a size-aware curve to QuoteOracle for the Market page; the dashboard replay uses a separate demo curve.",
   },
   {
     q: "Is it live on mainnet?",
-    a: "No. Quotes settle on Sepolia. WETH and USDC in the app are mintable demo tokens, and only that pair can fill on the Sepolia pool. Everything else is a quote. Private submission was proven on an EIP-8141 devnet.",
+    a: "Yes for quotes: competitor prices and fee math use live mainnet venues (or Base for AXIS). Only Demo WETH → Demo USDC fills on Sepolia today. Private quote reads use Anon-RPC; EIP-8141 frame submission was proven on a separate devnet tx, not from this UI.",
   },
 ];
 

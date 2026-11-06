@@ -28,7 +28,7 @@ export function QuoteTicker() {
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#AB9FF2] opacity-60" />
           <span className="relative inline-flex size-2 rounded-full bg-[#AB9FF2]" />
         </span>
-        Live · Sepolia
+        Live · Mainnet
       </div>
 
       <div className="min-w-0 flex-1 overflow-hidden">

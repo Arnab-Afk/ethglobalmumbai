@@ -6,12 +6,35 @@ import { SEPOLIA } from "@/lib/deployments";
 import { shortAddr } from "@/lib/format";
 import { useWallet } from "./wallet-provider";
 
-/** Header wallet control: Connect opens the wagmi wallet picker; address chip opens account options. */
-export function WalletButton() {
-  const { address, onSepolia, connecting, error, connectModalOpen, openConnectModal, switchToSepolia, disconnect } =
-    useWallet();
+/**
+ * Header wallet control. Connect opens the shared wagmi provider picker (ConnectModal).
+ * Address chip opens account options; Switch wallet disconnects then reopens the picker.
+ */
+export function WalletButton({
+  appearance,
+  solid = false,
+}: {
+  /** landing = hero header pills; app = cream app chrome; auto = from route */
+  appearance?: "auto" | "landing" | "app";
+  /** Landing only: filled black when header is solid white */
+  solid?: boolean;
+}) {
+  const {
+    address,
+    onSepolia,
+    connecting,
+    switching,
+    error,
+    connectModalOpen,
+    openConnectModal,
+    switchToSepolia,
+    disconnect,
+    disconnectAsync,
+  } = useWallet();
   const pathname = usePathname();
-  const light = pathname === "/swap" || pathname === "/market";
+  const mode =
+    appearance ??
+    (pathname === "/" ? "landing" : pathname === "/swap" || pathname === "/market" || pathname === "/dashboard" ? "app" : "app");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -21,6 +44,11 @@ export function WalletButton() {
     window.addEventListener("mousedown", onDown);
     return () => window.removeEventListener("mousedown", onDown);
   }, [open]);
+
+  // Close the account menu when the provider picker opens.
+  useEffect(() => {
+    if (connectModalOpen) setOpen(false);
+  }, [connectModalOpen]);
 
   const copy = async () => {
     if (!address) return;
@@ -32,6 +60,42 @@ export function WalletButton() {
     setOpen(false);
   };
 
+  const switchWallet = async () => {
+    setOpen(false);
+    try {
+      await disconnectAsync();
+    } catch {
+      disconnect();
+    }
+    // Let wagmi clear the session before listing wallets again.
+    queueMicrotask(() => openConnectModal());
+  };
+
+  const connectClass =
+    mode === "landing"
+      ? solid
+        ? "bg-[#151619] text-white hover:bg-black"
+        : "bg-white text-[#151619] hover:bg-white/90"
+      : mode === "app"
+        ? "bg-[#2F6BFF] text-white hover:bg-[#245BE0]"
+        : "bg-accent text-accent-ink hover:bg-accent-hi";
+
+  const chipClass =
+    mode === "landing"
+      ? solid
+        ? "bg-[#151619] text-white hover:bg-black"
+        : "bg-white text-[#151619] hover:bg-white/90"
+      : mode === "app"
+        ? "border border-[#E7E4DF] text-[#151619] hover:bg-white"
+        : "border border-line-hi hover:bg-surface-2";
+
+  const menuClass =
+    mode === "landing" || mode === "app"
+      ? "border-[#E7E4DF] bg-white text-[#151619] shadow-[0_16px_40px_rgb(0_0_0/0.14)]"
+      : "border-line-hi bg-panel text-fg shadow-black/50";
+
+  const itemHover = mode === "landing" || mode === "app" ? "hover:bg-[#F3F2EE]" : "text-fg-2 hover:bg-surface-2 hover:text-fg";
+
   return (
     <div ref={ref} className="relative justify-self-end">
       {!address ? (
@@ -39,9 +103,7 @@ export function WalletButton() {
           type="button"
           onClick={openConnectModal}
           disabled={connecting}
-          className={`h-8 rounded-full px-4 text-[14px] font-semibold transition-colors disabled:opacity-70 ${
-            light ? "bg-[#2F6BFF] text-white hover:bg-[#245BE0]" : "bg-accent text-accent-ink hover:bg-accent-hi"
-          }`}
+          className={`h-8 rounded-full px-4 text-[14px] font-bold transition-colors disabled:opacity-70 ${connectClass}`}
         >
           {connecting ? "Connecting…" : "Connect wallet"}
         </button>
@@ -50,20 +112,24 @@ export function WalletButton() {
           {!onSepolia && (
             <button
               type="button"
-              onClick={switchToSepolia}
-              className="flex h-8 items-center gap-2 rounded-full border border-warn/40 bg-warn/10 px-3.5 text-[14px] font-semibold text-warn"
+              onClick={() => void switchToSepolia()}
+              disabled={switching}
+              className={
+                mode === "landing"
+                  ? `h-8 rounded-full px-4 text-[14px] font-bold disabled:opacity-70 ${connectClass}`
+                  : "flex h-8 items-center gap-2 rounded-full border border-warn/40 bg-warn/10 px-3.5 text-[14px] font-semibold text-warn disabled:opacity-70"
+              }
             >
-              <span className="size-1.5 rounded-full bg-warn" />
-              Switch to Sepolia
+              {mode !== "landing" && <span className="size-1.5 rounded-full bg-warn" />}
+              {switching ? "Switching…" : "Switch to Sepolia"}
             </button>
           )}
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            className={`flex h-8 items-center gap-2 rounded-full border pr-3.5 pl-1 text-[14px] font-medium transition-colors ${
-              light ? "border-[#E7E4DF] text-[#151619] hover:bg-white" : "border-line-hi hover:bg-surface-2"
-            }`}
+            aria-haspopup="menu"
+            className={`flex h-8 items-center gap-2 rounded-full pl-1 pr-3 text-[14px] font-bold transition-colors ${chipClass}`}
           >
             <Avatar address={address} />
             <span className="tnum">{shortAddr(address)}</span>
@@ -73,51 +139,32 @@ export function WalletButton() {
 
       {open && address && (
         <div
-          className={`absolute right-0 top-11 z-40 w-56 rounded-2xl border p-1.5 text-[14px] shadow-xl ${
-            light
-              ? "border-[#E7E4DF] bg-white text-[#151619] shadow-black/10"
-              : "border-line-hi bg-panel shadow-black/50"
-          }`}
+          role="menu"
+          className={`absolute right-0 top-11 z-[90] w-56 rounded-2xl border p-1.5 text-[14px] font-semibold shadow-xl ${menuClass}`}
         >
-          <button
-            type="button"
-            onClick={() => void copy()}
-            className={`block w-full rounded-xl px-3 py-2.5 text-left ${
-              light ? "hover:bg-[#F3F2EE]" : "text-fg-2 hover:bg-surface-2 hover:text-fg"
-            }`}
-          >
+          <button type="button" role="menuitem" onClick={() => void copy()} className={`block w-full rounded-xl px-3 py-2.5 text-left ${itemHover}`}>
             Copy address
           </button>
           <a
             href={`${SEPOLIA.explorer}/address/${address}`}
             target="_blank"
             rel="noreferrer"
-            className={`block rounded-xl px-3 py-2.5 ${light ? "hover:bg-[#F3F2EE]" : "text-fg-2 hover:bg-surface-2 hover:text-fg"}`}
+            role="menuitem"
+            className={`block rounded-xl px-3 py-2.5 ${itemHover}`}
           >
             View on Etherscan ↗
           </a>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              disconnect();
-              openConnectModal();
-            }}
-            className={`block w-full rounded-xl px-3 py-2.5 text-left ${
-              light ? "hover:bg-[#F3F2EE]" : "text-fg-2 hover:bg-surface-2 hover:text-fg"
-            }`}
-          >
+          <button type="button" role="menuitem" onClick={() => void switchWallet()} className={`block w-full rounded-xl px-3 py-2.5 text-left ${itemHover}`}>
             Switch wallet
           </button>
           <button
             type="button"
+            role="menuitem"
             onClick={() => {
               disconnect();
               setOpen(false);
             }}
-            className={`block w-full rounded-xl px-3 py-2.5 text-left ${
-              light ? "hover:bg-[#F3F2EE]" : "text-fg-2 hover:bg-surface-2 hover:text-fg"
-            }`}
+            className={`block w-full rounded-xl px-3 py-2.5 text-left ${itemHover}`}
           >
             Disconnect
           </button>
@@ -125,7 +172,13 @@ export function WalletButton() {
       )}
 
       {error && !connectModalOpen && (
-        <p className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-line-hi bg-panel px-3.5 py-2.5 text-[14px] text-lose shadow-xl shadow-black/50">
+        <p
+          className={`absolute right-0 top-11 z-[90] w-64 rounded-2xl px-3.5 py-2.5 text-[13px] font-medium shadow-xl ${
+            mode === "landing" || mode === "app"
+              ? "bg-[#151619] text-white"
+              : "border border-line-hi bg-panel text-lose"
+          }`}
+        >
           {error}
         </p>
       )}

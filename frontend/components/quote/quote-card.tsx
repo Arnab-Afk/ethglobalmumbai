@@ -7,14 +7,17 @@ import { fmtAmount, fmtSmart } from "@/lib/format";
 import { isAxisPair } from "@/lib/base-axis";
 import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import { fillMode, quoteActionLabel, quoteHonestyBanner } from "@/lib/trade";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { QuoteDetails } from "./quote-details";
 import { ReadError } from "./read-error";
 import { RefreshRing } from "./refresh-ring";
 import { DEFAULT_SLIPPAGE_BPS, SwapSettings } from "./slippage-row";
+import { StatusBanner } from "./status-banner";
 import { SwapReview } from "./swap-review";
 import { TokenButton } from "./token-pill";
 import { TokenPicker } from "./token-picker";
+import { Skeleton } from "../ui/skeleton";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 
@@ -92,8 +95,9 @@ export function QuoteCard() {
   const inFlight = useRef(false);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
-  const { address, onSepolia, connecting, openConnectModal, switchToSepolia } = useWallet();
-  const balances = useBalances([sell, buy]);
+  const mode = fillMode(sell, buy);
+  const { address, onSepolia, connecting, switching, openConnectModal, switchToSepolia } = useWallet();
+  const { balances } = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
 
@@ -289,14 +293,35 @@ export function QuoteCard() {
               ? { label: "No bid", tone: "off" }
               : quoted.ourOut < quoted.bestOut
                 ? { label: "Rival pays more · no bid", tone: "off" }
-                : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)}`, tone: "off" }
-          : !address
-            ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : openConnectModal, tone: "soft" }
-            : !onSepolia
-              ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
-              : !quoted
-                ? { label: "Checking the best venue…", tone: "off" }
-                : { label: "Swap", onClick: () => setReviewKey(key), tone: "primary" };
+                : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)} · quote only`, tone: "off" }
+          : !quoted
+            ? { label: "Checking the best venue…", tone: "off" }
+            : !address
+              ? {
+                  label: quoteActionLabel(mode, { connecting, hasAddress: false }),
+                  onClick: connecting ? undefined : openConnectModal,
+                  tone: "soft",
+                }
+              : !onSepolia
+                ? {
+                    label: quoteActionLabel(mode, { switching, hasAddress: true, onSepolia: false }),
+                    onClick: switching ? undefined : () => void switchToSepolia(),
+                    tone: "warn",
+                  }
+                : {
+                    label: quoteActionLabel(mode, { hasAddress: true, onSepolia: true }),
+                    onClick: () => setReviewKey(key),
+                    tone: mode === "sepolia-fill" ? "primary" : "soft",
+                  };
+
+  const honesty =
+    quoted &&
+    quoteHonestyBanner({
+      mode,
+      status: quoted.status,
+      maxQuoteAge: config?.maxQuoteAge,
+      ageSeconds: quoted.status === "stale" ? quoted.blockTime - quoted.updatedAt : undefined,
+    });
 
   const actionTone = {
     primary: "bg-[#2F6BFF] text-white hover:bg-[#245BE0]",
@@ -380,11 +405,17 @@ export function QuoteCard() {
         <section>
           <div className="text-[14px] font-medium text-[#8A8680]">You receive</div>
           <div className="mt-2 flex items-center gap-3">
-            <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 8) : "0"} dim={!quote || loading} />
+            {loading && !quote ? (
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Skeleton className="h-10 w-[9.5rem] rounded-lg" tone="cream" />
+              </div>
+            ) : (
+              <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 8) : "0"} dim={!quote || loading} />
+            )}
             <TokenButton token={buy} tone="light" onClick={() => setPicking("buy")} />
           </div>
           <div className="tnum mt-2 flex h-5 items-center justify-between gap-3 text-[13px] text-[#9A9690]">
-            <span>{buyUsd ? `$${usd2(buyUsd)}` : ""}</span>
+            <span>{loading && !quote ? <Skeleton className="h-3 w-16 rounded" tone="cream" /> : buyUsd ? `$${usd2(buyUsd)}` : ""}</span>
             {buyBal !== undefined && (
               <span>
                 {fmtSmart(buyBal, buy.decimals)} {buy.symbol}
@@ -406,6 +437,8 @@ export function QuoteCard() {
       >
         {action.label}
       </button>
+
+      {honesty && <StatusBanner tone={honesty.tone} text={honesty.text} />}
 
       {fresh && shownPool && (
         <QuoteDetails
@@ -504,6 +537,11 @@ function EdgeNote({ quote, tokenOut }: { quote: LiveQuote; tokenOut: Token }) {
         ) : hasBest ? (
           <>
             The best pool pays <span className="font-semibold text-[#151619]">{fmt2(-edge, dec)} {symbol}</span> more on this size.
+          </>
+        ) : quote.status === "stale" ? (
+          <>
+            Competitor quote is stale, so the fee is the fallback. LPs earn{" "}
+            <span className="font-semibold text-[#151619]">{fmt2(kept, dec)} {symbol}</span>.
           </>
         ) : (
           <>

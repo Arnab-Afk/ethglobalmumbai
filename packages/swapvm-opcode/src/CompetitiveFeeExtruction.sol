@@ -16,6 +16,7 @@ contract CompetitiveFeeExtruction is IExtruction, IStaticExtruction {
     error RecomputeDetected();
     error BothBalancesRequired(uint256 balanceIn, uint256 balanceOut);
     error ExactOutNotSupported();
+    error CannotBeatVenue(uint256 amountOut, uint256 bestOut);
 
     /// @dev SwapVM Fee.sol scale: 1e9 = 100%.
     uint256 internal constant SWAPVM_BPS = 1e9;
@@ -67,25 +68,15 @@ contract CompetitiveFeeExtruction is IExtruction, IStaticExtruction {
         updatedNextPC = nextPC;
 
         if (!query.isExactIn) {
-            // MVP: exact-out competitive path deferred (docs/02). Use fallback fee.
+            // MVP: exact-out competitive path deferred (docs/02); exact-out swaps revert.
             revert ExactOutNotSupported();
         }
 
         if (swap.amountOut != 0) revert RecomputeDetected();
 
-        (uint256 bestOut, uint64 updatedAt) = oracle.getBestOut(query.tokenIn, query.tokenOut, swap.amountIn);
-
-        CompetitiveFee.Config memory cfg = CompetitiveFee.Config({
-            feeFloor: feeFloor,
-            feeCap: feeCap,
-            fallbackFee: fallbackFee,
-            undercutBps: undercutBps,
-            maxQuoteAge: maxQuoteAge
-        });
-
-        uint24 feePips = CompetitiveFee.compute(
-            swap.amountIn, swap.balanceIn, swap.balanceOut, bestOut, updatedAt, cfg
-        );
+        (uint256 bestOut, uint64 updatedAt) = _bestOut(query.tokenIn, query.tokenOut, swap.amountIn);
+        CompetitiveFee.Config memory cfg = _config();
+        uint24 feePips = CompetitiveFee.compute(swap.amountIn, swap.balanceIn, swap.balanceOut, bestOut, updatedAt, cfg);
 
         // Mirror SwapVM `_flatFeeAmountInXD` exact-in: floor fee, then XYC on net input
         uint32 feeBps = feePips.pipsToSwapVmBps();
@@ -94,6 +85,14 @@ contract CompetitiveFeeExtruction is IExtruction, IStaticExtruction {
 
         updatedSwap.amountOut =
             (amountInAfterFee * swap.balanceOut) / (swap.balanceIn + amountInAfterFee);
+
+        // A fresh quote says the trader does better elsewhere: we lose this trade, so don't fill it.
+        // Stale or missing quote → no revert, the fallback fee applies (fail-safe).
+        if (
+            CompetitiveFee._quoteUsable(bestOut, updatedAt, cfg.maxQuoteAge) && updatedSwap.amountOut < bestOut
+        ) {
+            revert CannotBeatVenue(updatedSwap.amountOut, bestOut);
+        }
     }
 
     /// @notice Helper for demos/tests: compute fee pips the extruction would use.
@@ -102,14 +101,28 @@ contract CompetitiveFeeExtruction is IExtruction, IStaticExtruction {
         view
         returns (uint24 feePips, uint256 bestOut, uint64 updatedAt)
     {
-        (bestOut, updatedAt) = oracle.getBestOut(tokenIn, tokenOut, amountIn);
-        CompetitiveFee.Config memory cfg = CompetitiveFee.Config({
+        (bestOut, updatedAt) = _bestOut(tokenIn, tokenOut, amountIn);
+        feePips = CompetitiveFee.compute(amountIn, balanceIn, balanceOut, bestOut, updatedAt, _config());
+    }
+
+    /// @dev Oracle failure must not block swaps (CLAUDE.md fail-safe): treat as missing → fallbackFee.
+    function _bestOut(address tokenIn, address tokenOut, uint256 amountIn)
+        internal
+        view
+        returns (uint256 bestOut, uint64 updatedAt)
+    {
+        try oracle.getBestOut(tokenIn, tokenOut, amountIn) returns (uint256 b, uint64 u) {
+            (bestOut, updatedAt) = (b, u);
+        } catch {}
+    }
+
+    function _config() internal view returns (CompetitiveFee.Config memory) {
+        return CompetitiveFee.Config({
             feeFloor: feeFloor,
             feeCap: feeCap,
             fallbackFee: fallbackFee,
             undercutBps: undercutBps,
             maxQuoteAge: maxQuoteAge
         });
-        feePips = CompetitiveFee.compute(amountIn, balanceIn, balanceOut, bestOut, updatedAt, cfg);
     }
 }

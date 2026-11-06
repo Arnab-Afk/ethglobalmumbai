@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Address, Hex } from "viem";
+import { sepolia } from "wagmi/chains";
 import {
   useConfig,
   useConnect,
@@ -19,6 +20,7 @@ interface WalletState {
   address?: Address;
   chainId?: number;
   connecting: boolean;
+  switching: boolean;
   pendingConnectorId?: string;
   error?: string;
   onSepolia: boolean;
@@ -30,6 +32,8 @@ interface WalletState {
   connect: (connector: Connector) => Promise<Address | undefined>;
   switchToSepolia: () => Promise<void>;
   disconnect: () => void;
+  /** Awaitable disconnect: use before opening the connect picker to switch wallets. */
+  disconnectAsync: () => Promise<void>;
   send: (tx: { to: Address; data: Hex }) => Promise<Hex>;
 }
 
@@ -42,17 +46,20 @@ export function useWallet(): WalletState {
 }
 
 function errorMessage(e: unknown): string {
-  const err = e as { code?: number; name?: string; shortMessage?: string; message?: string };
-  const raw = `${err?.shortMessage ?? ""} ${err?.message ?? ""}`;
+  const err = e as { code?: number | string; name?: string; shortMessage?: string; message?: string; details?: string };
+  const raw = `${err?.shortMessage ?? ""} ${err?.message ?? ""} ${err?.details ?? ""}`;
   if (/already pending/i.test(raw)) {
-    return "A wallet popup is already open. Open MetaMask from the toolbar, approve or reject, then tap Try again.";
+    return "A wallet popup is already open. Open MetaMask from the toolbar, approve or reject, then try again.";
   }
   if (/already connected/i.test(raw) || err?.name === "ConnectorAlreadyConnectedError") {
     return "Already connected.";
   }
   if (err?.code === 4001 || err?.name === "UserRejectedRequestError") return "Request rejected in wallet";
   if (err?.name === "ProviderNotFoundError") {
-    return "MetaMask not found. Install the extension or unlock it, then refresh.";
+    return "Wallet not found. Unlock it or refresh, then try again.";
+  }
+  if (/unrecognized chain|4902|chain not (found|configured|added)/i.test(raw) || err?.code === 4902) {
+    return "Sepolia isn’t in this wallet yet. Approve adding it when prompted.";
   }
   return err?.shortMessage ?? err?.message ?? "Wallet request failed";
 }
@@ -67,11 +74,33 @@ function isAlreadyConnected(e: unknown): boolean {
   return err?.name === "ConnectorAlreadyConnectedError" || /already connected/i.test(`${err?.shortMessage ?? ""} ${err?.message ?? ""}`);
 }
 
+function isMissingChainError(e: unknown): boolean {
+  const err = e as { code?: number | string; shortMessage?: string; message?: string; details?: string; data?: { originalError?: { code?: number } } };
+  const code = err?.code ?? err?.data?.originalError?.code;
+  if (code === 4902 || code === "4902") return true;
+  return /unrecognized chain|chain not (found|added|configured)|try adding the chain/i.test(
+    `${err?.shortMessage ?? ""} ${err?.message ?? ""} ${err?.details ?? ""}`,
+  );
+}
+
+const SEPOLIA_HEX = `0x${SEPOLIA.chainId.toString(16)}` as const;
+
+const ADD_SEPOLIA = {
+  chainId: SEPOLIA_HEX,
+  chainName: sepolia.name,
+  nativeCurrency: sepolia.nativeCurrency,
+  rpcUrls: [SEPOLIA.rpcUrl],
+  blockExplorerUrls: [SEPOLIA.explorer],
+} as const;
+
+type Eip1193 = {
+  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+};
+
 /** All installed wallets from wagmi / EIP-6963. Only drops a bare "Injected" duplicate. */
 export function listConnectors(list: readonly Connector[]): Connector[] {
   const named = list.filter((c) => c.id !== "injected");
   const fallback = list.filter((c) => c.id === "injected");
-  // If any wallet announced itself (MetaMask, Phantom, Rabby, …), hide the anonymous Injected row.
   const source = named.length > 0 ? named : fallback;
   const seen = new Set<string>();
   const out: Connector[] = [];
@@ -90,33 +119,23 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const { mutateAsync: connectAsync, reset: resetConnect, isPending: connectPending } = useConnect();
   const config = useConfig();
   const { mutateAsync: reconnectAsync } = useReconnect();
-  const { mutate: disconnectMutate } = useDisconnect();
-  const { mutateAsync: switchChainAsync } = useSwitchChain();
+  const { mutate: disconnectMutate, mutateAsync: disconnectAsyncMutate } = useDisconnect();
+  const { mutateAsync: switchChainAsync, isPending: switchPending } = useSwitchChain();
   const { mutateAsync: sendTxAsync } = useSendTransaction();
 
   const [error, setError] = useState<string>();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [pendingConnectorId, setPendingConnectorId] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const inFlight = useRef(false);
+  const switchInFlight = useRef(false);
 
   useEffect(() => {
     if (!error || connectModalOpen) return;
     const t = setTimeout(() => setError(undefined), 8_000);
     return () => clearTimeout(t);
   }, [error, connectModalOpen]);
-
-  const ensureSepolia = useCallback(
-    async (chainId: number) => {
-      if (chainId === SEPOLIA.chainId) return;
-      try {
-        await switchChainAsync({ chainId: SEPOLIA.chainId });
-      } catch (e) {
-        setError(errorMessage(e));
-      }
-    },
-    [switchChainAsync],
-  );
 
   const connect = useCallback(
     async (connector: Connector) => {
@@ -127,25 +146,23 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setError(undefined);
 
       try {
-        // Already connected to this wallet — just close the picker.
+        // Accounts only: never wallet_switchEthereumChain here (stacks prompts / MetaMask origin crash).
         if (connection.address && connection.connector?.uid === connector.uid) {
           setConnectModalOpen(false);
-          void ensureSepolia(connection.chainId ?? 0);
           return connection.address;
         }
 
-        let result: { accounts: readonly Address[]; chainId: number };
         try {
-          result = await connectAsync({ connector });
+          const result = await connectAsync({ connector });
+          setConnectModalOpen(false);
+          setError(undefined);
+          return result.accounts[0];
         } catch (e) {
           if (isAlreadyConnected(e) && connection.address) {
             setConnectModalOpen(false);
-            void ensureSepolia(connection.chainId ?? 0);
             return connection.address;
           }
           if (isPendingError(e)) {
-            // Do NOT call eth_requestAccounts again — that is what keeps MetaMask stuck.
-            // Wait for the open popup to settle, then reconnect from accounts (no new prompt).
             setError(errorMessage(e));
             resetConnect();
             const provider = (await connector.getProvider().catch(() => null)) as {
@@ -184,57 +201,88 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
               return undefined;
             }
 
-            // The user approved the open popup, so the wallet now authorizes this site. Reconnect
-            // reads accounts without a new prompt, but wagmi skips any connector whose shim flag
-            // says "disconnected" (left by an earlier Disconnect) and returns [] silently. Clear it.
             await config.storage?.removeItem(`${connector.id}.disconnected`);
             const recovered = await reconnectAsync({ connectors: [connector] }).catch(() => []);
             const session = recovered.find((c) => c.connector.uid === connector.uid) ?? recovered[0];
             if (!session?.accounts[0]) {
-              // Never report success without a live connection.
               setError("Approved in the wallet, but the connection didn't finish. Try again.");
               return undefined;
             }
             setConnectModalOpen(false);
             setError(undefined);
-            void ensureSepolia(session.chainId);
             return session.accounts[0];
           }
           setError(errorMessage(e));
           return undefined;
         }
-
-        setConnectModalOpen(false);
-        setError(undefined);
-        // Not awaited: see ensureSepolia callers above.
-        void ensureSepolia(result.chainId);
-        return result.accounts[0];
       } finally {
         inFlight.current = false;
         setBusy(false);
         setPendingConnectorId(undefined);
       }
     },
-    [
-      config.storage,
-      connectAsync,
-      connection.address,
-      connection.chainId,
-      connection.connector?.uid,
-      ensureSepolia,
-      reconnectAsync,
-      resetConnect,
-    ],
+    [config.storage, connectAsync, connection.address, connection.connector?.uid, reconnectAsync, resetConnect],
   );
 
   const switchToSepolia = useCallback(async () => {
+    if (switchInFlight.current) return;
+    if (connection.chainId === SEPOLIA.chainId) {
+      setError(undefined);
+      return;
+    }
+    switchInFlight.current = true;
+    setSwitching(true);
+    setError(undefined);
+
+    const connector = connection.connector;
+    const provider = (await connector?.getProvider().catch(() => null)) as Eip1193 | null;
+
+    const addThenSwitch = async () => {
+      if (!provider?.request) throw new Error("Wallet provider unavailable. Reconnect and try again.");
+      await provider.request({ method: "wallet_addEthereumChain", params: [ADD_SEPOLIA] });
+      // Some wallets land on Sepolia after add; others still need an explicit switch.
+      try {
+        await provider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: SEPOLIA_HEX }],
+        });
+      } catch {
+        /* already on Sepolia after add */
+      }
+    };
+
     try {
-      await switchChainAsync({ chainId: SEPOLIA.chainId });
+      try {
+        await switchChainAsync({ chainId: SEPOLIA.chainId });
+      } catch (e) {
+        if (isMissingChainError(e)) {
+          await addThenSwitch();
+        } else {
+          // wagmi can fail while MetaMask still accepts a direct EIP-1193 switch (e.g. unsupported
+          // current chain not in config). Fall through to the provider.
+          try {
+            if (!provider?.request) throw e;
+            await provider.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: SEPOLIA_HEX }],
+            });
+          } catch (e2) {
+            if (isMissingChainError(e2)) {
+              await addThenSwitch();
+            } else {
+              throw e2;
+            }
+          }
+        }
+      }
       setError(undefined);
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      switchInFlight.current = false;
+      setSwitching(false);
     }
-  }, [switchChainAsync]);
+  }, [connection.chainId, connection.connector, switchChainAsync]);
 
   const send = useCallback(
     async (tx: { to: Address; data: Hex }) => {
@@ -251,6 +299,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const disconnect = useCallback(() => {
     disconnectMutate();
   }, [disconnectMutate]);
+
+  const disconnectAsync = useCallback(async () => {
+    await disconnectAsyncMutate();
+  }, [disconnectAsyncMutate]);
 
   const closeConnectModal = useCallback(() => {
     if (inFlight.current) return;
@@ -275,6 +327,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       address: connection.address,
       chainId: connection.chainId,
       connecting,
+      switching: switching || switchPending,
       pendingConnectorId,
       error,
       onSepolia: connection.chainId === SEPOLIA.chainId,
@@ -290,12 +343,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       connect,
       switchToSepolia,
       disconnect,
+      disconnectAsync,
       send,
     }),
     [
       connection.address,
       connection.chainId,
       connecting,
+      switching,
+      switchPending,
       pendingConnectorId,
       error,
       connectors,
@@ -305,6 +361,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       connect,
       switchToSepolia,
       disconnect,
+      disconnectAsync,
       send,
       resetConnect,
     ],

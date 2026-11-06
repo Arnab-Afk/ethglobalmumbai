@@ -45,7 +45,7 @@ export function ConnectModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center sm:px-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center sm:px-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !connecting) closeConnectModal();
       }}
@@ -120,7 +120,7 @@ export function ConnectModal({
                   light ? "bg-[#151619] text-white hover:bg-black" : "bg-accent text-accent-ink hover:bg-accent-hi"
                 }`}
               >
-                I closed the popup — try again
+                I closed the popup. Try again
               </button>
             ) : null}
           </div>

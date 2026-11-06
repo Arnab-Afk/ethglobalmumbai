@@ -4,7 +4,7 @@
 
 | Track | What we submit | Must-have to qualify | Owner agent |
 |---|---|---|---|
-| 1inch (Aqua / SwapVM) | `CompetitiveFee` instruction + Aqua strategy | Working opcode, used in a program, swap executed against Aqua liquidity | `swapvm-aqua` |
+| 1inch "Build an Aqua App" | `CompetitiveFeeExtruction` (SwapVM opcode 32) as an Aqua strategy | "Official Aqua/SwapVM contracts must be used (redeployments of a modified SwapVM contract is allowed)"; "Onchain execution of token transfers should be presented during the final demo (local forks are ok)"; "Proper Git commit history (no single-commit entries on the final day)". SwapVM use scores higher. (Checked on the prize page, Nov 7.) Met by `npm run aqua:fork` in `packages/swapvm-opcode` | `swapvm-aqua` |
 | Ethereum Foundation (one EF prize per project; judges place us) | Private quoting + submission around the AMM | **Anon-RPC:** "your app routes its RPC reads through Anon-RPC by default." **Alt mempool:** "a link to your admitted transaction on the devnet explorer, or code that submits one", and we can explain the trade-offs. **CROPS:** FOSS license, README with run steps and a `CROPS` section, demo video ≤ 3 min, no trackers. (Checked on the prize page, Nov 6) | `private-quoting` |
 | Chainlink CRE | Quote workflow + `QuoteOracle` | Workflow runs (simulated or deployed) and writes data that contracts consume | `cre-oracle` |
 

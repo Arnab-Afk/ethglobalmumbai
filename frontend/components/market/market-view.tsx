@@ -5,6 +5,7 @@ import { SEPOLIA } from "@/lib/deployments";
 import { fmtAge, shortAddr } from "@/lib/format";
 import { CHAINLINK_ETH_USD, getMarket, type MarketSnapshot } from "@/lib/market";
 import { DEFAULT_BUY, DEFAULT_SELL, type Token } from "@/lib/tokens";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CurveChart } from "./curve-chart";
 
 const REFRESH_MS = 12_000;
@@ -85,7 +86,7 @@ export function MarketView() {
           <p className="font-mono text-[12px] tracking-[0.14em] text-[#5B46C7] uppercase">Mainnet venues</p>
           <h1 className="mt-3 text-[44px] leading-none font-medium tracking-[-0.04em]">Market</h1>
           <p className="mt-3 max-w-[36ch] text-[16px] leading-[1.5] text-[#6B6560]">
-            Best mainnet output for {tokenIn.symbol} → {tokenOut.symbol}, by size.
+            CRE QuoteOracle curve for {tokenIn.symbol} → {tokenOut.symbol}, by size. Separate from the swap screen&apos;s live mainnet venue reads.
           </p>
         </div>
         <div role="tablist" aria-label="Trade direction" className="flex h-11 items-center rounded-full bg-white p-1 ring-1 ring-black/[0.06]">
@@ -108,59 +109,80 @@ export function MarketView() {
         </div>
       </div>
 
-      {error && <p className="mt-6 text-[14px] text-[#B42318]">Couldn&apos;t reach Sepolia: {error}</p>}
+      {error && (
+        <p className="mt-6 text-[14px] text-[#B42318]">
+          Couldn&apos;t load QuoteOracle: {error}
+        </p>
+      )}
 
       <section className="mt-8 rounded-[28px] bg-white px-5 py-6 shadow-[0_24px_60px_rgb(40_28_96/0.07)] ring-1 ring-black/[0.04] sm:px-7 sm:py-7">
         <div className="grid items-end gap-8 sm:grid-cols-[minmax(0,1.45fr)_1fr_1fr]">
-          <Figure
-            large
-            tone="blue"
-            label={`Best venue · ${sizeLabel} ${tokenIn.symbol}`}
-            value={one ? `${fmtTok(one.out, tokenOut)}` : data ? "No curve" : "—"}
-            unit={one ? tokenOut.symbol : undefined}
-            note={
-              one && data ? (
-                <span className={one.vsFair >= 0 ? "text-[#1F8A5B]" : "text-[#6B6560]"}>
-                  {one.vsFair >= 0 ? "+" : ""}
-                  {one.vsFair.toFixed(2)}% vs Chainlink
-                </span>
-              ) : (
-                "Mainnet v3 quoter"
-              )
-            }
-          />
-          <Figure
-            tone="purple"
-            label="Chainlink ETH/USD"
-            value={data ? `$${fmtUsd(data.feed.price)}` : "—"}
-            note={
-              data ? (
-                <>
-                  {fmtAge(data.blockTime - data.feed.updatedAt)} ago ·{" "}
-                  <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${CHAINLINK_ETH_USD}`} target="_blank" rel="noreferrer">
-                    {shortAddr(CHAINLINK_ETH_USD)}
-                  </a>
-                </>
-              ) : (
-                "Loading"
-              )
-            }
-          />
-          <Figure
-            tone={fresh ? "green" : undefined}
-            label="Quote age"
-            value={age !== null ? fmtAge(age) : data ? "Never" : "—"}
-            unit={age !== null ? "ago" : undefined}
-            note={age !== null ? (fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s. Fee falls back.`) : "Waiting for a report"}
-          />
+          {data ? (
+            <>
+              <Figure
+                large
+                tone="blue"
+                label={`Best venue · ${sizeLabel} ${tokenIn.symbol}`}
+                value={one ? `${fmtTok(one.out, tokenOut)}` : "No curve"}
+                unit={one ? tokenOut.symbol : undefined}
+                note={
+                  one ? (
+                    <span className={one.vsFair >= 0 ? "text-[#1F8A5B]" : "text-[#6B6560]"}>
+                      {one.vsFair >= 0 ? "+" : ""}
+                      {one.vsFair.toFixed(2)}% vs Chainlink
+                    </span>
+                  ) : (
+                    "Mainnet v3 quoter"
+                  )
+                }
+              />
+              <Figure
+                tone="purple"
+                label="Chainlink ETH/USD"
+                value={`$${fmtUsd(data.feed.price)}`}
+                note={
+                  <>
+                    {fmtAge(data.blockTime - data.feed.updatedAt)} ago ·{" "}
+                    <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${CHAINLINK_ETH_USD}`} target="_blank" rel="noreferrer">
+                      {shortAddr(CHAINLINK_ETH_USD)}
+                    </a>
+                  </>
+                }
+              />
+              <Figure
+                tone={fresh ? "green" : undefined}
+                label="Quote age"
+                value={age !== null ? fmtAge(age) : "Never"}
+                unit={age !== null ? "ago" : undefined}
+                note={
+                  age !== null
+                    ? fresh
+                      ? "Within maxQuoteAge for fee pricing"
+                      : `Older than ${MAX_QUOTE_AGE}s. Swaps that read this curve fall back to the fixed fee.`
+                    : "Waiting for a CRE report"
+                }
+              />
+            </>
+          ) : (
+            <>
+              <FigureSkeleton large />
+              <FigureSkeleton />
+              <FigureSkeleton />
+            </>
+          )}
         </div>
 
         <div className="mt-7 overflow-hidden rounded-[20px] bg-[#F4F1FE]">
           {data && data.samples.length > 1 ? (
             <CurveChart samples={data.samples} reference={data.feed.price} tokenIn={tokenIn} tokenOut={tokenOut} />
-          ) : (
+          ) : data ? (
             <div className="grid h-[240px] place-items-center text-[14px] text-[#8A847E]">
-              {data ? "No competitor curve on-chain for this pair yet." : "Loading curve"}
+              No competitor curve on-chain for this pair yet.
+            </div>
+          ) : (
+            <div className="flex h-[240px] flex-col justify-end gap-3 px-6 pb-8" aria-busy aria-label="Loading curve">
+              <Skeleton className="h-24 w-full rounded-xl" style={{ background: "rgb(171 159 242 / 0.35)" }} />
+              <Skeleton className="h-2 w-full rounded" style={{ background: "rgb(171 159 242 / 0.25)" }} />
             </div>
           )}
         </div>
@@ -172,11 +194,12 @@ export function MarketView() {
               Up to <span className="tnum font-medium text-[#151619]">{fmtSize(data.maxSize)} {tokenIn.symbol}</span>.
             </>
           )}{" "}
-          The swap screen sends this output to{" "}
+          This page is the CRE-written curve. The swap screen prices liquid pairs from live mainnet venue
+          eth_calls into{" "}
           <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.GivenQuotePreview}`} target="_blank" rel="noreferrer">
             GivenQuotePreview
           </a>
-          , which calls fee-core.
+          ; both paths share fee-core.
         </p>
       </section>
 
@@ -284,9 +307,20 @@ function Figure({
   );
 }
 
-/** ["mock-b","mock-b","mock-b"] → "mock-b ×3"; mixed → "mock-a, mock-b ×2". */
+function FigureSkeleton({ large }: { large?: boolean }) {
+  return (
+    <div aria-hidden>
+      <Skeleton className="h-3 w-28 rounded" tone="cream" />
+      <Skeleton className={`mt-3 rounded-lg ${large ? "h-11 w-40" : "h-8 w-24"}`} tone="cream" />
+      <Skeleton className="mt-3 h-3 w-32 rounded" tone="cream" />
+    </div>
+  );
+}
+
+/** ["mock-b","mock-b","mock-b"] → "mock-b ×3"; mixed → "mock-a, mock-b ×2". Labels come from the CRE workflow config. */
 function summarizeVenues(venues: string[]): string {
   const counts = new Map<string, number>();
   venues.forEach((v) => counts.set(v, (counts.get(v) ?? 0) + 1));
-  return [...counts].map(([v, n]) => (n > 1 ? `${v} ×${n}` : v)).join(", ");
+  const body = [...counts].map(([v, n]) => (n > 1 ? `${v} ×${n}` : v)).join(", ");
+  return venues.some((v) => v.startsWith("mock-")) ? `${body} (workflow labels)` : body;
 }

@@ -2,6 +2,9 @@
 cache/
 out/
 
+# forge install deps (tracked via .gitmodules when registered as submodules)
+lib/
+
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
