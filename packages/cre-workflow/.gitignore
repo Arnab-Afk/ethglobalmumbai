@@ -1,0 +1,4 @@
+# CRE CLI build artifacts
+.cre_build_tmp.js
+*.wasm
+*.wasm.br.b64

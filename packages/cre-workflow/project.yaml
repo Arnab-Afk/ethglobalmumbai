@@ -1,0 +1,13 @@
+# CRE CLI project settings for packages/cre-workflow.
+#
+# Run from this directory:
+#   cre workflow simulate ./workflow -T sepolia-settings
+#   cre workflow simulate ./workflow -T sepolia-settings --broadcast   # real Sepolia tx via the mock forwarder
+#
+# Secrets (CRE_ETH_PRIVATE_KEY for --broadcast) go in ./.env, which the repo .gitignore excludes.
+# Never put keys or private RPC URLs in this file; use ${VAR} references instead.
+
+sepolia-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com

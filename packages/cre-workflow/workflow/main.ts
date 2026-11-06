@@ -11,6 +11,7 @@
  * `npm run apply:report` to push via QuoteOracle.applyReport while CRE deploy is pending.
  */
 import {
+  bytesToHex,
   cre,
   getNetwork,
   prepareReportRequest,
@@ -22,6 +23,9 @@ import { parseWorkflowConfig } from "../src/config.js";
 import { encodeCurveReport } from "../src/encodeReport.js";
 import type { CurveUpdate, PairConfig, WorkflowConfig } from "../src/types.js";
 import { quoteMockXyk } from "../src/venues/mockXyk.js";
+
+/** EVM TxStatus values from the CRE SDK (FATAL = 0, REVERTED = 1, SUCCESS = 2). */
+const TX_STATUS: Record<number, string> = { 0: "FATAL", 1: "REVERTED", 2: "SUCCESS" };
 
 function quotePairMockOnly(pair: PairConfig, observedAt: bigint): CurveUpdate {
   const venues = pair.venues.filter((v) => !v.exclude && v.kind === "mock-xyk");
@@ -73,7 +77,13 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
     })
     .result();
 
-  runtime.log(`cre-workflow: writeReport done ${JSON.stringify(reply)}`);
+  // The reply carries BigInt and Uint8Array fields, which JSON.stringify cannot print.
+  const status = TX_STATUS[reply.txStatus] ?? `UNKNOWN(${reply.txStatus})`;
+  const txHash = reply.txHash && reply.txHash.length > 0 ? bytesToHex(reply.txHash) : "none";
+  runtime.log(
+    `cre-workflow: writeReport status=${status} txHash=${txHash}` +
+      (reply.errorMessage ? ` error=${reply.errorMessage}` : ""),
+  );
   return payload;
 };
 

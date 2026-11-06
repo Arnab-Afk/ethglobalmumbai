@@ -1,6 +1,6 @@
 {
   "schedule": "0 */1 * * * *",
-  "chainSelectorName": "ethereum-sepolia",
+  "chainSelectorName": "ethereum-testnet-sepolia",
   "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
   "quoteOracle": "0xe39D6dE0689581C2e681379C206AA3492Dfd73C0",
   "gasLimit": "500000",

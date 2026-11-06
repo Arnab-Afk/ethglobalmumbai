@@ -1,0 +1,13 @@
+# CRE workflow settings: the competing-venue quote curve that feeds QuoteOracle.
+# Target name must match a target in ../project.yaml.
+
+sepolia-settings:
+  user-workflow:
+    workflow-name: "lastlook-quote-curve"
+    # Chainlink-hosted private registry: no mainnet gas for registration.
+    # Nothing is deployed unless someone runs `cre workflow deploy` on purpose.
+    deployment-registry: "private"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.json"
+    secrets-path: ""
