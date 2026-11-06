@@ -8,7 +8,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "simulate:local": "tsx scripts/simulate-local.ts",
-    "apply:report": "tsx scripts/apply-report.ts"
+    "apply:report": "tsx scripts/apply-report.ts",
+    "cre:watch": "bash scripts/cre-watch.sh"
   },
   "engines": {
     "node": ">=20.12"
