@@ -156,7 +156,7 @@ export function SwapReview({
   type Confirm = { label: string; onClick?: () => void; tone: "primary" | "soft" | "off" };
   let confirm: Confirm;
   if (!wallet.address) {
-    confirm = { label: wallet.connecting ? "Connecting…" : "Connect wallet", onClick: wallet.connect, tone: "soft" };
+    confirm = { label: wallet.connecting ? "Connecting…" : "Connect wallet", onClick: wallet.openConnectModal, tone: "soft" };
   } else if (!wallet.onSepolia) {
     confirm = { label: "Switch to Sepolia", onClick: wallet.switchToSepolia, tone: "soft" };
   } else if (shortBalance) {
