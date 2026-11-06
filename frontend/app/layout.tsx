@@ -22,7 +22,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      // Smooth scrolling for in-page anchors only: Next skips it for route changes.
+      data-scroll-behavior="smooth"
+      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <WalletProvider>{children}</WalletProvider>
       </body>
