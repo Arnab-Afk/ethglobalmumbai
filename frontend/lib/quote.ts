@@ -1,7 +1,7 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
 import { SEPOLIA } from "./deployments";
-import { bestMainnetOut, isMainnetPair, mainnetDecimals } from "./mainnet";
+import { bestMainnetOut, isMainnetPair, mainnetDecimals, mainnetVenueQuotes, type VenueQuote } from "./mainnet";
 import type { PoolSide } from "./pools";
 import { rpcFetch, rpcTimeoutMs } from "./rpc";
 import type { Token } from "./tokens";
@@ -40,7 +40,25 @@ function bookDepth(symbol: string): bigint {
   return symbol === "USDC" || symbol === "USDT" || symbol === "DAI" || symbol === "EURC" ? 1_000_000n : 1_000n;
 }
 
+/** True for the one pair SepoliaSwapPool can fill (either direction; only WETH → USDC beats the venue). */
+export function isSwapPair(symbolIn: string, symbolOut: string): boolean {
+  return (symbolIn === "WETH" && symbolOut === "USDC") || (symbolIn === "USDC" && symbolOut === "WETH");
+}
+
+/** SepoliaSwapPool's real balances: the reserves its quote / swap use. Read fresh every quote. */
+async function poolInventory(symbolIn: string): Promise<PoolSide> {
+  const { DemoWETH, DemoUSDC, SepoliaSwapPool } = SEPOLIA.contracts;
+  const [weth, usdc] = await Promise.all(
+    [DemoWETH, DemoUSDC].map((address) =>
+      client.readContract({ address, abi: erc20Abi, functionName: "balanceOf", args: [SepoliaSwapPool] }),
+    ),
+  );
+  return symbolIn === "WETH" ? { reserveIn: weth, reserveOut: usdc } : { reserveIn: usdc, reserveOut: weth };
+}
+
 async function inventory(symbolIn: string, symbolOut: string): Promise<PoolSide> {
+  // The swap pair prices against the pool's real balances: a pin drifts from the fill once mainnet moves.
+  if (isSwapPair(symbolIn, symbolOut)) return poolInventory(symbolIn);
   // One book per direction. A constant-product pin that beats selling WETH cannot also
   // beat selling USDC, so the reverse side gets its own 0.40% cushion.
   const key = `${symbolIn}/${symbolOut}`;
@@ -102,6 +120,8 @@ export interface LiveQuote {
   latencyMs: number;
   /** Where bestOut was read from. */
   venue: string;
+  /** Every competing venue's output for this exact trade, best first (mainnet pairs only). */
+  venues?: VenueQuote[];
   /** Inventory this quote was priced against, when the screen pins it. */
   reserves?: PoolSide;
 }
@@ -150,11 +170,13 @@ export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bi
 
 async function quoteMainnet(tokenIn: Token, tokenOut: Token, amountIn: bigint): Promise<LiveQuote> {
   const t0 = performance.now();
-  const [bestOut, book, block] = await Promise.all([
-    bestMainnetOut(tokenIn.symbol, tokenOut.symbol, amountIn),
+  const [venueQuotes, book, block] = await Promise.all([
+    mainnetVenueQuotes(tokenIn.symbol, tokenOut.symbol, amountIn),
     inventory(tokenIn.symbol, tokenOut.symbol),
     client.getBlock({ blockTag: "latest" }),
   ]);
+  const venues = venueQuotes.filter((v) => v.out > 0n).sort((a, b) => (b.out > a.out ? 1 : b.out < a.out ? -1 : 0));
+  const bestOut = venues[0]?.out ?? 0n;
   const { reserveIn, reserveOut } = book;
   const updatedAt = block.timestamp;
   const [feePips, ourOut] = await client.readContract({
@@ -175,7 +197,8 @@ async function quoteMainnet(tokenIn: Token, tokenOut: Token, amountIn: bigint): 
     blockTime,
     status,
     latencyMs: performance.now() - t0,
-    venue: "Uniswap v3 mainnet",
+    venue: venues[0] ? `${venues[0].name} ${venues[0].detail} · mainnet` : "No mainnet venue",
+    venues,
     reserves: book,
   };
 }

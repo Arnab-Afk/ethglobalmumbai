@@ -59,25 +59,99 @@ export function mainnetDecimals(symbol: string): number {
   return MAINNET_TOKENS[symbol]?.decimals ?? 18;
 }
 
-/** Best output across the mainnet v3 fee tiers for this exact size. */
-export async function bestMainnetOut(symbolIn: string, symbolOut: string, amountIn: bigint): Promise<bigint> {
+/** One competing venue's output for this exact trade. */
+export interface VenueQuote {
+  id: string;
+  /** e.g. "Uniswap v3", "SushiSwap". */
+  name: string;
+  /** Pool detail, e.g. "0.05%" or "v2 pool". */
+  detail: string;
+  /** Output in tokenOut units; 0 when the pool is missing or the call reverted. */
+  out: bigint;
+}
+
+const V2_ROUTERS = [
+  { id: "univ2", name: "Uniswap v2", router: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D" as Address },
+  { id: "sushi", name: "SushiSwap", router: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F" as Address },
+];
+const v2Abi = parseAbi(["function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[] amounts)"]);
+
+// Uniswap v4: hookless native-ETH/USDC pools (checked on mainnet, Nov 2026). Our own CompetitiveFeeHook
+// pools must never be listed here: quoting ourselves would undercut ourselves.
+const V4_QUOTER = "0x52F0E24D1c21C8A0cB1e5a5dD6198556BD9E1203" as const;
+const NATIVE = "0x0000000000000000000000000000000000000000" as const;
+const V4_POOLS: Record<string, { fee: number; tickSpacing: number }[]> = {
+  "USDC/WETH": [
+    { fee: 100, tickSpacing: 1 },
+    { fee: 500, tickSpacing: 10 },
+    { fee: 3000, tickSpacing: 60 },
+    { fee: 10000, tickSpacing: 200 },
+  ],
+};
+const v4Abi = parseAbi([
+  "struct PoolKey { address currency0; address currency1; uint24 fee; int24 tickSpacing; address hooks; }",
+  "struct QuoteExactSingleParams { PoolKey poolKey; bool zeroForOne; uint128 exactAmount; bytes hookData; }",
+  "function quoteExactInputSingle(QuoteExactSingleParams params) view returns (uint256 amountOut, uint256 gasEstimate)",
+]);
+
+const tierLabel = (fee: number) => `${(fee / 10_000).toFixed(fee < 500 ? 2 : fee < 10_000 ? 2 : 0)}%`;
+const orZero = (p: Promise<bigint>) => p.catch(() => 0n);
+
+/**
+ * Every mainnet venue we compare against, for this exact size: Uniswap v3 (4 fee tiers), Uniswap v4
+ * (hookless ETH pools), Uniswap v2 and SushiSwap. One batched RPC request.
+ */
+export async function mainnetVenueQuotes(symbolIn: string, symbolOut: string, amountIn: bigint): Promise<VenueQuote[]> {
   const tokenIn = MAINNET_TOKENS[symbolIn]?.address;
   const tokenOut = MAINNET_TOKENS[symbolOut]?.address;
-  if (!tokenIn || !tokenOut) return 0n;
-  const outs = await Promise.all(
-    FEES.map(async (fee) => {
-      try {
-        const [amountOut] = await mainnetClient.readContract({
-          address: QUOTER_V2,
-          abi: quoterAbi,
+  if (!tokenIn || !tokenOut) return [];
+
+  const v3 = FEES.map(async (fee): Promise<VenueQuote> => ({
+    id: `univ3-${fee}`,
+    name: "Uniswap v3",
+    detail: tierLabel(fee),
+    out: await orZero(
+      mainnetClient
+        .readContract({ address: QUOTER_V2, abi: quoterAbi, functionName: "quoteExactInputSingle", args: [[tokenIn, tokenOut, amountIn, fee, 0n]] })
+        .then(([o]) => o),
+    ),
+  }));
+
+  // v4 ETH pools use native ETH where we hold WETH. ETH (address 0) is always currency0.
+  const ethIn = symbolIn === "WETH";
+  const other = ethIn ? tokenOut : tokenIn;
+  const v4 = (V4_POOLS[pairKey(symbolIn, symbolOut)] ?? []).map(async ({ fee, tickSpacing }): Promise<VenueQuote> => ({
+    id: `univ4-${fee}`,
+    name: "Uniswap v4",
+    detail: tierLabel(fee),
+    out: await orZero(
+      mainnetClient
+        .readContract({
+          address: V4_QUOTER,
+          abi: v4Abi,
           functionName: "quoteExactInputSingle",
-          args: [[tokenIn, tokenOut, amountIn, fee, 0n]],
-        });
-        return amountOut;
-      } catch {
-        return 0n;
-      }
-    }),
-  );
-  return outs.reduce((best, out) => (out > best ? out : best), 0n);
+          args: [{ poolKey: { currency0: NATIVE, currency1: other, fee, tickSpacing, hooks: NATIVE }, zeroForOne: ethIn, exactAmount: amountIn, hookData: "0x" }],
+        })
+        .then(([o]) => o),
+    ),
+  }));
+
+  const v2 = V2_ROUTERS.map(async ({ id, name, router }): Promise<VenueQuote> => ({
+    id,
+    name,
+    detail: "0.30%",
+    out: await orZero(
+      mainnetClient
+        .readContract({ address: router, abi: v2Abi, functionName: "getAmountsOut", args: [amountIn, [tokenIn, tokenOut]] })
+        .then((a) => a[a.length - 1] ?? 0n),
+    ),
+  }));
+
+  return Promise.all([...v3, ...v4, ...v2]);
+}
+
+/** Best output across every mainnet venue for this exact size. */
+export async function bestMainnetOut(symbolIn: string, symbolOut: string, amountIn: bigint): Promise<bigint> {
+  const quotes = await mainnetVenueQuotes(symbolIn, symbolOut, amountIn);
+  return quotes.reduce((best, q) => (q.out > best ? q.out : best), 0n);
 }

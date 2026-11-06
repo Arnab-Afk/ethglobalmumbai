@@ -22,3 +22,5 @@ Thumbs.db
 
 # private-quoting: throwaway devnet key + deployed addresses
 .devnet-state.json
+# private-quoting: Sepolia demo pool deploy output (addresses go into deployments/sepolia.json)
+.sepolia-swap.json

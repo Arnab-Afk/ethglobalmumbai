@@ -7,6 +7,15 @@ import type { Token } from "./tokens";
 /** Chainlink ETH/USD on Sepolia: the reference price the CRE workflow logs alongside its venues. */
 export const CHAINLINK_ETH_USD = "0x694AA1769357215DE4FAC081bf1f309aDC325306" as const;
 
+/**
+ * The CRE workflow writes curves for the canonical Sepolia WETH / USDC. The picker's WETH / USDC rows now
+ * point at the demo tokens behind SepoliaSwapPool, so look CRE events up by symbol, not by picker address.
+ */
+const CRE_TOKENS: Record<string, `0x${string}`> = {
+  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+  USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+};
+
 /** Block of the QuoteOracle deployment (tx 0x19b733…db28); no CurveUpdated events can be older. */
 const QUOTE_ORACLE_DEPLOY_BLOCK = 12_070_789n;
 
@@ -153,7 +162,10 @@ export async function getMarket(tokenIn: Token, tokenOut: Token): Promise<Market
     client.getLogs({
       address: SEPOLIA.contracts.QuoteOracle,
       event: curveUpdated,
-      args: { tokenIn: tokenIn.address, tokenOut: tokenOut.address },
+      args: {
+        tokenIn: CRE_TOKENS[tokenIn.symbol] ?? tokenIn.address,
+        tokenOut: CRE_TOKENS[tokenOut.symbol] ?? tokenOut.address,
+      },
       fromBlock: QUOTE_ORACLE_DEPLOY_BLOCK,
       toBlock: "latest",
     }),

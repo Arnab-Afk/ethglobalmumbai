@@ -25,7 +25,7 @@ export function QuoteDetails({
 }) {
   const [open, setOpen] = useState(false);
   const rate = (quote.ourOut * 10n ** BigInt(tokenIn.decimals)) / quote.amountIn;
-  const onMainnet = quote.venue === "Uniswap v3 mainnet";
+  const onMainnet = quote.venues !== undefined;
   const previewAddress = onMainnet ? SEPOLIA.contracts.GivenQuotePreview : SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader;
   const minOut = (quote.ourOut * BigInt(10_000 - slippageBps)) / 10_000n;
   const out = tokenOut.symbol;
