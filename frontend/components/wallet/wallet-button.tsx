@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { SEPOLIA } from "@/lib/deployments";
 import { shortAddr } from "@/lib/format";
 import { useWallet } from "./wallet-provider";
@@ -8,6 +9,8 @@ import { useWallet } from "./wallet-provider";
 /** Header wallet control: Connect → address chip (with menu) → wrong-network warning. */
 export function WalletButton() {
   const { address, onSepolia, connecting, error, connect, switchToSepolia, disconnect } = useWallet();
+  const pathname = usePathname();
+  const light = pathname === "/swap" || pathname === "/market";
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -25,7 +28,9 @@ export function WalletButton() {
           type="button"
           onClick={connect}
           disabled={connecting}
-          className="h-8 rounded-full bg-accent px-4 text-[14px] font-semibold text-accent-ink transition-colors hover:bg-accent-hi disabled:opacity-70"
+          className={`h-8 rounded-full px-4 text-[14px] font-semibold transition-colors disabled:opacity-70 ${
+            light ? "bg-[#2F6BFF] text-white hover:bg-[#245BE0]" : "bg-accent text-accent-ink hover:bg-accent-hi"
+          }`}
         >
           {connecting ? "Connecting…" : "Connect wallet"}
         </button>
@@ -43,7 +48,9 @@ export function WalletButton() {
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex h-8 items-center gap-2 rounded-full border border-line-hi pr-3.5 pl-1 text-[14px] font-medium transition-colors hover:bg-surface-2"
+          className={`flex h-8 items-center gap-2 rounded-full border pr-3.5 pl-1 text-[14px] font-medium transition-colors ${
+            light ? "border-[#E7E4DF] text-[#151619] hover:bg-white" : "border-line-hi hover:bg-surface-2"
+          }`}
         >
           <Avatar address={address} />
           <span className="tnum">{shortAddr(address)}</span>

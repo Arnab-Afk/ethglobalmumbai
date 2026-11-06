@@ -52,7 +52,7 @@ export function TokenPicker({
       aria-modal="true"
       aria-labelledby="picker-title"
     >
-      <div className="flex max-h-[80vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[24px] border border-line-hi bg-panel shadow-2xl shadow-black/60 sm:rounded-[24px]">
+      <div className="flex max-h-[80vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[24px] border border-line-hi bg-panel text-[#f4f1ea] shadow-2xl shadow-black/60 sm:rounded-[24px]">
         <div className="px-5 pt-5">
           <div className="flex items-center justify-between">
             <h2 id="picker-title" className="text-[17px] font-semibold">

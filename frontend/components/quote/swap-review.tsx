@@ -181,7 +181,7 @@ export function SwapReview({
       aria-modal="true"
       aria-labelledby="review-title"
     >
-      <div className="w-full max-w-[440px] rounded-t-[28px] bg-[#161618] p-3 text-white shadow-2xl shadow-black/60 sm:rounded-[28px]">
+      <div className="w-full max-w-[550px] rounded-t-[28px] bg-[#161618] p-3 text-white shadow-2xl shadow-black/60 sm:rounded-[28px]">
         <div className="flex items-center justify-between px-2 pt-1 pb-3">
           <h2 id="review-title" className="text-[16px] font-semibold">
             Review quote
