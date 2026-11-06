@@ -8,6 +8,15 @@
 - Networks: https://ethereum.github.io/anon-rpc/networks/
 - GitHub: https://github.com/ethereum/anon-rpc
 - npm: `@anon-rpc/browser-harness`, `@anon-rpc/browser-extension-harness`
+
+Network check from Chrome, Nov 6, reading Sepolia through `@lastlook/sdk/anon`:
+
+| Network | Result | Notes |
+|---|---|---|
+| `nox` | Works: quote in 0.6–1.7 s | Drops out for a minute at a time with `NoTunnelExitError: No exit offers TLS tunnels`; the app retries every block. Specifier lives on Sepolia, so the one bootstrap read goes to Sepolia. |
+| `tor-js` | Down | The demo gateway from `adopters.json5` failed to build circuits ("all gateways failed"). Upstream says it may disappear; pass your own via `config.gateways`. |
+| `nym` | No answer in 2 min | Bundle is ~18 MB; bootstrap contacts `validator.nymtech.net`. |
+| `passthrough` | Not anonymous | Sandbox and hash pinning only. |
 - Prize: https://ethglobal.com/events/mumbai/prizes/ethereum-foundation
 
 ## Frame / EIP-8141 (self-hosted devnet)

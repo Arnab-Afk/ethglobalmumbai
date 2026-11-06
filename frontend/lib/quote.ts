@@ -2,12 +2,14 @@ import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
 import { SEPOLIA } from "./deployments";
 import type { PoolSide } from "./pools";
+import { rpcFetch, rpcTimeoutMs } from "./rpc";
 import type { Token } from "./tokens";
 
-// Batch so one quote (fee preview + block) is a single HTTP request: the public RPC rate-limits.
+// Batch so one quote (fee preview + block) is a single HTTP request: the public RPC rate-limits, and over
+// Anon-RPC each request costs a Tor round trip.
 export const client = createPublicClient({
   chain: sepolia,
-  transport: http(SEPOLIA.rpcUrl, { batch: { wait: 20 }, retryCount: 2 }),
+  transport: http(SEPOLIA.rpcUrl, { batch: { wait: 20 }, retryCount: 2, fetchFn: rpcFetch, timeout: rpcTimeoutMs }),
 });
 
 const extructionAbi = parseAbi([

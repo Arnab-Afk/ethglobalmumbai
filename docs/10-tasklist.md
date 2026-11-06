@@ -12,7 +12,7 @@ Status snapshot. Update when something lands.
 | **S1** | **Soham** | **Anon-RPC transport for `@lastlook/sdk` (`private` quote mode)** | **`packages/sdk`** | **Done** (`@lastlook/sdk/anon`; browser-only, fails closed) |
 | **S2** | **Soham** | **Wire `CompetitiveFeeClient.setFrameSubmitter` → EIP-8141 frame tx** | **`packages/sdk` + `private-quoting`** | **Done** (`@lastlook/sdk/frame`; unit-tested, live run blocked on empty faucet) |
 | **S3** | **Soham** | **Integrator README / 5-minute quote example for judges** | **`packages/sdk`** | **Done** (`packages/sdk/README.md`) |
-| **S4** | **Soham** | **Optional: demo app imports SDK instead of raw ABIs** | **`packages/sdk` → `apps/demo`** | **Blocked** (`apps/demo` not in repo yet) |
+| **S4** | **Soham** | **Demo app imports SDK: reads via Anon-RPC by default** | **`packages/sdk` → `frontend/`** | **Done** (`frontend/lib/rpc.ts`, Nox default; footer badge) |
 | D1–D5 | Ishika | Mock pools, dashboard, deploy-all, video, submissions | `apps/demo` | Pending |
 
 ## Soham — client SDK (detail)
@@ -26,4 +26,4 @@ import { CompetitiveFeeClient } from "@lastlook/sdk";
 const q = await client.quote({ tokenIn, amountIn });
 ```
 
-S1–S3 are in this package. S4 waits until `apps/demo` imports the SDK.
+S1–S3 are in this package. S4: the Hairline app (`frontend/`) reads Sepolia through `@lastlook/sdk/anon`. It targets `frontend/`, not `apps/demo`, because `frontend/` is the app we demo; it quotes Sepolia `previewFeePips`, so it uses the SDK transport rather than `CompetitiveFeeClient` (which wraps the devnet pool).

@@ -4,7 +4,7 @@ Client for the **last-look competitive-fee AMM**: a pool that sets its fee per t
 
 ```
 quote()  →  { amountOut, feePips, bestOut, beatsBestVenue }
-encodeSwap()  →  [approve, swap(minOut = quoted)]      send with any wallet
+encodeSwap()  →  [approve, swap(minOut = quoted, deadline = now + 10 min)]   send with any wallet
 submit()  →  one EIP-8141 frame tx (atomic) to the alt-mempool
 ```
 
@@ -27,13 +27,13 @@ import { parseEther, formatUnits } from "viem";
 
 const client = new CompetitiveFeeClient({
   rpcUrl: DEVNET.rpcUrl,          // self-hosted EIP-8141 devnet, chain 1337
-  pool: "0x…",                    // DevnetCompetitivePool (see packages/private-quoting/web/public/deployment.json)
+  pool: "0x9960927e3ecce8d5124db1bfad68121cdec20aa0",  // DevnetCompetitivePool, from packages/private-quoting/web/public/deployment.json
   quoteMode: "public",            // Node: Anon-RPC needs a browser
 });
 
-const q = await client.quote({ tokenIn: "0x…dWETH", amountIn: parseEther("10") });
+const q = await client.quote({ tokenIn: "0xf1877c0dc40bf2f1e46017c05908635e7cb68af2" /* dWETH */, amountIn: parseEther("10") });
 console.log(`fee ${q.feePips / 1e4}%  you get ${formatUnits(q.amountOut, 6)}  best venue ${formatUnits(q.bestOut, 6)}`);
-// fee 0.306%  you get 29613.0  best venue 29610.0
+// fee 0.3%  you get 29614.741031  best venue 29610   (live devnet, Nov 6)
 ```
 
 ## Private quotes (browser, default)
@@ -68,7 +68,17 @@ client.setFrameSubmitter(createFrameSubmitter({ privateKey: DEVNET_ONLY_KEY }));
 const txHash = await client.submit(q);   // waits for inclusion; see it on DEVNET.explorerUrl
 ```
 
-The frame tx is `[VERIFY, approve|ATOMIC_BATCH, swap]`. `minOut` defaults to the quoted output, so if the pool moves before inclusion (e.g. a front-run), the swap reverts and EIP-8141 rolls back the approve too.
+The frame tx is `[VERIFY, approve|ATOMIC_BATCH, swap]`. The swap reverts, and EIP-8141 rolls back the approve with it, when:
+
+| Revert | Cause | Default guard |
+|---|---|---|
+| `InsufficientOutput` | the pool moved before inclusion (e.g. a front-run) | `minOut` = quoted output |
+| `Expired` | the tx sat in the mempool too long | `deadline` = now + 10 min |
+| `CannotBeatVenue` | a competitor now pays more; the pool refuses to fill a worse trade | always on (pool-side) |
+
+All are in `poolAbi`, so `decodeErrorResult({ abi: poolAbi, data })` names them.
+
+From this repo, `cd packages/private-quoting && npm run quote:sdk -- 10` quotes the live pool through the SDK (`--swap` also submits).
 
 > **Not a private mempool.** The alt-mempool is public: anyone can subscribe to pending frame txs and their calldata. Protection comes from `minOut` + atomicity, not from hiding the tx.
 
@@ -78,8 +88,8 @@ The frame tx is `[VERIFY, approve|ATOMIC_BATCH, swap]`. `minOut` defaults to the
 |---|---|
 | `new CompetitiveFeeClient({ rpcUrl, pool, quoteMode?, anonFetch?, frameSubmitter?, timeoutMs? })` | `quoteMode` default `"private"`; `timeoutMs` default 120 s (mixnets are slow) |
 | `quote({ tokenIn, amountIn, mode? })` | `{ amountOut, feePips, bestOut, zeroFeeOut, beatsBestVenue, mode }`. `bestOut = 0` → no fresh competitor quote, pool used its fallback fee |
-| `encodeSwap(quote, { minOut? })` | `[approve, swap]` calls |
-| `setFrameSubmitter(fn)` / `submit(quote, { minOut? })` | `fn(calls) => txHash`; any submitter works, `createFrameSubmitter` is the EIP-8141 one |
+| `encodeSwap(quote, { minOut?, deadline? })` | `[approve, swap]` calls; `deadline` in unix seconds |
+| `setFrameSubmitter(fn)` / `submit(quote, { minOut?, deadline? })` | `fn(calls) => txHash`; any submitter works, `createFrameSubmitter` is the EIP-8141 one |
 | `createAnonFetch({ network?, config?, bootstrapRpc? })` | `@lastlook/sdk/anon`. `{ fetch, ready, anonymous, close }`; create once, reuse |
 | `createFrameSubmitter({ privateKey, rpcUrl?, chainId?, maxFeePerGas?, wait? })` | `@lastlook/sdk/frame` |
 

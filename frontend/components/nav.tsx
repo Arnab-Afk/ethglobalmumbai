@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WalletButton } from "./wallet/wallet-button";
 
-// Screens still to build are listed but not linked, so the demo never hits a 404.
 const LINKS = [
   { href: "/", label: "Quote", ready: true },
   { href: "/market", label: "Market", ready: true },
