@@ -1,0 +1,62 @@
+---
+title: Quickstart
+description: Quote the live devnet pool from Node in a few lines.
+---
+
+<Steps>
+<Step>
+
+### Install
+
+```sh
+npm install neat3-sdk viem
+```
+
+</Step>
+<Step>
+
+### Create a client
+
+In Node, pass `quoteMode: "public"`. The default mode, `"private"`, needs Anon-RPC, which only runs in a browser.
+
+```ts
+import { CompetitiveFeeClient, DEVNET } from "neat3-sdk";
+
+const client = new CompetitiveFeeClient({
+  rpcUrl: DEVNET.rpcUrl, // self-hosted EIP-8141 devnet, chain 1337
+  pool: "0x9960927e3ecce8d5124db1bfad68121cdec20aa0", // DevnetCompetitivePool
+  quoteMode: "public",
+});
+```
+
+</Step>
+<Step>
+
+### Ask for a quote
+
+```ts
+import { parseEther, formatUnits } from "viem";
+
+const q = await client.quote({
+  tokenIn: "0xf1877c0dc40bf2f1e46017c05908635e7cb68af2", // dWETH
+  amountIn: parseEther("10"),
+});
+
+console.log(
+  `fee ${q.feePips / 1e4}%  you get ${formatUnits(q.amountOut, 6)}  best venue ${formatUnits(q.bestOut, 6)}`,
+);
+// fee 0.3%  you get 29614.741031  best venue 29610   (live devnet, Nov 6)
+```
+
+`q.beatsBestVenue` is `true` when the pool's output is at least the best competing venue's.
+
+</Step>
+</Steps>
+
+## Next
+
+<Cards>
+  <Card title="How fees are set" href="/docs/guides/fees" />
+  <Card title="Quote privately in a browser" href="/docs/guides/private-quotes" />
+  <Card title="Send the swap" href="/docs/guides/swapping" />
+</Cards>

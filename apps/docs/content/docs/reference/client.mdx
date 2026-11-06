@@ -1,0 +1,92 @@
+---
+title: CompetitiveFeeClient
+description: The main entry point of neat3-sdk. Quote, encode and submit.
+---
+
+```ts
+import { CompetitiveFeeClient, DEVNET, poolAbi, erc20Abi } from "neat3-sdk";
+```
+
+## Constructor
+
+```ts
+new CompetitiveFeeClient(config: ClientConfig)
+```
+
+| Option | Type | Default | Notes |
+|---|---|---|---|
+| `rpcUrl` | `string` | required | JSON-RPC URL of the chain the pool lives on |
+| `pool` | `Address` | required | `DevnetCompetitivePool` address |
+| `quoteMode` | `"private" \| "public"` | `"private"` | Private reads go through `anonFetch` and never through a plain fetch |
+| `anonFetch` | `FetchFn` | none | Required for private mode. See [`neat3-sdk/anon`](/docs/reference/anon) |
+| `frameSubmitter` | `FrameSubmitter` | none | Enables `submit()`. Can be set later |
+| `timeoutMs` | `number` | `120000` | RPC timeout. Anonymizing networks are slow |
+
+## quote
+
+```ts
+client.quote({ tokenIn, amountIn, mode? }): Promise<Quote>
+```
+
+A read-only call to the pool's `quote`. It runs the same code as `swap`, so it matches a swap in the same block. `mode` overrides the client's `quoteMode` for one call.
+
+Throws if `mode` is `"private"` and no `anonFetch` was given.
+
+### Quote
+
+| Field | Type | Meaning |
+|---|---|---|
+| `tokenIn` | `Address` | Echo of the input |
+| `amountIn` | `bigint` | Echo of the input |
+| `amountOut` | `bigint` | What you receive, after the pool's fee |
+| `feePips` | `number` | Pool fee in pips (1e6 = 100%, 3000 = 0.30%) |
+| `bestOut` | `bigint` | Best competitor's output. `0n` = no fresh quote, fallback fee used |
+| `zeroFeeOut` | `bigint` | The pool's output at zero fee |
+| `beatsBestVenue` | `boolean` | `bestOut > 0n && amountOut >= bestOut` |
+| `mode` | `"private" \| "public"` | Which path served the read |
+
+## encodeSwap
+
+```ts
+client.encodeSwap(quote, { minOut?, deadline? }): Call[]
+```
+
+Returns `[approve, swap]`. `quote` only needs `tokenIn`, `amountIn` and `amountOut`.
+
+| Option | Default |
+|---|---|
+| `minOut` | The quoted `amountOut` |
+| `deadline` | Now + 600 seconds. Unix seconds, as a `bigint` |
+
+Each `Call` is `{ to, data, execution?, state? }`. `execution` and `state` are gas-limit hints that frame submitters use; wallets ignore them.
+
+## submit
+
+```ts
+client.submit(quote, { minOut?, deadline? }): Promise<Hex>
+```
+
+Encodes the swap and hands the calls to the frame submitter. Returns the transaction hash.
+
+Throws if no submitter is set. Pass one in the config, or call `setFrameSubmitter`.
+
+## setFrameSubmitter
+
+```ts
+client.setFrameSubmitter(fn: (calls: Call[]) => Promise<Hex>): this
+```
+
+Any function that sends the calls as one transaction works. [`createFrameSubmitter`](/docs/reference/frame) is the EIP-8141 one.
+
+## Exports
+
+| Export | What it is |
+|---|---|
+| `DEVNET` | `{ chainId: 1337, rpcUrl, explorerUrl }` for the self-hosted EIP-8141 devnet |
+| `poolAbi` | `quote`, the 4-argument `swap`, and the pool's errors |
+| `erc20Abi` | Just `approve` |
+| Types | `Call`, `ClientConfig`, `FetchFn`, `FrameSubmitter`, `Quote`, `QuoteMode`, `SwapOptions` |
+
+<Callout title="The 3-argument swap">
+The pool also has `swap(tokenIn, amountIn, minOut)`, which uses `block.timestamp` as its deadline. The SDK's ABI and `encodeSwap` use only the 4-argument form.
+</Callout>

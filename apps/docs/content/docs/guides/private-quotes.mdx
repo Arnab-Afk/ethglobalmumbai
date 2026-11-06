@@ -1,0 +1,53 @@
+---
+title: Private quotes
+description: Read the pool through Anon-RPC so the RPC doesn't learn who asked, for which pair, or how much.
+---
+
+A quote request tells the RPC provider your IP, the pair and the size. That is a signal other people can buy or infer. In `"private"` mode the SDK sends reads through [Anon-RPC](https://github.com/ethereum/anon-rpc), so the RPC sees an exit node instead.
+
+`"private"` is the default `quoteMode`.
+
+## Use it
+
+```ts
+import { CompetitiveFeeClient, DEVNET } from "neat3-sdk";
+import { createAnonFetch } from "neat3-sdk/anon";
+
+const anon = createAnonFetch({ network: "nox" });
+const client = new CompetitiveFeeClient({
+  rpcUrl: DEVNET.rpcUrl,
+  pool,
+  anonFetch: anon.fetch,
+});
+
+const q = await client.quote({ tokenIn, amountIn }); // the first call waits for the network to bootstrap
+```
+
+Create one `anon` per network and reuse it. Calls made before `anon.ready` resolves are buffered, not dropped.
+
+<Callout type="warn" title="It fails closed">
+Without `anonFetch`, a `"private"` quote throws. It never falls back to a plain `fetch`. To read without Anon-RPC, pass `quoteMode: "public"` on purpose.
+</Callout>
+
+## Browser only
+
+Anon-RPC runs a hash-pinned worker in a sandboxed iframe, so `createAnonFetch` throws outside a browser. In Node, use `quoteMode: "public"`.
+
+## Pick a network
+
+| Network | Notes (checked from Chrome, Nov 6 2026) |
+|---|---|
+| `nox` | Works. About 5 s for a Sepolia read. Drops out for a minute at a time, so retry |
+| `nym` | Works against public Sepolia endpoints. About 46 s on a cold start, and a large bundle |
+| `tor-js` | The upstream demo gateway was down (timed out after 140 s). Pass your own gateway through `config` |
+| `passthrough` | Sandbox and hash pinning only. **Does not anonymize.** For tests |
+
+Our own app tries `nox`, then `nym`, then `tor-js`, and skips a failed network for 45 seconds. The SDK doesn't do this for you: a client uses the one `anonFetch` you give it.
+
+Expect mixnets to be slow. `timeoutMs` defaults to 120 seconds for that reason.
+
+## What it doesn't hide
+
+- The one read of the network's specifier contract at startup is **not** anonymized.
+- The anon-client sees your requests the way any RPC would. The sandbox narrows what a bad client can do, and an on-chain hash pins the code.
+- Swaps are a separate matter. See [Swapping](/docs/guides/swapping): the alt-mempool is public.

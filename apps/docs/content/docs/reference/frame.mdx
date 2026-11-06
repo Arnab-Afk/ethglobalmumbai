@@ -1,0 +1,52 @@
+---
+title: neat3-sdk/frame
+description: createFrameSubmitter and buildFrames. Send approve and swap as one atomic EIP-8141 transaction.
+---
+
+```ts
+import { createFrameSubmitter, buildFrames } from "neat3-sdk/frame";
+```
+
+Requires the optional peer `@forshtat/hegota-support@0.0.1`. It targets the self-hosted devnet (profile `ethrex-eip8141-tracer`).
+
+## createFrameSubmitter
+
+```ts
+createFrameSubmitter(options): FrameSubmitter
+```
+
+| Option | Default | Notes |
+|---|---|---|
+| `privateKey` | required | Devnet-only key. It signs the transaction and pays the gas (self-relay) |
+| `rpcUrl` | `https://eip8141-rpc.arnabbhowmik.in/rpc` | Sends with `eth_sendFrameTransaction` |
+| `chainId` | `1337` | |
+| `maxFeePerGas` | 2 gwei | |
+| `wait` | `true` | Wait for inclusion and throw if any frame failed |
+| `timeoutMs` | `120000` | How long to wait for inclusion |
+
+The returned function takes `Call[]`, reads the sender's nonce, signs and sends the transaction, and resolves to its hash.
+
+With `wait` on, it polls the receipt every two seconds. It throws if the transaction wasn't mined in time, or if it was mined but a frame didn't succeed. A frame with status `0x2` was skipped because an earlier frame in its atomic batch failed.
+
+## buildFrames
+
+```ts
+buildFrames(calls: Call[]): Frame[]
+```
+
+The frame layout, if you want to build the transaction yourself:
+
+```
+[ VERIFY (self, EXECUTION_AND_PAYMENT),
+  SENDER(call_0) | ATOMIC_BATCH,
+  …,
+  SENDER(call_n) ]
+```
+
+Every call except the last carries `ATOMIC_BATCH`, and the last one closes the batch. If any frame in the batch fails, the whole batch rolls back. Each `SENDER` frame uses the call's `execution` and `state` hints, or 250,000 and 200,000 by default.
+
+Throws on an empty list.
+
+<Callout type="warn" title="Gas limits are estimates">
+The per-frame limits have been checked in unit tests and not yet across many live devnet runs. Raise them through the `execution` and `state` fields of your calls if a frame runs out of gas.
+</Callout>

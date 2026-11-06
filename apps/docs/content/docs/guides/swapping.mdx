@@ -1,0 +1,74 @@
+---
+title: Swapping
+description: Encode a swap, send it with your own wallet or as one atomic frame transaction, and read the reverts.
+---
+
+A swap is two calls: approve the pool to spend `tokenIn`, then call `swap`. `encodeSwap` builds both from a quote.
+
+```ts
+const q = await client.quote({ tokenIn, amountIn });
+const calls = client.encodeSwap(q); // [approve, swap]
+```
+
+By default the swap carries two guards:
+
+- `minOut` is the quoted `amountOut`. If the price moves against you before inclusion, the swap reverts instead of filling worse.
+- `deadline` is now plus 10 minutes. A transaction stuck in a mempool can't fill later.
+
+Override either one:
+
+```ts
+client.encodeSwap(q, { minOut: q.amountOut - 1000n, deadline: 1_800_000_000n }); // unix seconds
+```
+
+## Option 1: your own wallet
+
+```ts
+for (const call of client.encodeSwap(q)) {
+  await wallet.sendTransaction({ to: call.to, data: call.data });
+}
+```
+
+Two normal transactions are not atomic. If the swap reverts, the approve has already happened.
+
+## Option 2: one frame transaction
+
+An [EIP-8141](https://eips.ethereum.org/EIPS/eip-8141) frame transaction can batch both calls atomically. `neat3-sdk/frame` builds and sends one to the alt-mempool.
+
+```ts
+import { createFrameSubmitter } from "neat3-sdk/frame";
+
+client.setFrameSubmitter(createFrameSubmitter({ privateKey: DEVNET_ONLY_KEY }));
+const txHash = await client.submit(q); // waits for inclusion
+```
+
+The frame transaction is `[VERIFY, approve | ATOMIC_BATCH, swap]`. If the swap fails, EIP-8141 rolls back the approve with it.
+
+<Callout type="warn" title="Devnet keys only">
+The submitter signs with the key you give it and pays gas from that account. Use a throwaway devnet key, never a key that holds real funds, and don't use the devnet's shared genesis key.
+</Callout>
+
+<Callout type="warn" title="The alt-mempool is public">
+Anyone can subscribe to pending frame transactions and read their calldata. It does **not** hide your swap or stop a sandwich. Protection comes from `minOut` and atomicity: a front-run makes the batch revert and you keep your tokens.
+</Callout>
+
+## Reverts
+
+| Error | Cause | Guard |
+|---|---|---|
+| `InsufficientOutput(amountOut, minOut)` | The pool moved before inclusion, for example after a front-run | `minOut`, default the quoted output |
+| `Expired(deadline)` | The transaction waited too long | `deadline`, default now + 10 min |
+| `CannotBeatVenue(amountOut, bestOut)` | A competitor now pays more, so the pool refuses to fill a worse trade | Always on, enforced by the pool |
+| `BadToken(token)` | `tokenIn` isn't one of the pool's two tokens | None. Check the address |
+
+All four are in `poolAbi`, so viem can name them:
+
+```ts
+import { decodeErrorResult } from "viem";
+import { poolAbi } from "neat3-sdk";
+
+const err = decodeErrorResult({ abi: poolAbi, data });
+// { errorName: "CannotBeatVenue", args: [amountOut, bestOut] }
+```
+
+A failed swap costs gas, not tokens.
