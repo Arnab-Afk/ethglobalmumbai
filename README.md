@@ -12,6 +12,27 @@ Built for **ETHGlobal Mumbai**. One fee engine, three integrations:
 
 Inspired by PropellerHeads' Fynd AMM. **All code in this repo is written fresh during the hackathon**; nothing is copied from Fynd.
 
+## Run it
+
+Node ≥ 20.12 and [Foundry](https://book.getfoundry.sh/) for the contracts. Every package installs on its own (no workspace).
+
+| What | Commands |
+|---|---|
+| App (Sepolia quote, market, dashboard) | `cd frontend && npm install && npm run dev` → http://localhost:3000 |
+| Fee math and contracts | `cd packages/fee-core && forge test` (same in `oracle`, `swapvm-opcode`, `v4-hook`) |
+| Integrator SDK | `cd packages/sdk && npm install && npm test`; usage in [packages/sdk/README.md](packages/sdk/README.md) |
+| EIP-8141 frame swap (devnet, chain 1337) | `cd packages/private-quoting && npm install && npm run quote:sdk -- 10`; full flow in [its README](packages/private-quoting/README.md) |
+| CRE workflow (local simulate) | `cd packages/cre-workflow && npm install && npm run simulate:local` |
+
+Deployed addresses: [deployments/sepolia.json](deployments/sepolia.json) and [packages/private-quoting/web/public/deployment.json](packages/private-quoting/web/public/deployment.json).
+
+## CROPS
+
+- **Censorship resistant.** Swaps can go out as EIP-8141 frame transactions to the alt mempool. The pool and the v4 hook have no owner and no allowlist, so anyone can trade. The price inputs do have owners: `VenueReader` (which venues count) and `QuoteOracle` (which CRE forwarder may write). An owner who reports a false `bestOut` can make the devnet pool refuse trades (`CannotBeatVenue`), but cannot move anyone's funds.
+- **Open source.** MIT ([LICENSE](LICENSE)), everything is in this repo. Exception: `packages/swapvm-opcode` depends on 1inch's `@1inch/aqua-sdk` and SwapVM, which are source-available (Degensoft licenses), not FOSS.
+- **Private.** The app reads Sepolia through Anon-RPC by default (Nox mixnet, `frontend/lib/rpc.ts`), so the RPC never learns who asked for which pair or size. Not anonymized: the one read of the Anon-RPC specifier contract at startup, and your wallet's own RPC once you connect. The alt mempool is public, so a submitted swap is visible before inclusion.
+- **Secure.** A swap reverts instead of filling worse: `minOut` defaults to the quote, `deadline` to 10 minutes, and the pool rechecks the competitor price in the same transaction. Approve and swap are one atomic frame batch, so a revert rolls both back. Fee math lives in one library (`packages/fee-core`) with fuzz tests for "trader output ≥ best venue". The client has no trackers or analytics.
+
 ## Mentor feedback and the path we are locking
 
 The fee engine already works. A real frame swap on our EIP-8141 devnet beat the best venue: [tx `0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59) paid **29512.45** against a competitor quote of **29500**. The competitor price on that trade came from `MockQuoteOracle`. Sepolia now reads Uniswap v3 inside the quote, and the devnet pool reverts when it cannot beat the live price. The fee math is unchanged.
