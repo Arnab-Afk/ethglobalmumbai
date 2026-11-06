@@ -101,7 +101,7 @@ With a `sanity` block on a pair, both paths:
 
 ### Both directions from one feed
 
-`workflow/config.json` publishes **WETH→USDC** and **USDC→WETH** in the same report (one transaction). Both use ETH/USD; the reverse pair sets `"invert": true`, so fair output is `amountIn ÷ price` instead of `amountIn × price`, and its anchored mocks are built the same way. The CRE handler reads each feed once per run, so the two pairs cost 2 EVM reads (CRE allows 15 per run). If one pair throws (an RPC error, a bad config), the handler logs `ERROR pair … skipped` and still publishes the others.
+`workflow/config.json` publishes **WETH→USDC** and **USDC→WETH** in the same report (one transaction). Both use ETH/USD; the reverse pair sets `"invert": true`, so fair output is `amountIn ÷ price` instead of `amountIn × price`, and its anchored mocks are built the same way. The CRE handler reads **every feed in the config with one EVM call** through Multicall3 (`0xcA11…CA11`, overridable with `multicall3` in the config), so adding pairs or feeds does not use up CRE's 15-reads-per-run limit. A feed that reverts fails only the pairs that use it. If one pair throws (an RPC error, a bad config), the handler logs `ERROR pair … skipped` and still publishes the others.
 
 Gas on Sepolia: the first write of a new pair's 3-point curve costs ~1.1M (fresh storage), an overwrite ~0.22M. The first two-pair write ([`0xd431fd28…581e`](https://sepolia.etherscan.io/tx/0xd431fd28cc66ce058df1b5db64f31945cb3bd5e95c32feb98c0f1e02c7cb581e)) used 1,307,171 gas; `gasLimit` is now 3,000,000. Low quotes are not filtered per venue: the max rule already ignores them while one honest venue exists.
 
