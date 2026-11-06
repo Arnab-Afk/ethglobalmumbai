@@ -1,12 +1,11 @@
 /**
- * Fixed categorical order for the three pools. Validated for the dark surface with the dataviz
- * palette validator (lightness band, chroma, CVD and normal-vision separation, contrast: all pass).
+ * Fixed categorical order for the three pools on the cream dashboard.
  * Colour follows the pool, never its rank.
  */
 export const SERIES = [
-  { key: "hairline", label: "neat", color: "#8572e6" },
-  { key: "flat30", label: "Flat 30 bp", color: "#c4862a" },
-  { key: "flat5", label: "Flat 5 bp", color: "#26967b" },
+  { key: "hairline", label: "neat", color: "#5B46C7" },
+  { key: "flat30", label: "Flat 30 bp", color: "#C4862A" },
+  { key: "flat5", label: "Flat 5 bp", color: "#1F8A5B" },
 ] as const;
 
 export type SeriesKey = (typeof SERIES)[number]["key"];

@@ -11,7 +11,7 @@ export function PrivacyBadge() {
   // Per network, so a switch to a fallback shows "connecting" until that worker is up.
   const [states, setStates] = useState<Record<string, "ready" | "failed">>({});
   const pathname = usePathname();
-  const light = pathname === "/swap" || pathname === "/market";
+  const light = pathname === "/swap" || pathname === "/market" || pathname === "/dashboard";
   const direct = useSyncExternalStore(subscribeRpcState, isDirectReads, () => false);
   const net = useSyncExternalStore(subscribeRpcState, activeNetwork, () => anonNetwork);
 
