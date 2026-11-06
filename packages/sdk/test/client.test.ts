@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { decodeFunctionData, encodeFunctionResult, getAddress, type Address } from "viem";
+import { decodeErrorResult, decodeFunctionData, encodeErrorResult, encodeFunctionResult, getAddress, type Address } from "viem";
 import { CompetitiveFeeClient, erc20Abi, poolAbi, type FetchFn } from "../src/index.js";
 
 const pool = "0x00000000000000000000000000000000000000aa" as Address;
@@ -73,24 +73,33 @@ describe("quote", () => {
 describe("encodeSwap / submit", () => {
   const q = { tokenIn: weth, amountIn: 10n ** 19n, amountOut: QUOTE[0] };
 
-  it("approve then swap, minOut defaults to the quoted output", () => {
+  it("approve then swap, minOut = quoted output, deadline = now + 10 min", () => {
+    const now = BigInt(Math.floor(Date.now() / 1000));
     const [approve, swap] = new CompetitiveFeeClient({ rpcUrl, pool }).encodeSwap(q);
     expect(approve.to).toBe(weth);
     expect(decodeFunctionData({ abi: erc20Abi, data: approve.data }).args).toEqual([getAddress(pool), q.amountIn]);
     expect(swap.to).toBe(pool);
-    expect(decodeFunctionData({ abi: poolAbi, data: swap.data }).args).toEqual([getAddress(weth), q.amountIn, q.amountOut]);
+    const [tokenIn, amountIn, minOut, deadline] = decodeFunctionData({ abi: poolAbi, data: swap.data }).args;
+    expect([tokenIn, amountIn, minOut]).toEqual([getAddress(weth), q.amountIn, q.amountOut]);
+    expect(deadline! - now).toBeGreaterThanOrEqual(600n);
+    expect(deadline! - now).toBeLessThanOrEqual(601n);
   });
 
-  it("minOut override", () => {
-    const [, swap] = new CompetitiveFeeClient({ rpcUrl, pool }).encodeSwap(q, { minOut: 1n });
-    expect(decodeFunctionData({ abi: poolAbi, data: swap.data }).args[2]).toBe(1n);
+  it("minOut and deadline overrides", () => {
+    const [, swap] = new CompetitiveFeeClient({ rpcUrl, pool }).encodeSwap(q, { minOut: 1n, deadline: 42n });
+    expect(decodeFunctionData({ abi: poolAbi, data: swap.data }).args.slice(2)).toEqual([1n, 42n]);
+  });
+
+  it("decodes the pool's swap reverts", () => {
+    const data = encodeErrorResult({ abi: poolAbi, errorName: "CannotBeatVenue", args: [1n, 2n] });
+    expect(decodeErrorResult({ abi: poolAbi, data })).toMatchObject({ errorName: "CannotBeatVenue", args: [1n, 2n] });
   });
 
   it("submit needs a frame submitter, then hands it the encoded calls", async () => {
     const c = new CompetitiveFeeClient({ rpcUrl, pool });
     await expect(c.submit(q)).rejects.toThrow(/frame submitter/);
     const submitter = vi.fn(async () => "0xabc" as const);
-    expect(await c.setFrameSubmitter(submitter).submit(q)).toBe("0xabc");
-    expect(submitter).toHaveBeenCalledWith(c.encodeSwap(q));
+    expect(await c.setFrameSubmitter(submitter).submit(q, { deadline: 42n })).toBe("0xabc");
+    expect(submitter).toHaveBeenCalledWith(c.encodeSwap(q, { deadline: 42n }));
   });
 });
