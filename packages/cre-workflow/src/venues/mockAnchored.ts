@@ -17,8 +17,9 @@ export function quoteAnchoredMock(
   decimalsOut: number,
   depthIn: bigint,
   feeBps: number,
+  invert = false,
 ): bigint {
   if (depthIn === 0n) return 0n;
-  const reserveOut = fairOut(depthIn, feed, decimalsIn, decimalsOut);
+  const reserveOut = fairOut(depthIn, feed, decimalsIn, decimalsOut, invert);
   return quoteMockXyk(amountIn, depthIn, reserveOut, feeBps);
 }

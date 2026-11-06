@@ -2,7 +2,7 @@
   "schedule": "0 */1 * * * *",
   "chainSelectorName": "ethereum-testnet-sepolia",
   "quoteOracle": "0xe39D6dE0689581C2e681379C206AA3492Dfd73C0",
-  "gasLimit": "1500000",
+  "gasLimit": "3000000",
   "pairs": [
     {
       "tokenIn": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
@@ -31,6 +31,38 @@
           "id": "mock-b",
           "kind": "mock-anchored",
           "reserveIn": "2000000000000000000000",
+          "feeBps": 5
+        }
+      ]
+    },
+    {
+      "tokenIn": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      "tokenOut": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+      "decimalsIn": 6,
+      "decimalsOut": 18,
+      "sanity": {
+        "feed": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+        "invert": true,
+        "maxAboveBps": 200,
+        "maxBelowBps": 2000,
+        "maxFeedAgeSec": 4200
+      },
+      "amountsIn": [
+        "200000000",
+        "2000000000",
+        "20000000000"
+      ],
+      "venues": [
+        {
+          "id": "mock-a",
+          "kind": "mock-anchored",
+          "reserveIn": "1100000000000",
+          "feeBps": 30
+        },
+        {
+          "id": "mock-b",
+          "kind": "mock-anchored",
+          "reserveIn": "4400000000000",
           "feeBps": 5
         }
       ]

@@ -21,7 +21,7 @@ const BPS = 10_000n;
 
 /** Latest Chainlink round, as read from AggregatorV3Interface.latestRoundData(). */
 export interface FeedReading {
-  /** Price of 1 tokenIn in tokenOut, scaled by `decimals` (e.g. ETH/USD 8 decimals). */
+  /** Feed answer scaled by `decimals` (e.g. ETH/USD, 8 decimals). Which token it prices depends on `invert`. */
   answer: bigint;
   decimals: number;
   /** Unix seconds of the round. */
@@ -43,18 +43,28 @@ export function isFeedFresh(feed: FeedReading, nowSec: bigint, maxAgeSec: number
 }
 
 /**
- * Output at the feed price, no fees or price impact, in tokenOut atomic units:
+ * Output at the feed price, no fees or price impact, in tokenOut atomic units.
+ *
+ * Normal (feed prices 1 tokenIn in tokenOut, e.g. ETH/USD for WETH→USDC):
  *   amountIn × answer × 10^decimalsOut / (10^decimalsIn × 10^feedDecimals)
+ * Inverted (feed prices 1 tokenOut in tokenIn, e.g. ETH/USD for USDC→WETH):
+ *   amountIn × 10^feedDecimals × 10^decimalsOut / (10^decimalsIn × answer)
  */
 export function fairOut(
   amountIn: bigint,
   feed: FeedReading,
   decimalsIn: number,
   decimalsOut: number,
+  invert = false,
 ): bigint {
-  const num = amountIn * feed.answer * 10n ** BigInt(decimalsOut);
-  const den = 10n ** BigInt(decimalsIn) * 10n ** BigInt(feed.decimals);
-  return num / den;
+  const feedScale = 10n ** BigInt(feed.decimals);
+  const outScale = 10n ** BigInt(decimalsOut);
+  const inScale = 10n ** BigInt(decimalsIn);
+  if (invert) {
+    if (feed.answer <= 0n) return 0n;
+    return (amountIn * feedScale * outScale) / (inScale * feed.answer);
+  }
+  return (amountIn * feed.answer * outScale) / (inScale * feedScale);
 }
 
 /** Signed deviation of `quote` from `fair` in basis points (+ = quote pays more). */

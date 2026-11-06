@@ -20,7 +20,7 @@ Inspired by the *idea* behind PropellerHeads Fynd (quote against live market liq
 | `scripts/simulate-local.ts` | Node path: quote venues via RPC/mocks, print report, optional `applyReport` |
 | `workflow/` | CRE TS entry (`@chainlink/cre-sdk`) for `cre workflow simulate` |
 | `config.demo.json` | Node demo: Sepolia pair, anchored mocks, real Sepolia Uniswap v3, our own pool excluded |
-| `workflow/config.json` | CRE config: same pair and sanity check, mock venues only |
+| `workflow/config.json` | CRE config: WETH→USDC and USDC→WETH, same sanity check, mock venues only |
 | `logs/` | Trimmed output of both simulators (evidence for the submission) |
 
 ## Run (no CRE CLI required)
@@ -97,7 +97,13 @@ With a `sanity` block on a pair, both paths:
 }
 ```
 
-`sanity` needs `decimalsIn` and `decimalsOut` on the pair. Low quotes are not filtered per venue: the max rule already ignores them while one honest venue exists.
+`sanity` needs `decimalsIn` and `decimalsOut` on the pair.
+
+### Both directions from one feed
+
+`workflow/config.json` publishes **WETH→USDC** and **USDC→WETH** in the same report (one transaction). Both use ETH/USD; the reverse pair sets `"invert": true`, so fair output is `amountIn ÷ price` instead of `amountIn × price`, and its anchored mocks are built the same way. The CRE handler reads each feed once per run, so the two pairs cost 2 EVM reads (CRE allows 15 per run). If one pair throws (an RPC error, a bad config), the handler logs `ERROR pair … skipped` and still publishes the others.
+
+Gas on Sepolia: the first write of a new pair's 3-point curve costs ~1.1M (fresh storage), an overwrite ~0.22M. The first two-pair write ([`0xd431fd28…581e`](https://sepolia.etherscan.io/tx/0xd431fd28cc66ce058df1b5db64f31945cb3bd5e95c32feb98c0f1e02c7cb581e)) used 1,307,171 gas; `gasLimit` is now 3,000,000. Low quotes are not filtered per venue: the max rule already ignores them while one honest venue exists.
 
 ### Anchored mock venues
 

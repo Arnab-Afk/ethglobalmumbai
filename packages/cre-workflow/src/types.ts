@@ -40,6 +40,11 @@ export interface PairConfig {
 export interface SanityConfig {
   /** Chainlink AggregatorV3 feed pricing 1 tokenIn in tokenOut (e.g. ETH/USD for WETH→USDC). */
   feed: Address;
+  /**
+   * The feed prices tokenOut in tokenIn instead, so fair output is amountIn ÷ price
+   * (e.g. ETH/USD for USDC→WETH). Lets both directions of a pair share one feed.
+   */
+  invert?: boolean;
   /** Reject quotes more than this far above fair (bps). */
   maxAboveBps: number;
   /** End the curve when the best quote is this far below fair (bps). */

@@ -35,6 +35,7 @@ export function quoteMockVenue(
         pair.decimalsOut,
         BigInt(venue.reserveIn ?? "0"),
         venue.feeBps ?? 30,
+        pair.sanity?.invert,
       );
     default:
       throw new Error(`quoteMockVenue: ${venue.kind} is not a mock venue`);

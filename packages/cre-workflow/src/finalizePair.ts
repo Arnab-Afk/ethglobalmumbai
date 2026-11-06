@@ -39,7 +39,9 @@ export function finalizePair(
       keep = 0;
       stopReason = `feed stale or invalid (updatedAt=${feed.updatedAt}, maxAge=${pair.sanity.maxFeedAgeSec}s)`;
     } else {
-      fairOuts = amountsIn.map((a) => fairOut(a, feed, pair.decimalsIn!, pair.decimalsOut!));
+      fairOuts = amountsIn.map((a) =>
+        fairOut(a, feed, pair.decimalsIn!, pair.decimalsOut!, pair.sanity!.invert),
+      );
       const r = applySanity(amountsIn, quotesByBucket, fairOuts, pair.sanity);
       quotes = r.quotesByBucket;
       keep = r.keep;
