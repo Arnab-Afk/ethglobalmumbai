@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
-import { fmtAge, fmtAmount, fmtSmart } from "@/lib/format";
+import { fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
@@ -12,8 +12,8 @@ import { QuoteDetails } from "./quote-details";
 import { SlippageRow } from "./slippage-row";
 import { SwapReview } from "./swap-review";
 import { TokenPicker } from "./token-picker";
-import { TokenButton } from "./token-pill";
 import { useBalances } from "../wallet/use-balances";
+import { useWallet } from "../wallet/wallet-provider";
 
 const REFRESH_MS = 12_000; // one Sepolia block
 const DEBOUNCE_MS = 350;
@@ -56,6 +56,7 @@ export function QuoteCard() {
   const reqId = useRef(0);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
+  const { address, onSepolia, connecting, connect, switchToSepolia } = useWallet();
   const balances = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
@@ -136,9 +137,11 @@ export function QuoteCard() {
     ? null
     : sell.usd
       ? fmtAmount(quote.amountIn, sell.decimals, 2)
-      : buy.usd && hasBest
-        ? fmtAmount(quote.bestOut, buy.decimals, 2)
-        : null;
+      : buy.usd
+        ? fmtAmount(quote.ourOut, buy.decimals, 2)
+        : hasBest
+          ? fmtAmount(quote.bestOut, buy.decimals, 2)
+          : null;
   const buyUsd = !quote
     ? null
     : buy.usd
@@ -174,120 +177,110 @@ export function QuoteCard() {
         ? { label: loading ? "Finding price…" : "Enter amount" }
         : { label: "Swap", onClick: () => setReviewing(true) };
 
-  return (
-    <div className="flex w-full max-w-[470px] flex-col gap-2">
-      {/* Top row */}
-      <div className="flex h-10 items-center justify-between">
-        <FreshnessTab quote={quote} hasPool={!!pool} />
-        <span className="flex h-10 items-center gap-2 panel rounded-lg py-1.5 pl-1.5 pr-3.5 text-base font-medium">
-          <span className="grid size-7 place-items-center rounded-md bg-[#627eea]">
-            <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden>
-              <path d="M5 0 0 8.3l5 3L10 8.3 5 0Zm0 12.3L0 9.3 5 16l5-6.7-5 3Z" fill="#fff" />
-            </svg>
-          </span>
-          Sepolia
-        </span>
-      </div>
+  const action = !address
+    ? { label: connecting ? "Connecting…" : "Connect wallet", onClick: connect, disabled: connecting }
+    : !onSepolia
+      ? { label: "Switch to Sepolia", onClick: switchToSepolia, disabled: false }
+      : { label: cta.label, onClick: cta.onClick, disabled: !cta.onClick };
 
-      {/* Sell + Buy, with the flip button sitting in the 8px gap */}
-      <div className="relative flex flex-col gap-2">
-        <div className="panel h-[136px] rounded-lg p-4">
-          <div className="text-base font-medium text-fg-2">Sell</div>
-          <div className="mt-2 flex h-10 items-center gap-3">
-            <input
-              inputMode="decimal"
-              aria-label="Amount to sell"
-              placeholder="0"
-              value={amount}
-              onChange={(e) => {
-                const v = e.target.value.replace(",", ".");
-                if (/^\d*\.?\d*$/.test(v)) setAmount(v);
-              }}
-              className="tnum h-10 min-w-0 flex-1 bg-transparent text-[32px] font-medium tracking-[-1px] text-fg outline-none placeholder:text-fg"
-              suppressHydrationWarning
-            />
-            <TokenButton token={sell} onClick={() => setPicking("sell")} />
-          </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
-            <span>{sellUsd ? `$${sellUsd}` : "-"}</span>
-            {sellBal !== undefined && (
+  return (
+    <div className="flex w-full max-w-[460px] flex-col items-center">
+      <div className="w-full overflow-hidden rounded-[28px] bg-[#1c1c1e]">
+        <div className="px-6 pt-5 pb-5">
+          <div className="text-[15px] text-white/55">Pay on Sepolia</div>
+          <div className="mt-4 flex items-end justify-between gap-3">
+            <div className="flex min-w-0 items-baseline gap-3">
+              <input
+                inputMode="decimal"
+                aria-label="Amount to sell"
+                placeholder="0"
+                value={amount}
+                onChange={(e) => {
+                  const v = e.target.value.replace(",", ".");
+                  if (/^\d*\.?\d*$/.test(v)) setAmount(v);
+                }}
+                className="tnum max-w-[46%] bg-transparent text-[42px] font-medium tracking-[-0.04em] text-white outline-none placeholder:text-white"
+                style={{ width: `${Math.max((amount || "0").length, 1) + 0.5}ch` }}
+                suppressHydrationWarning
+              />
               <button
                 type="button"
-                onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
-                className="transition-colors hover:text-fg"
-                title="Use full balance"
+                onClick={() => setPicking("sell")}
+                className="text-[42px] font-medium tracking-[-0.03em] text-[#4c82fb]"
               >
-                {fmtSmart(sellBal, sell.decimals)} {sell.symbol}
+                {sell.symbol}
               </button>
-            )}
+            </div>
+            <span className="tnum pb-1.5 text-[18px] font-medium text-[#4c82fb]">{sellUsd ? `$${sellUsd}` : ""}</span>
           </div>
+          {sellBal !== undefined && (
+            <button
+              type="button"
+              onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
+              className="tnum mt-2 text-[13px] text-white/40 hover:text-white/70"
+              title="Use full balance"
+            >
+              Balance {fmtSmart(sellBal, sell.decimals)}
+            </button>
+          )}
         </div>
 
-        <button
-          type="button"
-          onClick={flip}
-          aria-label="Switch tokens"
-          className="absolute left-1/2 top-[136px] z-10 grid size-9 -translate-x-1/2 -translate-y-[14px] place-items-center rounded-lg border border-line-hi bg-solid text-fg transition-colors hover:border-accent/60 hover:text-accent-hi"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
-            <path
-              d="M5 2.5v10m0 0L2.5 10M5 12.5 7.5 10M11 13.5v-10m0 0L8.5 6M11 3.5 13.5 6"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        <div className="relative h-px bg-white/10">
+          <button
+            type="button"
+            onClick={flip}
+            aria-label="Switch tokens"
+            className="absolute top-1/2 left-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#2a2a2e] text-white/80"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+              <path d="M8 3v10M8 13l-3.2-3.2M8 13l3.2-3.2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
 
-        <div className="panel h-[136px] rounded-lg p-4">
-          <div className="text-base font-medium text-fg-2">Buy</div>
-          <div className="mt-2 flex h-10 items-center gap-3">
-            <div
-              className={`tnum min-w-0 flex-1 truncate text-[32px] font-medium leading-10 tracking-[-1px] transition-opacity ${
-                loading ? "opacity-50" : ""
-              }`}
-            >
-              {quote ? fmtSmart(quote.ourOut, buy.decimals, 10) : "0"}
+        <div className="px-6 pt-5 pb-6">
+          <div className="text-[15px] text-white/55">Receive</div>
+          <div className={`mt-4 flex items-end justify-between gap-3 ${loading ? "opacity-50" : ""}`}>
+            <div className="flex min-w-0 items-baseline gap-3">
+              <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 6) : "0"} />
+              <button
+                type="button"
+                onClick={() => setPicking("buy")}
+                className="text-[42px] font-medium tracking-[-0.03em] text-[#4c82fb]"
+              >
+                {buy.symbol}
+              </button>
             </div>
-            <TokenButton token={buy} onClick={() => setPicking("buy")} />
-          </div>
-          <div className="tnum mt-2.5 flex h-[18px] items-center justify-between text-sm text-fg-2">
-            <span>
-              {buyUsd ? `$${buyUsd}` : quote ? "" : "-"}
+            <span className="tnum pb-1.5 text-right text-[18px] font-medium text-[#4c82fb]">
+              {buyUsd ? `$${buyUsd}` : ""}
               {hasBest && (
-                <span className={`${buyUsd ? "ml-1" : ""} ${edgePct >= 0 ? "text-win" : "text-lose"}`} title="vs best competing venue">
-                  ({edgePct >= 0 ? "+" : ""}
-                  {edgePct.toFixed(2)}% vs best venue)
+                <span className={`mt-0.5 block text-[12px] font-normal ${edgePct >= 0 ? "text-win" : "text-lose"}`}>
+                  {edgePct >= 0 ? "+" : ""}
+                  {edgePct.toFixed(2)}% vs venue
                 </span>
               )}
             </span>
-            {buyBal !== undefined && (
-              <span>
-                {fmtSmart(buyBal, buy.decimals)} {buy.symbol}
-              </span>
-            )}
           </div>
+          {buyBal !== undefined && (
+            <div className="tnum mt-2 text-[13px] text-white/40">
+              Balance {fmtSmart(buyBal, buy.decimals)}
+            </div>
+          )}
         </div>
       </div>
 
-      <SlippageRow bps={slippageBps} onChange={setSlippageBps} />
+      <div className="mt-3 w-full">
+        <SlippageRow bps={slippageBps} onChange={setSlippageBps} />
+      </div>
 
-      {/* Swap opens the confirm step. Filling still needs a pool on Sepolia. */}
-      {cta.onClick ? (
-        <button type="button" onClick={cta.onClick} className="btn-primary h-14 w-full rounded-lg text-base font-medium">
-          {cta.label}
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className="panel h-14 w-full cursor-not-allowed rounded-lg text-base font-medium text-muted"
-        >
-          {cta.label}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={action.onClick}
+        disabled={action.disabled}
+        className="mt-5 flex h-[52px] min-w-[240px] items-center justify-center rounded-full bg-white px-8 text-[16px] font-medium text-black disabled:cursor-not-allowed disabled:bg-white/70"
+      >
+        {action.label}
+      </button>
 
       {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>}
 
@@ -316,19 +309,13 @@ export function QuoteCard() {
   );
 }
 
-/** Left tab of the top row: carries the quote's freshness. */
-function FreshnessTab({ quote, hasPool }: { quote?: LiveQuote; hasPool: boolean }) {
-  const age = quote ? quote.blockTime - quote.updatedAt : 0;
-  const label = !hasPool
-    ? "No pool"
-    : !quote
-      ? "Quote"
-      : { live: "Live", stale: `Stale · ${fmtAge(age)}`, none: "No venue curve" }[quote.status];
-  const dot = !quote ? "bg-faint" : { live: "bg-win", stale: "bg-warn", none: "bg-faint" }[quote.status];
+
+/** Receive amount that steps its size down for long numbers instead of truncating digits. */
+function ReceiveAmount({ text }: { text: string }) {
+  const size = text.length <= 7 ? "text-[42px]" : text.length <= 9 ? "text-[36px]" : "text-[30px]";
   return (
-    <span className="flex h-10 items-center gap-2 panel rounded-lg pl-3 pr-4 text-base font-medium">
-      <span className={`size-2 rounded-full ${dot}`} />
-      {label}
+    <span className={`tnum min-w-0 truncate font-medium tracking-[-0.04em] text-white ${size}`} title={text}>
+      {text}
     </span>
   );
 }
