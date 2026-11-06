@@ -48,6 +48,19 @@ cre workflow simulate ./workflow -T sepolia-settings --broadcast    # real Sepol
 
 `--broadcast` needs `CRE_ETH_PRIVATE_KEY` (a funded Sepolia key, 64 hex chars, no `0x`) in `./.env`, which is gitignored.
 
+### Keep it running (`cre:watch`)
+
+The workflow is not deployed to the Chainlink DON, so it only runs when someone calls `cre workflow simulate`. The Chainlink feed itself is always live; our workflow just reads it on each run. `cre:watch` re-runs the simulation on a timer, standing in for the deployed workflow's cron:
+
+```sh
+npm run cre:watch                         # dry run every 60 s, no transactions
+INTERVAL=30 npm run cre:watch             # every 30 s
+BROADCAST=1 npm run cre:watch             # also write each curve to QuoteOracle (Sepolia tx per run)
+MAX_RUNS=3 INTERVAL=5 npm run cre:watch   # stop after 3 runs
+```
+
+The terminal shows the workflow's log lines; full output goes to `logs/live/<start time>.log` (gitignored). `BROADCAST=1` refuses to start without a valid `CRE_ETH_PRIVATE_KEY`. Stop with Ctrl-C.
+
 The CRE handler reads the Chainlink feed through the EVM capability and quotes the mock venues (`mock-xyk`, `mock-anchored`). Uniswap v2/v3 venues are only read by the Node simulator for now; the handler logs them as "not read in CRE yet". Sample output: [`logs/cre-simulate-sanity.txt`](logs/cre-simulate-sanity.txt).
 
 ## Chainlink sanity check
