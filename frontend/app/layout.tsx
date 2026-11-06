@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hairline — best price, every swap",
+  title: "Hairline - best price, every swap",
   description:
     "Hairline checks the best price you could get anywhere else, then beats it. You receive more. Liquidity providers earn what a flat fee would have missed.",
 };
