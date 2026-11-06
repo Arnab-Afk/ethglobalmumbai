@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { anonNetwork, isDirectReads, setDirectReads, subscribeDirectReads } from "@/lib/rpc";
+import { anonNetwork, isDirectReads, retryNetworks, setDirectReads, subscribeRpcState } from "@/lib/rpc";
 
 /** Network-level failures (timeouts, dropped requests), as opposed to the contract refusing the call. */
 const TRANSPORT = /timeout|timed out|HTTP request failed|failed to fetch|fetch failed|network|TRANSPORT/i;
@@ -10,7 +10,7 @@ const BTN = "rounded-full bg-lose/15 px-3 py-1 text-[12px] font-medium text-lose
 
 /** A failed read, in words, with the next step: retry, or (only when you click) read without the mixnet. */
 export function ReadError({ message, onRetry }: { message: string; onRetry: () => void }) {
-  const direct = useSyncExternalStore(subscribeDirectReads, isDirectReads, () => false);
+  const direct = useSyncExternalStore(subscribeRpcState, isDirectReads, () => false);
 
   if (!TRANSPORT.test(message)) {
     return (
@@ -25,11 +25,18 @@ export function ReadError({ message, onRetry }: { message: string; onRetry: () =
       <p className="font-medium">Couldn&apos;t reach Sepolia</p>
       <p className="mt-1 text-lose/80">
         {private_
-          ? "The private connection can take a moment to start, and we already tried four RPC endpoints. Trying again usually works. If it keeps failing, your browser or network may be blocking the mixnet (Brave Shields and VPNs do): try Chrome, or turn Shields off for this site."
+          ? "The private connection can take a moment to start (we try Nox, then Nym, then Tor), and we already tried four RPC endpoints. Trying again usually works. If it keeps failing, your browser or network may be blocking the mixnet (Brave Shields and VPNs do): try Chrome, or turn Shields off for this site."
           : "None of our four RPC endpoints answered. Check your connection and try again."}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
-        <button type="button" className={BTN} onClick={onRetry}>
+        <button
+          type="button"
+          className={BTN}
+          onClick={() => {
+            retryNetworks();
+            onRetry();
+          }}
+        >
           Try again
         </button>
         {private_ && (
