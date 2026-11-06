@@ -22,7 +22,7 @@ npm run deploy    # dWETH, dUSDC, MockQuoteOracle, pool; writes web/public/deplo
 npm run swap -- --mode frame  --amount 10   # frame tx → alt-mempool; prints JSON incl. tx hash
 npm run swap -- --mode legacy --amount 10   # 3 legacy txs → canonical mempool (comparison)
 npm run curve -- 29500                      # move the mock competitor's price (dUSDC for 10 dWETH)
-npm run quote:sdk -- 10 [--swap]            # same quote (and optional frame swap) through @lastlook/sdk
+npm run quote:sdk -- 10 [--swap]            # same quote (and optional frame swap) through @hairline/sdk
 npm run web       # open the printed localhost URL; pick Tor / Nym / Nox and quote
 ```
 

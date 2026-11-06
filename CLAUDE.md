@@ -42,7 +42,7 @@ apps/demo docs/
 |---|---|
 | `fee-math` | `packages/fee-core`: formula, rounding, property tests |
 | `swapvm-aqua` | `packages/swapvm-opcode`: SwapVM instruction, Aqua strategy |
-| `private-quoting` | `packages/private-quoting` + `packages/sdk` (`@lastlook/sdk` client): Anon-RPC quoter, Frame mempool submitter, integrator SDK |
+| `private-quoting` | `packages/private-quoting` + `packages/sdk` (`@hairline/sdk` client): Anon-RPC quoter, Frame mempool submitter, integrator SDK |
 | `cre-oracle` | `packages/cre-workflow` + `packages/oracle` |
 | `demo-integration` | `apps/demo`, mock venues, end-to-end scripts, submission materials |
 

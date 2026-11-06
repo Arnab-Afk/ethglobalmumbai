@@ -48,7 +48,7 @@ packages/
   swapvm-opcode/   CompetitiveFee instruction + example SwapVM program + Aqua wiring
   private-quoting/ Anon-RPC quoter, Frame mempool submitter, searcher bot, comparison scripts
   cre-workflow/    CRE workflow (TS or Go SDK) + simulation config
-  sdk/             @lastlook/sdk — integrator client (quote / swap helpers); owner: Soham
+  sdk/             @hairline/sdk — integrator client (quote / swap helpers); owner: Soham
 apps/
   demo/            Frontend dashboard + scripts (mock venues, trade replays)
 docs/              This documentation
