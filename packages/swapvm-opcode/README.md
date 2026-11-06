@@ -13,45 +13,50 @@
 
 Quote and swap call the same `view` function, so the router's `quote` equals what `swap` pays.
 
-## Proof: a swap through the official Aqua contracts
+## Proof: a swap through the official Aqua contracts, against the live market
 
-Runs against the **deployed** Aqua registry (`0x1111113C…a90a`) and `AquaSwapVMRouter` (`0x11111133…C0De`) on a local mainnet fork. Nothing is redeployed.
+Runs on a local fork against the **deployed** `AquaSwapVMRouter`. The Aqua registry address is read from the router (`AQUA()`), so nothing of 1inch's is redeployed or configured. Nothing about the market is fixed either:
+
+- **The competitor** is `VenueReader` over every Uniswap v3 pool and the v2 pair for the pair, found through the Uniswap factories at fork time.
+- **Our pool's price** is the live mid from the deepest v3 pool (`slot0`), plus the maker's edge.
+- **Trade size** is one whole token (decimals read on-chain); depth and edge come from the env.
 
 ```bash
 cd packages/swapvm-opcode
-npm run aqua:fork     # Anvil fork → deploy → ship strategy → swap 1 WETH → USDC; prints tx hashes + Transfer events
-npm run test:fork     # same flow as Foundry assertions (6 tests)
+npm run aqua:fork     # fork → deploy → ship → swap; prints the live venue quote, our output, tx hashes, Transfer events
+npm run test:fork     # 6 fork tests (invariants against the live venue)
 forge test            # offline unit tests; the fork suite skips without FORK_RPC
+
+FORK_RPC=https://base-rpc.publicnode.com npm run aqua:fork   # same on Base
 ```
 
-Needs Foundry and Python 3. `FORK_RPC` defaults to a public mainnet RPC.
+Needs Foundry and Python 3. `FORK_RPC` defaults to a public mainnet RPC. The runner funds the fork accounts by finding each token's balance slot, so any ERC-20 pair works.
 
 On Windows: `npm run aqua:fork:win` (`scripts/run-aqua-fork.ps1`) forks, deploys and ships through the TS SDK, but stops before the swap. `npm run test:fork` runs the full ship + swap on any OS, and so does `aqua:fork` under Git Bash or WSL.
 
-What `aqua:fork` prints (Nov 7 run, competitor quote 2,965 USDC for 1 WETH):
+### Config (`script/AquaForkConfig.sol`, all optional)
 
-```
-competitor out (USDC 6d) 2965000000
-neat out       (USDC 6d) 2965297435
-fee (pips, 1e6 = 100%)   1700            # 17 bp, set by the market, not a fixed tier
-...  ship(address,bytes,address[],uint256[])
-...  swap((address,uint256,bytes),address,address,uint256,bytes)
-== ERC-20 Transfer events in the swap tx ==
-USDC maker  -> taker   2965297435
-WETH taker  -> router  1000000000000000000
-WETH router -> maker   1000000000000000000
-```
-
-`test:fork` also ships flat 30 bp and flat 5 bp XYC programs (opcodes 21 + 17) on the **same capital**, since Aqua balances are virtual:
-
-| Strategy (1 WETH in, 100 WETH / 300k USDC) | USDC out | Result |
+| Env | Default | Meaning |
 |---|---|---|
-| zero fee | 2970.30 | — |
-| flat 30 bp | 2961.47 | loses to the venue (2965.00) |
-| flat 5 bp | 2968.83 | wins, gives away 3.83 USDC |
-| **competitive** | **2965.30** | wins by 1 bp, LP keeps 3.53 USDC more than flat 5 bp |
+| `FORK_RPC` | public mainnet RPC | Chain to fork (mainnet and Base have defaults) |
+| `AQUA_TOKEN_IN`, `AQUA_TOKEN_OUT` | WETH, USDC of the forked chain | Pair to trade |
+| `AQUA_UNI_V3_FACTORY`, `AQUA_UNI_V2_FACTORY` | Uniswap factories of the forked chain | Where competitor pools are discovered |
+| `AQUA_AMOUNT_IN` | 1 whole `tokenIn` | Trade size, raw units |
+| `AQUA_DEPTH_MULTIPLE` | 10000 | Our pool holds this × trade size of `tokenIn` |
+| `AQUA_MAKER_EDGE_BPS` | 10 | Maker prices `tokenIn` this far above the live mid |
+| `FEE_FLOOR`, `FEE_CAP`, `FALLBACK_FEE`, `UNDERCUT_BPS`, `MAX_QUOTE_AGE` | 500, 10000, 3000, 1, 120 | Fee config, same names as `script/Deploy.s.sol` |
+| `AQUA_ROUTER` | the canonical 1inch router | Router under test |
 
-The competitor price comes from `MockQuoteOracle`, so the demo can move it. The same contract reads `VenueReader` (live Uniswap v3) on Sepolia: `CompetitiveFeeExtructionVenueReader` in `deployments/sepolia.json`.
+### What the fork tests check, on whatever the market is at fork time
+
+| Test | Invariant |
+|---|---|
+| `shipQuoteSwap_movesTokensThroughAqua` | Our output beats the live venue; swap == quote; exact ERC-20 and Aqua balance changes on both sides |
+| `competitiveVsFlat_sameCapital` | Flat-fallback and flat-floor programs (opcodes 21 + 17) on the same capital: whenever a flat fee also wins, the competitive fee keeps at least as much for the LP |
+| `cannotBeatVenue_reverts` | A pool that pays 1 unit less than the live venue even at zero fee reverts, and no tokens move |
+| `swapRevertsBelowMinOut` | `minOut` above the quote reverts |
+| `swapUntilWeLose_everyFillBeatsVenue` | Keep swapping: every fill beats the live venue, and the first one we can't win reverts |
+| `oracleDown_fillsAtFallback` | Venue reader reverts → fill at the fallback fee, same as the flat-fallback strategy |
 
 ## Files
 
@@ -60,7 +65,8 @@ The competitor price comes from `MockQuoteOracle`, so the demo can move it. The 
 | `src/CompetitiveFeeExtruction.sol` | The pricing target |
 | `src/ProgramCodec.sol` | Program bytes: competitive (32), flat fee + XYC (21, 17) |
 | `src/swapvm/Aqua.sol` | Router / Aqua interfaces, `Order` and taker-traits encoders |
-| `test/AquaFork.t.sol` | Fork test against the deployed router |
+| `script/AquaForkConfig.sol` | Fork config: chain defaults, env, venue discovery, live mid price, inventory |
+| `test/AquaFork.t.sol` | Fork tests against the deployed router and live Uniswap |
 | `script/AquaForkDemo.s.sol`, `scripts/aqua-fork.sh` | Broadcast demo |
 | `scripts/aqua-ship-quote.ts` | Same order through `@1inch/swap-vm-sdk` (ship + quote only) |
 
@@ -69,7 +75,7 @@ The competitor price comes from `MockQuoteOracle`, so the demo can move it. The 
 - Built against **swap-vm v1.0.2**, the deployed router. `main` of `1inch/swap-vm` renumbers opcodes (Extruction 4, XYCSwap 50), so these program bytes only fit a v1.0.2 router.
 - Sepolia has the Aqua registry but **no `AquaSwapVMRouter`**, so settlement runs on a mainnet fork. Base has both at the same addresses.
 - Exact-out swaps revert (`ExactOutNotSupported`). The MVP is exact-in only.
-- The demo pool is shallow (100 WETH), so each 1 WETH swap moves our price about 1.8% while the mock venue stays put. A second identical swap loses and reverts (`test_Fork_secondSwapLosesToVenue_reverts`). On stage, swap once or move the venue with `setCurve`.
+- Each fill moves our pool's price, so after enough swaps we stop beating the venue and further swaps revert (`swapUntilWeLose_everyFillBeatsVenue` reports how many fills that took).
 - The Sepolia `CompetitiveFeeExtruction` instances in `deployments/sepolia.json` were deployed before the `CannotBeatVenue` check and the oracle `try`/`catch`, and they are immutable. A redeploy picks both up.
 
 ## Not done: Path A
