@@ -10,10 +10,10 @@ import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/toke
 import { PriceCard } from "./price-card";
 import { QuoteDetails } from "./quote-details";
 import { SlippageRow } from "./slippage-row";
+import { SwapReview } from "./swap-review";
 import { TokenPicker } from "./token-picker";
 import { TokenButton } from "./token-pill";
 import { useBalances } from "../wallet/use-balances";
-import { useWallet } from "../wallet/wallet-provider";
 
 const REFRESH_MS = 12_000; // one Sepolia block
 const DEBOUNCE_MS = 350;
@@ -52,10 +52,10 @@ export function QuoteCard() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [config, setConfig] = useState<FeeConfig | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [reviewing, setReviewing] = useState(false);
   const reqId = useRef(0);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
-  const wallet = useWallet();
   const balances = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
@@ -122,6 +122,7 @@ export function QuoteCard() {
     setSell(buy);
     setBuy(sell);
     setState({ kind: "idle" });
+    setReviewing(false);
   };
 
   // A previous quote is only shown while it belongs to the current pair.
@@ -147,18 +148,31 @@ export function QuoteCard() {
         : null;
 
   const amountIn = parseAmount(amount, sell.decimals);
+  const quoted = quote && pool && amountIn !== null ? quote : undefined;
+
+  if (reviewing && quoted && pool) {
+    return (
+      <SwapReview
+        quote={quoted}
+        sell={sell}
+        buy={buy}
+        amount={amount}
+        pool={pool}
+        config={config}
+        slippageBps={slippageBps}
+        onBack={() => setReviewing(false)}
+      />
+    );
+  }
+
   type Cta = { label: string; onClick?: () => void };
   const cta: Cta = !pool
     ? { label: `No pool for ${sell.symbol} → ${buy.symbol} yet` }
     : amountIn === null
       ? { label: "Enter amount" }
-      : !wallet.address
-        ? { label: wallet.connecting ? "Connecting…" : "Connect wallet", onClick: wallet.connect }
-        : !wallet.onSepolia
-          ? { label: "Switch to Sepolia", onClick: wallet.switchToSepolia }
-          : sellBal !== undefined && amountIn > sellBal
-            ? { label: `Insufficient ${sell.symbol} balance` }
-            : { label: "Swap pool not deployed on Sepolia" };
+      : !quoted
+        ? { label: loading ? "Finding price…" : "Enter amount" }
+        : { label: "Swap", onClick: () => setReviewing(true) };
 
   return (
     <div className="flex w-full max-w-[470px] flex-col gap-2">
@@ -190,6 +204,7 @@ export function QuoteCard() {
                 if (/^\d*\.?\d*$/.test(v)) setAmount(v);
               }}
               className="tnum h-10 min-w-0 flex-1 bg-transparent text-[32px] font-medium tracking-[-1px] text-fg outline-none placeholder:text-fg"
+              suppressHydrationWarning
             />
             <TokenButton token={sell} onClick={() => setPicking("sell")} />
           </div>
@@ -259,7 +274,7 @@ export function QuoteCard() {
 
       <SlippageRow bps={slippageBps} onChange={setSlippageBps} />
 
-      {/* Swap execution is screen 3; until a fillable pool exists the last step is quote-only. */}
+      {/* Swap opens the confirm step. Filling still needs a pool on Sepolia. */}
       {cta.onClick ? (
         <button type="button" onClick={cta.onClick} className="btn-primary h-14 w-full rounded-lg text-base font-medium">
           {cta.label}
