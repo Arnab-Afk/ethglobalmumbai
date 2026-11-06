@@ -1,4 +1,5 @@
 import { Nav } from "@/components/nav";
+import { PrivacyBadge } from "@/components/privacy-badge";
 import { SEPOLIA } from "@/lib/deployments";
 
 /** Nav and footer for the swap app. Wallet state lives on the root layout so it survives route changes. */
@@ -17,6 +18,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           Sepolia
         </a>
+        <div className="mt-1">
+          <PrivacyBadge />
+        </div>
       </footer>
     </>
   );

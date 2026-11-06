@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getAddress, type Address } from "viem";
+import { getAddress, type Address, type Hex } from "viem";
 import { SEPOLIA } from "@/lib/deployments";
 
 /** Minimal EIP-1193 provider (MetaMask, Rabby, Coinbase Wallet extension, …). */
@@ -28,6 +28,8 @@ interface WalletState {
   connect: () => Promise<void>;
   switchToSepolia: () => Promise<void>;
   disconnect: () => void;
+  /** eth_sendTransaction from the connected account; resolves to the tx hash. Throws (readable message) on reject. */
+  send: (tx: { to: Address; data: Hex }) => Promise<Hex>;
 }
 
 const WalletContext = createContext<WalletState | null>(null);
@@ -119,6 +121,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const send = useCallback(
+    async (tx: { to: Address; data: Hex }): Promise<Hex> => {
+      const eth = window.ethereum;
+      if (!eth || !address) throw new Error("Connect a wallet first");
+      try {
+        return (await eth.request({ method: "eth_sendTransaction", params: [{ from: address, to: tx.to, data: tx.data }] })) as Hex;
+      } catch (e) {
+        throw new Error(errorMessage(e));
+      }
+    },
+    [address],
+  );
+
   // Wallets can't be disconnected from the page; forget the account locally.
   const disconnect = useCallback(() => setAddress(undefined), []);
 
@@ -132,8 +147,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       connect,
       switchToSepolia,
       disconnect,
+      send,
     }),
-    [address, chainId, connecting, error, connect, switchToSepolia, disconnect],
+    [address, chainId, connecting, error, connect, switchToSepolia, disconnect, send],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

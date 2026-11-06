@@ -3,6 +3,14 @@
 ## Goal
 CRE workflow that quotes competing venues and feeds the fee-last AMM. Can start **without** on-chain deploy.
 
+## Current setup (6 Nov)
+- Saish's workflow runs in **Saish's own CRE org** (not the shared one below), on macOS with CRE CLI 1.39.
+- `cre login`, then from `packages/cre-workflow`: `cre workflow simulate ./workflow -T sepolia-settings`.
+- `--broadcast` and `BROADCAST=1 npm run cre:watch` read `CRE_ETH_PRIVATE_KEY` from `packages/cre-workflow/.env` (gitignored): 64 hex characters, **no `0x`**. A `0x` prefix makes broadcast refuse to start.
+- Status, evidence and open items: `docs/06-chainlink-cre.md`. Commands: `packages/cre-workflow/README.md`.
+
+The steps below are the original shared-org setup, kept for reference.
+
 ## Already done (Koa / Arnab)
 - Chainlink Platform account: `arnab.b@somaiya.edu` (vault login on Koa)
 - CRE org: **My Org** / `org_BDWz8ob6BRQMXSYs`

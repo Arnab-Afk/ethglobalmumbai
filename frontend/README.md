@@ -1,3 +1,25 @@
+# Hairline (frontend)
+
+The demo app: quote, market and dashboard on Sepolia.
+
+```sh
+npm install
+npm run dev        # builds ../packages/sdk first, then serves http://localhost:3000
+```
+
+**Private reads.** Every RPC read the app makes (quotes, balances, market history) goes through Anon-RPC via `@hairline/sdk/anon` (`lib/rpc.ts`), and the footer shows the state. There is no fallback to a plain fetch. Set `NEXT_PUBLIC_ANON_RPC` to pick the network:
+
+| Value | Meaning |
+|---|---|
+| `nox` (default) | Nox mixnet; the network that answered on Nov 6 |
+| `tor-js`, `nym` | Other Anon-RPC networks (see `docs/05b-ef-endpoints.md` for their state) |
+| `passthrough` | Sandbox only, **not** anonymous |
+| `off` | Direct RPC, **not** private; the footer says so |
+
+Not anonymized: the one startup read of the Anon-RPC specifier contract, and your wallet's own RPC once you connect.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

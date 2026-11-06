@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sdk": "npm --prefix ../packages/sdk install --no-audit --no-fund && npm --prefix ../packages/sdk run build",
+    "predev": "npm run sdk",
     "dev": "next dev",
+    "prebuild": "npm run sdk",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@anon-rpc/browser-harness": "0.4.0",
+    "@hairline/sdk": "file:../packages/sdk",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",

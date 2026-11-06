@@ -3,13 +3,13 @@ import { erc20Abi, poolAbi } from "./abi.js";
 
 export type QuoteMode = "private" | "public";
 
-/** A plain `fetch`; for private mode, pass Anon-RPC's anonymized fetch (see `@lastlook/sdk/anon`). */
+/** A plain `fetch`; for private mode, pass Anon-RPC's anonymized fetch (see `@hairline/sdk/anon`). */
 export type FetchFn = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 /** One contract call. Gas limits are optional hints for frame submitters. */
 export interface Call { to: Address; data: Hex; execution?: bigint; state?: bigint }
 
-/** Sends calls as one transaction and returns its hash. `@lastlook/sdk/frame` provides an EIP-8141 one. */
+/** Sends calls as one transaction and returns its hash. `@hairline/sdk/frame` provides an EIP-8141 one. */
 export type FrameSubmitter = (calls: Call[]) => Promise<Hex>;
 
 export interface ClientConfig {
@@ -111,7 +111,7 @@ export class CompetitiveFeeClient {
     let fetchFn: FetchFn | undefined;
     if (mode === "private") {
       // Fail closed: never fall back to a plain fetch, which would reveal the trader's IP, pair and size.
-      if (!this.#config.anonFetch) throw new Error('quoteMode "private" needs anonFetch (browser: createAnonFetch() from "@lastlook/sdk/anon"); pass quoteMode: "public" to read without Anon-RPC');
+      if (!this.#config.anonFetch) throw new Error('quoteMode "private" needs anonFetch (browser: createAnonFetch() from "@hairline/sdk/anon"); pass quoteMode: "public" to read without Anon-RPC');
       fetchFn = this.#config.anonFetch;
     }
     r = createPublicClient({ transport: http(this.#config.rpcUrl, { fetchFn, timeout: this.#config.timeoutMs ?? 120_000 }) });

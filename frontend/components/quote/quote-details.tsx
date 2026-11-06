@@ -30,6 +30,10 @@ export function QuoteDetails({
 }) {
   const [open, setOpen] = useState(false);
   const [inverted, setInverted] = useState(false);
+  const onMainnet = quote.venues !== undefined;
+  const previewAddress = onMainnet
+    ? SEPOLIA.contracts.GivenQuotePreview
+    : SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader;
 
   const out = tokenOut.symbol;
   const rate = (quote.ourOut * 10n ** BigInt(tokenIn.decimals)) / quote.amountIn; // tokenOut per 1 tokenIn
@@ -151,12 +155,12 @@ export function QuoteDetails({
           )}
 
           <a
-            href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}#readContract`}
+            href={`${SEPOLIA.explorer}/address/${previewAddress}#readContract`}
             target="_blank"
             rel="noreferrer"
             className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-fg-2 transition-colors hover:text-fg"
           >
-            Verify previewFeePips on Etherscan
+            {onMainnet ? "Verify the fee preview on Etherscan" : "Verify previewFeePips on Etherscan"}
             <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden>
               <path d="M2 7 7 2M3 2h4v4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
             </svg>

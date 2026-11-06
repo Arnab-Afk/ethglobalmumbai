@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { Hex } from "viem";
+import { SEPOLIA } from "@/lib/deployments";
 import { fmtAmount, fmtSmart } from "@/lib/format";
 import type { PoolSide } from "@/lib/pools";
 import { pipsToPercent, type FeeConfig, type LiveQuote } from "@/lib/quote";
+import { allowance, approveData, deadlineIn, poolQuote, simulateSwap, swapData, txUrl, waitForReceipt, type SwapArgs } from "@/lib/swap";
 import type { Token } from "@/lib/tokens";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 import { TokenIcon } from "./token-pill";
 
-/** Review modal: the exact trade you are about to send, its guarantees, then the wallet step. */
+/** Review sheet: the quote, then Approve and Swap when this pair can fill on Sepolia. */
 export function SwapReview({
   quote,
   sell,
@@ -40,6 +43,15 @@ export function SwapReview({
   const hasBest = quote.bestOut > 0n;
   const edge = quote.ourOut - quote.bestOut;
   const fallback = quote.status !== "live";
+  const shortBalance = sellBal !== undefined && quote.amountIn > sellBal;
+  const receiveText = fmtSmart(quote.ourOut, buy.decimals, 8);
+
+  // Only WETH → USDC fills on Sepolia: SepoliaSwapPool's book is pinned to beat selling WETH.
+  const canSwap = sell.symbol === "WETH" && buy.symbol === "USDC" && sell.address === SEPOLIA.contracts.DemoWETH;
+  const [step, setStep] = useState<"approve" | "swap" | "done">("approve");
+  const [busy, setBusy] = useState<string>();
+  const [swapError, setSwapError] = useState<string>();
+  const [txs, setTxs] = useState<{ approve?: Hex; swap?: Hex }>({});
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -47,8 +59,73 @@ export function SwapReview({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const shortBalance = sellBal !== undefined && quote.amountIn > sellBal;
-  const receiveText = fmtSmart(quote.ourOut, buy.decimals, 8);
+  // Skip Approve when the pool can already pull this amount.
+  useEffect(() => {
+    if (!canSwap || !wallet.address || !wallet.onSepolia) return;
+    let live = true;
+    allowance(sell.address, wallet.address)
+      .then((a) => live && a >= quote.amountIn && setStep((s) => (s === "approve" ? "swap" : s)))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [canSwap, wallet.address, wallet.onSepolia, sell.address, quote.amountIn]);
+
+  async function approve() {
+    setSwapError(undefined);
+    setBusy("Approve in wallet…");
+    try {
+      const hash = await wallet.send({ to: sell.address, data: approveData(quote.amountIn) });
+      setTxs((t) => ({ ...t, approve: hash }));
+      setBusy("Approving…");
+      const r = await waitForReceipt(hash);
+      if (r.status !== "success") throw new Error("Approve reverted");
+      setStep("swap");
+    } catch (e) {
+      setSwapError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function swap() {
+    if (!wallet.address) return;
+    setSwapError(undefined);
+    setBusy("Checking the pool…");
+    try {
+      const args: SwapArgs = {
+        tokenIn: sell.address,
+        amountIn: quote.amountIn,
+        minOut,
+        deadline: deadlineIn(600),
+      };
+      // The pool prices from its own curve; the screen prices from live mainnet. Don't send a swap
+      // that would revert because the two drifted apart.
+      const pq = await poolQuote(args.tokenIn, args.amountIn);
+      if (pq.amountOut < minOut) {
+        throw new Error(
+          `The pool pays ${fmtSmart(pq.amountOut, buy.decimals)} ${buy.symbol}, below your minimum ${fmtSmart(minOut, buy.decimals)}. ` +
+            "Its competitor curve has drifted from mainnet; refresh it (deploy-sepolia --curve-only) and try again.",
+        );
+      }
+      const revert = await simulateSwap(wallet.address, args);
+      if (revert) throw new Error(`The swap would revert: ${revert}`);
+      setBusy("Swap in wallet…");
+      const hash = await wallet.send({ to: SEPOLIA.contracts.SepoliaSwapPool, data: swapData(args) });
+      setTxs((t) => ({ ...t, swap: hash }));
+      setBusy("Swapping…");
+      const r = await waitForReceipt(hash);
+      if (r.status !== "success") {
+        const why = await simulateSwap(wallet.address, args, r.blockNumber - 1n);
+        throw new Error(`Swap reverted${why ? `: ${why}` : ""}`);
+      }
+      setStep("done");
+    } catch (e) {
+      setSwapError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(undefined);
+    }
+  }
 
   const rows: [string, React.ReactNode][] = [
     [
@@ -62,6 +139,7 @@ export function SwapReview({
       "Best venue",
       hasBest ? (
         <>
+          {quote.venue ? `${quote.venue} · ` : ""}
           {fmtSmart(quote.bestOut, buy.decimals)} {buy.symbol}
           {edge >= 0n && <span className="text-win"> · +{fmtSmart(edge, buy.decimals, 4)}</span>}
         </>
@@ -75,13 +153,24 @@ export function SwapReview({
   if (config) rows.push(["Fee range", `${pipsToPercent(config.feeFloor)} – ${pipsToPercent(config.feeCap)}`]);
   rows.push(["Pool", `${fmtAmount(pool.reserveIn, sell.decimals, 0)} ${sell.symbol} / ${fmtAmount(pool.reserveOut, buy.decimals, 0)} ${buy.symbol}`]);
 
-  let confirm: { label: string; onClick?: () => void; tone: "primary" | "soft" | "off" };
+  type Confirm = { label: string; onClick?: () => void; tone: "primary" | "soft" | "off" };
+  let confirm: Confirm;
   if (!wallet.address) {
     confirm = { label: wallet.connecting ? "Connecting…" : "Connect wallet", onClick: wallet.connect, tone: "soft" };
   } else if (!wallet.onSepolia) {
     confirm = { label: "Switch to Sepolia", onClick: wallet.switchToSepolia, tone: "soft" };
+  } else if (shortBalance) {
+    confirm = { label: `Insufficient ${sell.symbol}`, tone: "off" };
+  } else if (!canSwap) {
+    confirm = { label: "No pool to fill on Sepolia", tone: "off" };
+  } else if (busy) {
+    confirm = { label: busy, tone: "off" };
+  } else if (step === "approve") {
+    confirm = { label: "Approve", onClick: approve, tone: "primary" };
+  } else if (step === "swap") {
+    confirm = { label: "Swap", onClick: swap, tone: "primary" };
   } else {
-    confirm = { label: "No pool to fill on Sepolia yet", tone: "off" };
+    confirm = { label: "Swapped", tone: "off" };
   }
 
   return (
@@ -134,23 +223,39 @@ export function SwapReview({
           </p>
         )}
 
+        {(txs.approve || txs.swap || swapError) && (
+          <div className="tnum mt-3 flex flex-col gap-1 px-2 text-[13px]">
+            {txs.approve && (
+              <a href={txUrl(txs.approve)} target="_blank" rel="noreferrer" className="text-white/55 hover:text-white">
+                Approve {txs.approve.slice(0, 10)}… ↗
+              </a>
+            )}
+            {txs.swap && (
+              <a href={txUrl(txs.swap)} target="_blank" rel="noreferrer" className={step === "done" ? "text-win hover:underline" : "text-white/55 hover:text-white"}>
+                {step === "done" ? "Swap confirmed" : "Swap"} {txs.swap.slice(0, 10)}… on Etherscan ↗
+              </a>
+            )}
+            {swapError && <p className="text-lose">{swapError}</p>}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={confirm.onClick}
-          disabled={!confirm.onClick || wallet.connecting}
+          disabled={!confirm.onClick || wallet.connecting || !!busy}
           className={`mt-4 h-[52px] w-full rounded-2xl text-[16px] font-semibold transition-colors ${
-            confirm.tone === "soft"
-              ? "bg-white text-black hover:bg-white/90"
-              : confirm.tone === "primary"
-                ? "bg-white text-black hover:bg-white/90"
-                : "cursor-not-allowed bg-white/[0.06] text-white/45"
+            confirm.tone === "off"
+              ? "cursor-not-allowed bg-white/[0.06] text-white/45"
+              : "bg-white text-black hover:bg-white/90"
           }`}
         >
           {confirm.label}
         </button>
 
         <p className="px-3 py-3 text-center text-[12px] leading-[1.5] text-white/40">
-          Priced by previewFeePips on Sepolia. No pool there can take the tokens yet, so the swap stops here.
+          {canSwap
+            ? "The fee is GivenQuotePreview on the live mainnet Uniswap v3 price. The swap fills on Sepolia against SepoliaSwapPool."
+            : "Priced by previewFeePips on Sepolia. No pool there can take this pair, so the swap stops here."}
         </p>
       </div>
     </div>

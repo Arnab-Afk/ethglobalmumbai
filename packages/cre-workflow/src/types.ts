@@ -58,6 +58,8 @@ export interface WorkflowConfig {
   chainSelectorName: string;
   rpcUrl?: string;
   quoteOracle: Address;
+  /** Multicall3 used to batch feed reads (default 0xcA11…CA11, same address on most chains). */
+  multicall3?: Address;
   /** Gas limit for writeReport / applyReport. */
   gasLimit?: string;
   pairs: PairConfig[];

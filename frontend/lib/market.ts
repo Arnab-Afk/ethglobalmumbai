@@ -1,10 +1,20 @@
 import { keccak256, parseAbi, parseAbiItem, toBytes, type Hex } from "viem";
 import { SEPOLIA } from "./deployments";
+import { bestMainnetOut, isMainnetPair } from "./mainnet";
 import { client } from "./quote";
 import type { Token } from "./tokens";
 
 /** Chainlink ETH/USD on Sepolia: the reference price the CRE workflow logs alongside its venues. */
 export const CHAINLINK_ETH_USD = "0x694AA1769357215DE4FAC081bf1f309aDC325306" as const;
+
+/**
+ * The CRE workflow writes curves for the canonical Sepolia WETH / USDC. The picker's WETH / USDC rows now
+ * point at the demo tokens behind SepoliaSwapPool, so look CRE events up by symbol, not by picker address.
+ */
+const CRE_TOKENS: Record<string, `0x${string}`> = {
+  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+  USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+};
 
 /** Block of the QuoteOracle deployment (tx 0x19b733…db28); no CurveUpdated events can be older. */
 const QUOTE_ORACLE_DEPLOY_BLOCK = 12_070_789n;
@@ -24,12 +34,18 @@ const curveUpdated = parseAbiItem(
 );
 
 export interface CurveSample {
-  /** Trade size in tokenIn units (e.g. 2.5 WETH). */
+  /** Trade size in tokenIn units (e.g. 2.5 WETH, or 2,000 USDC). */
   size: number;
   /** Best competing output for that size, in tokenOut units. */
   out: number;
-  /** out / size: the effective price per tokenIn. */
+  /**
+   * Effective USD price of the non-USD token, in both directions, so the curve sits on the
+   * same scale as the Chainlink line: WETH→USDC is out / size (USDC received per WETH),
+   * USDC→WETH is size / out (USDC paid per WETH).
+   */
   price: number;
+  /** Trader's output vs the Chainlink fair output, in percent (negative = worse than fair). */
+  vsFair: number;
 }
 
 export interface CurveUpdate {
@@ -42,6 +58,10 @@ export interface CurveUpdate {
 }
 
 export interface MarketSnapshot {
+  /** True when selling the priced token (WETH→USDC); false for the reverse (USDC→WETH). */
+  sellingBase: boolean;
+  /** Size of the headline stat, in tokenIn units (1 WETH, or 2,000 USDC). */
+  headlineSize: number;
   samples: CurveSample[];
   /** Largest size the curve covers; above it the oracle returns 0 (pool uses its fallback fee). */
   maxSize: number;
@@ -52,17 +72,28 @@ export interface MarketSnapshot {
   latencyMs: number;
 }
 
-// Log-spaced sizes from 0.05 to 100 units, plus round sizes so 1 and the curve's buckets are exact.
-// Sizes beyond the curve come back as 0 and are dropped.
-const SIZES = [
-  ...new Set([
-    ...Array.from({ length: 41 }, (_, i) => Number((0.05 * Math.pow(2000, i / 40)).toPrecision(4))),
-    0.1, 0.5, 1, 2, 5, 10, 20, 50,
-  ]),
-].sort((a, b) => a - b);
+/** Log-spaced sizes from `from` to 2000×`from`, plus round sizes so the curve's buckets are exact. */
+function sizeGrid(from: number, round: number[]): number[] {
+  return [
+    ...new Set([
+      ...Array.from({ length: 41 }, (_, i) => Number((from * Math.pow(2000, i / 40)).toPrecision(4))),
+      ...round,
+    ]),
+  ].sort((a, b) => a - b);
+}
 
-/** Exact size whose price the headline stat shows. */
+// Mainnet quotes are a quoter call per fee tier, so the chart stays on a short grid.
+const MAINNET_BASE_SIZES = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10];
+const MAINNET_USD_SIZES = [100, 250, 500, 1_000, 2_000, 5_000, 10_000, 20_000];
+
+// Sizes beyond the curve come back as 0 and are dropped.
+// Selling WETH: 0.05 to 100 WETH. Selling a dollar token: 100 to 200,000 (about the same notional).
+const BASE_SIZES = sizeGrid(0.05, [0.1, 0.5, 1, 2, 5, 10, 20, 50]);
+const USD_SIZES = sizeGrid(100, [200, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000]);
+
+/** Exact size whose price the headline stat shows, per direction. */
 export const HEADLINE_SIZE = 1;
+export const HEADLINE_SIZE_USD = 2_000;
 
 const venueCache = new Map<string, string[] | undefined>();
 
@@ -96,40 +127,65 @@ function decodeVenues(hash: Hex, points: number): string[] | undefined {
 
 export async function getMarket(tokenIn: Token, tokenOut: Token): Promise<MarketSnapshot> {
   const t0 = performance.now();
-  const oracle = SEPOLIA.contracts.QuoteOracle;
+  // Chainlink ETH/USD prices WETH; a dollar token on the input side means the reverse direction.
+  const sellingBase = !tokenIn.usd;
   const unitIn = 10 ** tokenIn.decimals;
   const unitOut = 10 ** tokenOut.decimals;
+  const onMainnet = isMainnetPair(tokenIn.symbol, tokenOut.symbol);
+  const SIZES = onMainnet
+    ? sellingBase
+      ? MAINNET_BASE_SIZES
+      : MAINNET_USD_SIZES
+    : sellingBase
+      ? BASE_SIZES
+      : USD_SIZES;
 
   const [outs, round, feedDecimals, block, logs] = await Promise.all([
     Promise.all(
-      SIZES.map((size) =>
-        client.readContract({
-          address: oracle,
+      SIZES.map(async (size) => {
+        const amountIn = BigInt(Math.round(size * 1e6)) * BigInt(unitIn / 1e6);
+        if (onMainnet) {
+          const bestOut = await bestMainnetOut(tokenIn.symbol, tokenOut.symbol, amountIn);
+          return [bestOut, 0n] as const;
+        }
+        return client.readContract({
+          address: SEPOLIA.contracts.VenueReader,
           abi: oracleAbi,
           functionName: "getBestOut",
-          args: [tokenIn.address, tokenOut.address, BigInt(Math.round(size * 1e6)) * BigInt(unitIn / 1e6)],
-        }),
-      ),
+          args: [tokenIn.address, tokenOut.address, amountIn],
+        });
+      }),
     ),
     client.readContract({ address: CHAINLINK_ETH_USD, abi: feedAbi, functionName: "latestRoundData" }),
     client.readContract({ address: CHAINLINK_ETH_USD, abi: feedAbi, functionName: "decimals" }),
     client.getBlock({ blockTag: "latest" }),
     client.getLogs({
-      address: oracle,
+      address: SEPOLIA.contracts.QuoteOracle,
       event: curveUpdated,
-      args: { tokenIn: tokenIn.address, tokenOut: tokenOut.address },
+      args: {
+        tokenIn: CRE_TOKENS[tokenIn.symbol] ?? tokenIn.address,
+        tokenOut: CRE_TOKENS[tokenOut.symbol] ?? tokenOut.address,
+      },
       fromBlock: QUOTE_ORACLE_DEPLOY_BLOCK,
       toBlock: "latest",
     }),
   ]);
 
+  const feedPrice = Number(round[1]) / 10 ** feedDecimals;
   const samples: CurveSample[] = [];
   let observedAt = 0;
   outs.forEach(([bestOut, updatedAt], i) => {
     if (bestOut === 0n) return;
-    observedAt = Number(updatedAt);
+    observedAt = onMainnet ? Number(block.timestamp) : Number(updatedAt);
+    const size = SIZES[i];
     const out = Number(bestOut) / unitOut;
-    samples.push({ size: SIZES[i], out, price: out / SIZES[i] });
+    const fairOut = sellingBase ? size * feedPrice : size / feedPrice;
+    samples.push({
+      size,
+      out,
+      price: sellingBase ? out / size : size / out,
+      vsFair: (out / fairOut - 1) * 100,
+    });
   });
 
   const updates: CurveUpdate[] = logs
@@ -146,11 +202,13 @@ export async function getMarket(tokenIn: Token, tokenOut: Token): Promise<Market
     .reverse(); // newest first
 
   return {
+    sellingBase,
+    headlineSize: sellingBase ? HEADLINE_SIZE : HEADLINE_SIZE_USD,
     samples,
     maxSize: samples.at(-1)?.size ?? 0,
     observedAt,
     blockTime: Number(block.timestamp),
-    feed: { price: Number(round[1]) / 10 ** feedDecimals, updatedAt: Number(round[3]) },
+    feed: { price: feedPrice, updatedAt: Number(round[3]) },
     updates,
     latencyMs: performance.now() - t0,
   };

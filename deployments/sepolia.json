@@ -10,11 +10,16 @@
     "CompetitiveFeeExtructionVenueReader": "0xC0a28A08cBfB6Eb93cd36752c7B856741E235628",
     "CompetitiveFeeHook": "0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080",
     "VenueReader": "0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F",
+    "GivenQuotePreview": "0xbF488B884e7E84a6F87109FC985BbC821EF6393f",
     "TradePreview": "0x318589f99F1b560230340C20e2649751B4be098F",
     "KeystoneForwarderMock": "0x15fC6ae953E024d975e77382eEeC56A9101f9F88",
     "KeystoneForwarderProd": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
     "AquaRegistry": "0x1111113ccf1426a8e30e2bff5e005d929bf6a90a",
-    "AquaSwapVMRouter": "0x111111338c5091e8440b67b168bae16a668ac0de"
+    "AquaSwapVMRouter": "0x111111338c5091e8440b67b168bae16a668ac0de",
+    "DemoWETH": "0xDb30012EBB4190C6aB2657283766531DA76a5475",
+    "DemoUSDC": "0xFD0b2B0B9d44308F396f6aeb6E3eD36893a67b42",
+    "SepoliaSwapOracle": "0xEfe745de339040E6182dcCb745f3A7ED7150C5DD",
+    "SepoliaSwapPool": "0xE1Fde020143A73d0B0a9E8ba91E3ecD01dCb14EF"
   },
   "program": {
     "competitiveExtruction": "0x201423ed7de99df648f8164c9ef3bd0657059f6e2187",
@@ -38,7 +43,15 @@
     "TradePreview": "https://sepolia.etherscan.io/tx/0x241440c575f279ee603492a5af68ff8d4e222ef4ec6b02f4141da28425c3acf2",
     "CompetitiveFeeHook": "https://sepolia.etherscan.io/tx/0x04d16eb7b7ca01f7c25d754921aa19f24bb30e4ea17bc8faf5dfa1b0742152a5",
     "CompetitiveFeeHookInitialize": "https://sepolia.etherscan.io/tx/0x0e55ba23a95f1d58b16ba0bbe59e976bcc3e91037753e3eb64bd323145a47293",
-    "CompetitiveFeeExtructionVenueReader": "https://sepolia.etherscan.io/tx/0x08e9c266787e963900db4cbbf13572bca08e0db7da1c6be3534c39c81d7bf656"
+    "CompetitiveFeeExtructionVenueReader": "https://sepolia.etherscan.io/tx/0x08e9c266787e963900db4cbbf13572bca08e0db7da1c6be3534c39c81d7bf656",
+    "GivenQuotePreview": "https://sepolia.etherscan.io/tx/0x160e39936c9b7c4e8a8b30bfd5ba71d688a6d720fb5a3cd95de08ba4b3c890c4",
+    "DemoWETH": "https://sepolia.etherscan.io/tx/0x52c09e13219521d6edcb4ea35996f5421b9114fe638aae312106dfa9d2eaafda",
+    "DemoUSDC": "https://sepolia.etherscan.io/tx/0x53970a3b4d8b7ac02e5d058fa1e87d18a4b38f2d91d6d49cbf7c68b26d1ddc85",
+    "SepoliaSwapOracle": "https://sepolia.etherscan.io/tx/0x42e12e7813543cbb80d256c1dc66e0dc3116fdbf694d05938f702aa86d1076b1",
+    "SepoliaSwapPool": "https://sepolia.etherscan.io/tx/0x6d452963e33616c6e3f2164bced68b0845c0bdeaf4e7ea016f27079009ea9d45",
+    "SepoliaSwapMintWETH": "https://sepolia.etherscan.io/tx/0xe9790ed448feb41b5adf25b9ca8a4b438abc6ad5cfac420cc0f5f358f26487e8",
+    "SepoliaSwapMintUSDC": "https://sepolia.etherscan.io/tx/0xa9c484edf8259af91d71641d619e87bb1434e2610a5398d839328a874d60d861",
+    "SepoliaSwapSetCurve": "https://sepolia.etherscan.io/tx/0xdca0dba16a8ff61531cc1ff16ffcbb005e9f6d68649adaac9525bc5d9758214d"
   },
   "verified": true,
   "etherscan": {
@@ -47,6 +60,7 @@
     "CompetitiveFeeExtruction": "https://sepolia.etherscan.io/address/0x23ED7de99DF648f8164c9Ef3bD0657059f6E2187#code"
   },
   "notes": [
+    "Sepolia swap demo (docs/team/sepolia-swap.md): DemoWETH/DemoUSDC are mintable demo tokens, SepoliaSwapPool is a DevnetCompetitivePool (floor 500, cap 10000, fallback 3000, undercut 1 bp, maxQuoteAge 3600) seeded with 1000 dWETH and dUSDC from the mainnet Uniswap v3 1 WETH quote × 1.004. SepoliaSwapOracle is its own MockQuoteOracle with a WETH→USDC curve from mainnet v3 (0.05–10 WETH); refresh with `npx tsx src/cli/deploy-sepolia.ts --curve-only --send` in packages/private-quoting.",
     "QuoteOracle trusts CRE MockKeystoneForwarder — use with `cre workflow simulate --broadcast`. Switch to KEYSTONE_FORWARDER_PROD via setForwarder for live CRE.",
     "CompetitiveFeeExtruction reads MockQuoteOracle (demo price control). CompetitiveFeeExtructionVenueReader reads VenueReader.",
     "Aqua registry/router addresses are canonical vanity addresses (same on all Aqua chains). Wire strategy on a mainnet/Base Anvil fork — not Sepolia.",

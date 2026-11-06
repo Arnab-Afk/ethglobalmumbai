@@ -12,6 +12,28 @@ Built for **ETHGlobal Mumbai**. One fee engine, three integrations:
 
 Inspired by PropellerHeads' Fynd AMM. **All code in this repo is written fresh during the hackathon**; nothing is copied from Fynd.
 
+## Run it
+
+Node ≥ 20.12 and [Foundry](https://book.getfoundry.sh/) for the contracts. Every package installs on its own (no workspace).
+
+| What | Commands |
+|---|---|
+| App (Sepolia quote, market, dashboard) | `cd frontend && npm install && npm run dev` → http://localhost:3000 |
+| Fee math and contracts | `cd packages/fee-core && forge test` (same in `oracle`, `swapvm-opcode`, `v4-hook`) |
+| Integrator SDK | `cd packages/sdk && npm install && npm test`; usage in [packages/sdk/README.md](packages/sdk/README.md) |
+| EIP-8141 frame swap (devnet, chain 1337) | `cd packages/private-quoting && npm install && npm run quote:sdk -- 10`; full flow in [its README](packages/private-quoting/README.md) |
+| CRE workflow (local simulate) | `cd packages/cre-workflow && npm install && npm run simulate:local` |
+| CRE workflow (CRE CLI) | `cd packages/cre-workflow && cre workflow simulate ./workflow -T sepolia-settings` (add `--broadcast` to write to Sepolia; `BROADCAST=1 npm run cre:watch` to repeat) |
+
+Deployed addresses: [deployments/sepolia.json](deployments/sepolia.json) and [packages/private-quoting/web/public/deployment.json](packages/private-quoting/web/public/deployment.json).
+
+## CROPS
+
+- **Censorship resistant.** Swaps can go out as EIP-8141 frame transactions to the alt mempool. The pool and the v4 hook have no owner and no allowlist, so anyone can trade. The price inputs do have owners: `VenueReader` (which venues count) and `QuoteOracle` (which CRE forwarder may write). An owner who reports a false `bestOut` can make the devnet pool refuse trades (`CannotBeatVenue`), but cannot move anyone's funds.
+- **Open source.** MIT ([LICENSE](LICENSE)), everything is in this repo. Exception: `packages/swapvm-opcode` depends on 1inch's `@1inch/aqua-sdk` and SwapVM, which are source-available (Degensoft licenses), not FOSS.
+- **Private.** The app reads Sepolia through Anon-RPC by default (Nox mixnet, `frontend/lib/rpc.ts`), so the RPC never learns who asked for which pair or size. Not anonymized: the one read of the Anon-RPC specifier contract at startup, and your wallet's own RPC once you connect. The alt mempool is public, so a submitted swap is visible before inclusion.
+- **Secure.** A swap reverts instead of filling worse: `minOut` defaults to the quote, `deadline` to 10 minutes, and the pool rechecks the competitor price in the same transaction. Approve and swap are one atomic frame batch, so a revert rolls both back. Fee math lives in one library (`packages/fee-core`) with fuzz tests for "trader output ≥ best venue". The client has no trackers or analytics.
+
 ## Mentor feedback and the path we are locking
 
 The fee engine already works. A real frame swap on our EIP-8141 devnet beat the best venue: [tx `0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59) paid **29512.45** against a competitor quote of **29500**. The competitor price on that trade came from `MockQuoteOracle`. Sepolia now reads Uniswap v3 inside the quote, and the devnet pool reverts when it cannot beat the live price. The fee math is unchanged.
@@ -31,7 +53,7 @@ The fee engine already works. A real frame swap on our EIP-8141 devnet beat the 
 | Sepolia oracle + Extruction | Deployed and verified. Curve updates and `previewFeePips` work. No fillable pool on Sepolia yet. |
 | EIP-8141 frame swap (`packages/private-quoting`) | Working prototype. The tx above filled against the **mock** oracle. |
 | Client SDK + Sepolia dashboard | `packages/sdk`, `apps/demo` (quote view). |
-| CRE aggregator | Local simulator writes a curve. Live DON deploy is optional for the prototype. |
+| CRE aggregator | `cre workflow simulate --broadcast` writes WETH⇄USDC curves to Sepolia `QuoteOracle` through Chainlink's mock forwarder, after checking every quote against Chainlink ETH/USD. No swap path reads `QuoteOracle` yet (task C3). Live DON deploy is optional. See [docs/06](docs/06-chainlink-cre.md). |
 | Real Uniswap reads inside the swap | **Sepolia v3 pools, live.** `VenueReader` `0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F` reads the four WETH/USDC fee tiers from pool storage. `TradePreview` `0x318589f99F1b560230340C20e2649751B4be098F` runs that quote through fee-core. v4 hook `0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080` is initialized on a dynamic-fee WETH/USDC pool. The 8141 devnet still falls back to `MockQuoteOracle`. |
 
 ### Locked plan

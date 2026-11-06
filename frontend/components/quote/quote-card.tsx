@@ -5,20 +5,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
+import { isMainnetPair, mainnetClient } from "@/lib/mainnet";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { QuoteDetails } from "./quote-details";
 import { RefreshRing } from "./refresh-ring";
 import { DEFAULT_SLIPPAGE_BPS, SwapSettings } from "./slippage-row";
 import { SwapReview } from "./swap-review";
+import { VenueComparison } from "./venue-comparison";
 import { TokenButton } from "./token-pill";
 import { TokenPicker } from "./token-picker";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 
-const REFRESH_MS = 12_000; // one Sepolia block
+const REFRESH_MS = 12_000; // ring length; the quote itself re-runs on each new block
 const DEBOUNCE_MS = 350;
-const DEFAULT_AMOUNT = ""; // start empty, like any swap form
+const DEFAULT_AMOUNT = "0.1";
 
 type State =
   | { kind: "idle" }
@@ -98,15 +100,30 @@ export function QuoteCard() {
     return () => clearTimeout(t);
   }, [runQuote, sell, buy, amount]);
 
-  // Re-quote once per block.
+  // Liquid pairs follow mainnet blocks, which is where those pools actually trade.
   useEffect(() => {
-    if (state.kind !== "ok") return;
+    if (!isMainnetPair(sell.symbol, buy.symbol)) return;
+    const unwatch = mainnetClient.watchBlockNumber({
+      pollingInterval: 4_000,
+      onBlockNumber() {
+        setRefreshKey((k) => k + 1);
+        runQuote();
+      },
+    });
+    return unwatch;
+  }, [runQuote, sell.symbol, buy.symbol]);
+
+  // Other pairs re-quote on a timer, including after an error: an Anon-RPC network can drop
+  // out for a while (e.g. Nox "No exit offers TLS tunnels") and should recover on its own.
+  useEffect(() => {
+    if (isMainnetPair(sell.symbol, buy.symbol)) return;
+    if (state.kind !== "ok" && state.kind !== "error") return;
     const t = setTimeout(() => {
       setRefreshKey((k) => k + 1);
       runQuote();
     }, REFRESH_MS);
     return () => clearTimeout(t);
-  }, [state, runQuote]);
+  }, [state, runQuote, sell.symbol, buy.symbol]);
 
   const choose = (side: "sell" | "buy", t: Token) => {
     const other = side === "sell" ? buy : sell;
@@ -152,6 +169,7 @@ export function QuoteCard() {
 
   const amountIn = parseAmount(amount, sell.decimals);
   const quoted = quote && pool && amountIn !== null ? quote : undefined;
+  const shownPool = quoted?.reserves ?? pool;
 
   type Action = { label: string; onClick?: () => void; tone: "primary" | "soft" | "warn" | "off" };
   const action: Action = !pool
@@ -257,16 +275,19 @@ export function QuoteCard() {
         <p className="mt-3 rounded-2xl bg-lose/10 px-4 py-3 text-[13px] text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>
       )}
 
-      {quote && pool && (
-        <QuoteDetails
-          quote={quote}
-          tokenIn={sell}
-          tokenOut={buy}
-          pool={pool}
-          config={config}
-          slippageBps={slippageBps}
-          loading={loading}
-        />
+      {quote && shownPool && (
+        <>
+          <QuoteDetails
+            quote={quote}
+            tokenIn={sell}
+            tokenOut={buy}
+            pool={shownPool}
+            config={config}
+            slippageBps={slippageBps}
+            loading={loading}
+          />
+          <VenueComparison quote={quote} tokenIn={sell} tokenOut={buy} config={config} />
+        </>
       )}
 
       <button
@@ -278,7 +299,7 @@ export function QuoteCard() {
         {action.label}
       </button>
 
-      {reviewing && quoted && pool && (
+      {reviewing && quoted && shownPool && (
         <SwapReview
           quote={quoted}
           sell={sell}
@@ -286,7 +307,7 @@ export function QuoteCard() {
           amount={amount}
           sellUsd={sellUsd}
           buyUsd={buyUsd}
-          pool={pool}
+          pool={shownPool}
           config={config}
           slippageBps={slippageBps}
           onClose={() => setReviewing(false)}

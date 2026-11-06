@@ -7,8 +7,8 @@
  * Aggregation is ours (docs/06). Fynd is inspiration only — no Fynd imports/code.
  *
  * Per pair, on each cron tick (a pair that throws is skipped; the others still publish):
- *   1. If the pair has a `sanity` block, read its Chainlink feed with the EVM capability
- *      (once per run per feed: WETH→USDC and USDC→WETH share ETH/USD).
+ *   1. Read every Chainlink feed in the config with ONE EVM call (Multicall3); pairs that
+ *      share a feed (WETH→USDC and USDC→WETH share ETH/USD) share its reading.
  *   2. Quote the mock venues (`mock-xyk`, and `mock-anchored`, which is priced from the feed).
  *   3. finalizePair: drop quotes far above the Chainlink fair price, cut untrusted buckets
  *      (same code as the Node simulator).
@@ -26,11 +26,11 @@ import {
   Runner,
   type Runtime,
 } from "@chainlink/cre-sdk";
-import { type Address, decodeFunctionResult, encodeFunctionData, type Hex, zeroAddress } from "viem";
+import { type Address, getAddress, type Hex, zeroAddress } from "viem";
 import { formatBucketLines, formatFeedLine } from "../src/describeCurve.js";
 import { parseWorkflowConfig } from "../src/config.js";
 import { encodeCurveReport } from "../src/encodeReport.js";
-import { AGGREGATOR_V3_ABI } from "../src/feed.js";
+import { decodeFeedBatch, encodeFeedBatch, type FeedBatchResult, MULTICALL3_ADDRESS, uniqueFeeds } from "../src/feedBatch.js";
 import { finalizePair } from "../src/finalizePair.js";
 import type { FeedReading } from "../src/sanity.js";
 import type { CurveUpdate, PairConfig, VenueQuote, WorkflowConfig } from "../src/types.js";
@@ -51,35 +51,35 @@ function callView(runtime: Runtime<WorkflowConfig>, evm: EVMClient, to: Address,
   return bytesToHex(reply.data);
 }
 
-/** Chainlink AggregatorV3 latestRoundData + decimals, read via CRE. */
-function readFeedCre(runtime: Runtime<WorkflowConfig>, evm: EVMClient, feed: Address): FeedReading {
-  const decimals = decodeFunctionResult({
-    abi: AGGREGATOR_V3_ABI,
-    functionName: "decimals",
-    data: callView(runtime, evm, feed, encodeFunctionData({ abi: AGGREGATOR_V3_ABI, functionName: "decimals" })),
-  });
-  const round = decodeFunctionResult({
-    abi: AGGREGATOR_V3_ABI,
-    functionName: "latestRoundData",
-    data: callView(
-      runtime,
-      evm,
-      feed,
-      encodeFunctionData({ abi: AGGREGATOR_V3_ABI, functionName: "latestRoundData" }),
-    ),
-  });
-  return { answer: round[1], decimals, updatedAt: round[3] };
+/**
+ * Every Chainlink feed the config uses, read in ONE EVM call through Multicall3
+ * (CRE allows 15 reads per run). A feed that reverts is an Error for its pairs only;
+ * if the whole call fails, every feed is that Error.
+ */
+function readFeedsCre(
+  runtime: Runtime<WorkflowConfig>,
+  evm: EVMClient,
+  multicall: Address,
+  pairs: PairConfig[],
+): FeedBatchResult {
+  const feeds = uniqueFeeds(pairs.flatMap((p) => (p.sanity ? [p.sanity.feed] : [])));
+  if (feeds.length === 0) return new Map();
+  try {
+    const result = decodeFeedBatch(feeds, callView(runtime, evm, multicall, encodeFeedBatch(feeds)));
+    runtime.log(`cre-workflow: read ${feeds.length} Chainlink feed(s) in 1 EVM call (Multicall3)`);
+    return result;
+  } catch (err) {
+    const e = new Error(`Multicall3 feed read failed: ${err instanceof Error ? err.message : String(err)}`);
+    return new Map(feeds.map((f) => [f, e]));
+  }
 }
-
-/** Feed readings for this run, keyed by feed address: pairs sharing a feed read it once. */
-type FeedCache = Map<string, FeedReading>;
 
 function quotePair(
   runtime: Runtime<WorkflowConfig>,
   evm: EVMClient,
   pair: PairConfig,
   observedAt: bigint,
-  feeds: FeedCache,
+  feeds: FeedBatchResult,
 ): CurveUpdate | null {
   runtime.log(`cre-workflow: pair ${pair.tokenIn} → ${pair.tokenOut}`);
 
@@ -96,9 +96,10 @@ function quotePair(
 
   let feed: FeedReading | undefined;
   if (pair.sanity) {
-    const key = pair.sanity.feed.toLowerCase();
-    feed = feeds.get(key) ?? readFeedCre(runtime, evm, pair.sanity.feed);
-    feeds.set(key, feed);
+    const reading = feeds.get(getAddress(pair.sanity.feed));
+    if (!reading) throw new Error(`feed ${pair.sanity.feed} was not read`);
+    if (reading instanceof Error) throw reading;
+    feed = reading;
     runtime.log(`cre-workflow:   ${formatFeedLine(pair.sanity.feed, feed, observedAt)}`);
   }
 
@@ -137,7 +138,7 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
 
   // runtime.now() is the DON's agreed time; Date.now() can differ between nodes.
   const observedAt = BigInt(Math.floor(runtime.now().getTime() / 1000));
-  const feeds: FeedCache = new Map();
+  const feeds = readFeedsCre(runtime, evm, config.multicall3 ?? MULTICALL3_ADDRESS, config.pairs);
   const updates: CurveUpdate[] = [];
   for (const pair of config.pairs) {
     // One pair failing (an RPC read error, a bad config) skips that pair only.
