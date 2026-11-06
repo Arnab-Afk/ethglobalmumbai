@@ -9,6 +9,7 @@
 1. Read `IQuoteOracle.getBestOut(tokenIn, tokenOut, amountIn)`, the best competing venue for this exact trade.
 2. `CompetitiveFee.compute` (fee-core, pips): the largest fee that still beats that venue by `undercutBps`. Stale or missing quote → `fallbackFee`.
 3. Convert to SwapVM fee units (`×1000`) and apply `_flatFeeAmountInXD` exact-in math, then constant product on the Aqua balances.
+4. **If we lose, we lose.** When a fresh competitor quote pays more than we can, quote and swap revert with `CannotBeatVenue`, so the trade goes elsewhere. With a stale or missing quote, or an oracle that reverts, we fill at `fallbackFee` instead, because a broken oracle must not block swaps.
 
 Quote and swap call the same `view` function, so the router's `quote` equals what `swap` pays.
 
@@ -19,7 +20,7 @@ Runs against the **deployed** Aqua registry (`0x1111113C…a90a`) and `AquaSwapV
 ```bash
 cd packages/swapvm-opcode
 npm run aqua:fork     # Anvil fork → deploy → ship strategy → swap 1 WETH → USDC; prints tx hashes + Transfer events
-npm run test:fork     # same flow as Foundry assertions (3 tests)
+npm run test:fork     # same flow as Foundry assertions (6 tests)
 forge test            # offline unit tests; the fork suite skips without FORK_RPC
 ```
 
@@ -68,6 +69,8 @@ The competitor price comes from `MockQuoteOracle`, so the demo can move it. The 
 - Built against **swap-vm v1.0.2**, the deployed router. `main` of `1inch/swap-vm` renumbers opcodes (Extruction 4, XYCSwap 50), so these program bytes only fit a v1.0.2 router.
 - Sepolia has the Aqua registry but **no `AquaSwapVMRouter`**, so settlement runs on a mainnet fork. Base has both at the same addresses.
 - Exact-out swaps revert (`ExactOutNotSupported`). The MVP is exact-in only.
+- The demo pool is shallow (100 WETH), so each 1 WETH swap moves our price about 1.8% while the mock venue stays put. A second identical swap loses and reverts (`test_Fork_secondSwapLosesToVenue_reverts`). On stage, swap once or move the venue with `setCurve`.
+- The Sepolia `CompetitiveFeeExtruction` instances in `deployments/sepolia.json` were deployed before the `CannotBeatVenue` check and the oracle `try`/`catch`, and they are immutable. A redeploy picks both up.
 
 ## Not done: Path A
 

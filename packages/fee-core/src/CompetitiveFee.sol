@@ -100,7 +100,7 @@ library CompetitiveFee {
     }
 
     function _quoteUsable(uint256 bestOut, uint64 updatedAt, uint32 maxQuoteAge)
-        private
+        internal
         view
         returns (bool)
     {

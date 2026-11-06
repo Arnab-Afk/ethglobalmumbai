@@ -146,6 +146,45 @@ contract CompetitiveFeeExtructionTest is Test {
         target.extruction(true, 0, _query(true), s, hex"", hex"");
     }
 
+    /// @dev Competitor curve that pays more than our zero-fee output at AMOUNT_IN (29_703e6).
+    function _setUnbeatableCurve() internal {
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory outs = new uint256[](2);
+        (amounts[0], amounts[1]) = (1 ether, 100 ether);
+        (outs[0], outs[1]) = (3_000e6, 300_000e6); // 30_000e6 at 10 ETH
+        oracle.setCurve(tokenA, tokenB, amounts, outs, 0);
+    }
+
+    function test_freshQuoteWeCannotBeat_reverts() public {
+        _setUnbeatableCurve();
+        // compute() returns the floor (500 pips) when we can't win; that output is still below the venue.
+        uint256 afterFee = AMOUNT_IN - (AMOUNT_IN * FeeUnits.pipsToSwapVmBps(500)) / 1e9;
+        uint256 ourOut = (afterFee * Y) / (X + afterFee);
+        vm.expectRevert(
+            abi.encodeWithSelector(CompetitiveFeeExtruction.CannotBeatVenue.selector, ourOut, uint256(30_000e6))
+        );
+        target.extruction(false, 0, _query(true), _swap(AMOUNT_IN), hex"", hex"");
+    }
+
+    function test_staleQuoteWeCannotBeat_stillFillsAtFallback() public {
+        _setUnbeatableCurve();
+        vm.warp(block.timestamp + 61); // stale: we don't know who wins, so fail safe and fill
+        (, , SwapRegisters memory out) =
+            target.extruction(false, 0, _query(true), _swap(AMOUNT_IN), hex"", hex"");
+        uint256 afterFee = AMOUNT_IN - (AMOUNT_IN * FeeUnits.pipsToSwapVmBps(3_000)) / 1e9;
+        assertEq(out.amountOut, (afterFee * Y) / (X + afterFee));
+    }
+
+    function test_oracleReverts_usesFallbackFee() public {
+        vm.mockCallRevert(address(oracle), abi.encodeWithSelector(oracle.getBestOut.selector), "oracle down");
+        (uint24 feePips, uint256 bestOut,) = target.previewFeePips(tokenA, tokenB, AMOUNT_IN, X, Y);
+        assertEq(feePips, 3_000);
+        assertEq(bestOut, 0);
+        (, , SwapRegisters memory out) =
+            target.extruction(false, 0, _query(true), _swap(AMOUNT_IN), hex"", hex"");
+        assertGt(out.amountOut, 0);
+    }
+
     function test_feeUnitsBoundary() public pure {
         assertEq(FeeUnits.pipsToSwapVmBps(3_000), 3_000_000);
     }

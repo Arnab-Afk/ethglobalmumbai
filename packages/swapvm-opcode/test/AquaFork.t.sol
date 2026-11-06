@@ -150,4 +150,41 @@ contract AquaForkTest is Test {
         vm.expectRevert();
         router.swap(competitive, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(qOut + 1));
     }
+
+    /// @dev "If we lose to a competitor, we lose": a fresh quote we can't beat makes the router swap revert.
+    function test_Fork_cannotBeatVenue_reverts() public {
+        uint256[] memory a = new uint256[](1);
+        uint256[] memory o = new uint256[](1);
+        (a[0], o[0]) = (1 ether, 2_990e6); // above our zero-fee output (2970.30)
+        oracle.setCurve(WETH, USDC, a, o, 0);
+
+        bytes memory data = AquaEncoding.exactInTakerData(0);
+        vm.expectRevert(); // CannotBeatVenue, bubbled through the router
+        router.quote(competitive, WETH, USDC, AMOUNT_IN, data);
+
+        uint256 takerWeth = IERC20(WETH).balanceOf(taker);
+        vm.prank(taker);
+        vm.expectRevert();
+        router.swap(competitive, WETH, USDC, AMOUNT_IN, data);
+        assertEq(IERC20(WETH).balanceOf(taker), takerWeth, "no tokens moved");
+    }
+
+    /// @dev Our 100 WETH demo pool moves ~1.8% per 1 WETH, so the 2nd swap can't beat the fixed venue and reverts.
+    function test_Fork_secondSwapLosesToVenue_reverts() public {
+        vm.startPrank(taker);
+        router.swap(competitive, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(0));
+        vm.expectRevert();
+        router.swap(competitive, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(0));
+        vm.stopPrank();
+    }
+
+    /// @dev Stale venue quote: no revert, the fallback fee (30 bp) applies.
+    function test_Fork_staleQuote_fillsAtFallback() public {
+        vm.warp(block.timestamp + 301);
+        (, uint256 outCompetitive,) = router.quote(competitive, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(0));
+        (, uint256 outFlat30,) = router.quote(flat30, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(0));
+        assertEq(outCompetitive, outFlat30);
+        vm.prank(taker);
+        router.swap(competitive, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(outCompetitive));
+    }
 }
