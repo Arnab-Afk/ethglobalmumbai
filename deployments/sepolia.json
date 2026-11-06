@@ -10,6 +10,7 @@
     "CompetitiveFeeExtructionVenueReader": "0xC0a28A08cBfB6Eb93cd36752c7B856741E235628",
     "CompetitiveFeeHook": "0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080",
     "VenueReader": "0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F",
+    "GivenQuotePreview": "0xbF488B884e7E84a6F87109FC985BbC821EF6393f",
     "TradePreview": "0x318589f99F1b560230340C20e2649751B4be098F",
     "KeystoneForwarderMock": "0x15fC6ae953E024d975e77382eEeC56A9101f9F88",
     "KeystoneForwarderProd": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
@@ -38,7 +39,8 @@
     "TradePreview": "https://sepolia.etherscan.io/tx/0x241440c575f279ee603492a5af68ff8d4e222ef4ec6b02f4141da28425c3acf2",
     "CompetitiveFeeHook": "https://sepolia.etherscan.io/tx/0x04d16eb7b7ca01f7c25d754921aa19f24bb30e4ea17bc8faf5dfa1b0742152a5",
     "CompetitiveFeeHookInitialize": "https://sepolia.etherscan.io/tx/0x0e55ba23a95f1d58b16ba0bbe59e976bcc3e91037753e3eb64bd323145a47293",
-    "CompetitiveFeeExtructionVenueReader": "https://sepolia.etherscan.io/tx/0x08e9c266787e963900db4cbbf13572bca08e0db7da1c6be3534c39c81d7bf656"
+    "CompetitiveFeeExtructionVenueReader": "https://sepolia.etherscan.io/tx/0x08e9c266787e963900db4cbbf13572bca08e0db7da1c6be3534c39c81d7bf656",
+    "GivenQuotePreview": "https://sepolia.etherscan.io/tx/0x160e39936c9b7c4e8a8b30bfd5ba71d688a6d720fb5a3cd95de08ba4b3c890c4"
   },
   "verified": true,
   "etherscan": {
