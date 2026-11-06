@@ -8,7 +8,7 @@ Built for **ETHGlobal Mumbai**. One fee engine, three integrations:
 
 | Surface | What it is | Prize track | Doc |
 |---|---|---|---|
-| **1inch SwapVM opcode** (core) | Custom instruction that computes the competitive fee inside a SwapVM program running on Aqua liquidity | 1inch — Aqua | [docs/04-swapvm-opcode.md](docs/04-swapvm-opcode.md) |
+| **1inch SwapVM opcode** (core) | Extruction target that computes the competitive fee inside a SwapVM program on Aqua liquidity. Shipped to the live Aqua registry and swapped through the deployed `AquaSwapVMRouter` on a mainnet fork (`npm run aqua:fork`) | 1inch — Aqua | [docs/04-swapvm-opcode.md](docs/04-swapvm-opcode.md) |
 | **Private & competitive quoting** | Every app read goes through Anon-RPC, so the RPC never sees who asked for which pair or size. Swaps can go out as one atomic EIP-8141 frame tx to the alt mempool, where `minOut` makes a front-run revert the whole batch (the alt mempool itself is public) | Ethereum Foundation | [docs/05-ef-private-quoting.md](docs/05-ef-private-quoting.md) |
 | **Chainlink CRE workflow** | Off-chain workflow that quotes competing venues and writes a signed quote curve on-chain | Chainlink CRE | [docs/06-chainlink-cre.md](docs/06-chainlink-cre.md) |
 
@@ -22,6 +22,7 @@ Node ≥ 20.12 and [Foundry](https://book.getfoundry.sh/) for the contracts. Eve
 |---|---|
 | App (Sepolia quote, market, dashboard) | `cd frontend && npm install && npm run dev` → http://localhost:3000 |
 | Fee math and contracts | `cd packages/fee-core && forge test` (same in `oracle`, `swapvm-opcode`, `v4-hook`) |
+| 1inch Aqua swap (mainnet fork, real router) | `cd packages/swapvm-opcode && npm run aqua:fork` (tx hashes + Transfer events); `npm run test:fork` for the assertions |
 | Base fee-last hook, router, and AXIS pool | `cd packages/fee-last && forge test` |
 | Integrator SDK | `cd packages/sdk && npm install && npm test`; usage in [packages/sdk/README.md](packages/sdk/README.md) |
 | SDK docs site | `cd apps/docs && npm install && npm run dev -- -p 3001` → http://localhost:3001 (the app uses 3000); see [apps/docs/README.md](apps/docs/README.md) |

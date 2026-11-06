@@ -67,7 +67,7 @@ contract CompetitiveFeeExtruction is IExtruction, IStaticExtruction {
         updatedNextPC = nextPC;
 
         if (!query.isExactIn) {
-            // MVP: exact-out competitive path deferred (docs/02). Use fallback fee.
+            // MVP: exact-out competitive path deferred (docs/02); exact-out swaps revert.
             revert ExactOutNotSupported();
         }
 
