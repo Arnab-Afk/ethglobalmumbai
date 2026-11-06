@@ -5,16 +5,17 @@ export function RefreshRing({ durationMs, spinning }: { durationMs: number; spin
   return (
     <span
       className="grid size-9 shrink-0 place-items-center rounded-full"
-      title="Re-quotes every block (12 s)"
+      title={spinning ? "Refreshing this quote" : "Quote refreshes on this timer"}
+      aria-label={spinning ? "Refreshing quote" : "Time until the next quote"}
     >
       <svg width="22" height="22" viewBox="0 0 22 22" className={spinning ? "animate-spin" : "-rotate-90"} aria-hidden>
-        <circle cx="11" cy="11" r={r} fill="none" stroke="var(--surface-3)" strokeWidth="2" />
+        <circle cx="11" cy="11" r={r} fill="none" stroke="#E6E4DF" strokeWidth="2" />
         <circle
           cx="11"
           cy="11"
           r={r}
           fill="none"
-          stroke="var(--accent-hi)"
+          stroke="#2F6BFF"
           strokeWidth="2"
           strokeLinecap="round"
           strokeDasharray={c}
