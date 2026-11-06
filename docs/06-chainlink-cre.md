@@ -130,7 +130,7 @@ Plan for the mainnet-fork demo (not built yet): add `univ3` and `univ4` venue ki
 
 | Item | Owner | Why it matters |
 |---|---|---|
-| **A contract that consumes `QuoteOracle`** | Arnab, with Saish | The track asks for data "that contracts consume". On 6 Nov, `CompetitiveFeeExtruction` reads `MockQuoteOracle`, and `VenueReader`'s fallback is also `MockQuoteOracle`. Proposed: `VenueReader` ignores venue quotes more than ~2% above Chainlink fair and falls back to `QuoteOracle`. That also fixes the inflated Sepolia v3 quote it reads today. |
+| **A contract that consumes `QuoteOracle`** | Arnab, with Saish | The track asks for data "that contracts consume". On 6 Nov, `CompetitiveFeeExtruction` reads `MockQuoteOracle`, and `VenueReader`'s fallback is also `MockQuoteOracle`. Since `3469efc` the swap screen and the `/market` chart price from mainnet Uniswap v3, read in the browser and passed into `GivenQuotePreview` as `bestOut` (any caller can pass any value; it is a preview, not a swap path). The CRE curve now appears only in the `/market` updates table. Proposed: `VenueReader` ignores venue quotes more than ~2% above Chainlink fair and falls back to `QuoteOracle`. That also fixes the inflated Sepolia v3 quote it reads today. |
 | Consumer `maxQuoteAge` vs write cadence | Arnab, with Saish | 120 s today. Local `cre:watch` writes about every 50 s at `INTERVAL=30`. |
 | Live DON deploy (optional) | Saish, after Arnab | Needs a second `QuoteOracle` that trusts `0xF834…4482` and checks the workflow ID. The private registry is free (3 workflows per org). |
 | Real Uniswap v3/v4 venues in the CRE handler | Saish | Mainnet-fork demo (see above). |
