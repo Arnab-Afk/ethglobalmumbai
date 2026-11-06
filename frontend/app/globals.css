@@ -122,24 +122,22 @@ body::after {
   animation: hairline-ticker 28s linear infinite;
 }
 
-/* Hero staircase bars: stretch sideways from their left edge, like Loopscale's. */
-@keyframes hairline-bar {
-  0%,
-  100% {
-    transform: scaleX(1);
+/* Fee diagram: progress bar under the active step, timed to its auto-advance. */
+@keyframes fee-step-progress {
+  from {
+    transform: scaleX(0);
   }
-  50% {
-    transform: scaleX(var(--bar-scale, 1.5));
+  to {
+    transform: scaleX(1);
   }
 }
 
-.hairline-bar {
-  transform-origin: left center;
-  animation: hairline-bar 7s ease-in-out infinite;
+.fee-step-progress {
+  animation: fee-step-progress 3.8s linear forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hairline-bar,
+  .fee-step-progress,
   .hairline-ticker {
     animation: none;
   }

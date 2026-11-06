@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AudienceToggle } from "@/components/landing/audience-toggle";
 import { CompareCard } from "@/components/landing/compare-card";
 import { Faq } from "@/components/landing/faq";
+import { FeeDiagram } from "@/components/landing/fee-diagram";
 import { LandingHeader, LaunchButton } from "@/components/landing/header";
 import { HeroSwap } from "@/components/landing/hero-swap";
 import { QuoteTicker } from "@/components/landing/quote-ticker";
@@ -21,11 +22,11 @@ const PRINCIPLES = [
   { t: "Never on a stale price", d: "If the competitor quote is old or missing, Hairline falls back to a fixed fee." },
 ];
 
-const STEPS = [
-  { n: "01", t: "Read the venue", d: "What the best competing pool pays for this exact pair, direction and size." },
-  { n: "02", t: "Price at zero fee", d: "What our pool would return if it charged nothing at all." },
-  { n: "03", t: "Charge what still wins", d: "The largest fee that keeps the trader just above the venue, 1 bp ahead." },
-  { n: "04", t: "Settle or revert", d: "The swap carries minOut. If the market moves, it reverts instead of filling worse." },
+const PIPELINE = [
+  { k: "Chainlink CRE", d: "Quotes competing venues off-chain" },
+  { k: "QuoteOracle", d: "Stores a size-aware price curve" },
+  { k: "Fee opcode", d: "Sets the largest fee that still wins" },
+  { k: "Your swap", d: "Settles at minOut, or reverts" },
 ];
 
 const SURFACES = [
@@ -78,7 +79,7 @@ export default function LandingPage() {
       {/* ───────── Hero: pitch on the left, live swap card on the right ───────── */}
       <section className="relative overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
         <HeroBars />
-        <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-14 px-5 pt-[132px] pb-16 sm:px-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-10 lg:pt-[150px] lg:pb-24">
+        <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-[132px] pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16 lg:pt-[150px] lg:pb-24">
           <div>
             <h1 className="text-[58px] leading-[0.98] font-semibold tracking-[-0.055em] sm:text-[84px] xl:text-[100px]">
               Best price,
@@ -105,7 +106,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="flex justify-center lg:justify-end">
+          <div className="flex justify-center">
             <HeroSwap />
           </div>
         </div>
@@ -113,6 +114,13 @@ export default function LandingPage() {
 
       {/* ───────── Live quotes tape ───────── */}
       <QuoteTicker />
+
+      {/* ───────── How it works (editorial hairline grid) ───────── */}
+      <section className="bg-white">
+        <div className="mx-auto w-full max-w-[1240px] px-5 py-24 sm:px-10 lg:py-32">
+          <FeeDiagram />
+        </div>
+      </section>
 
       {/* ───────── Split: sticky panel + features ───────── */}
       <section className="mx-auto grid w-full max-w-[1600px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
@@ -149,19 +157,6 @@ export default function LandingPage() {
             </ul>
           </div>
 
-          <ol className="mt-16 max-w-[720px]">
-            {STEPS.map((s) => (
-              <li key={s.n} className="grid grid-cols-[96px_1fr] gap-6 py-10 sm:grid-cols-[180px_1fr]">
-                <span className="text-[56px] leading-none font-medium tracking-[-0.03em] sm:text-[72px]" style={{ color: INK }}>
-                  {s.n}
-                </span>
-                <div className="pt-2">
-                  <h3 className="text-[24px] leading-[30px] font-bold sm:text-[28px] sm:leading-[34px]">{s.t}</h3>
-                  <p className="mt-2 max-w-[34ch] text-[17px] leading-[22px] text-[#6B6560]">{s.d}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
         </div>
       </section>
 
@@ -172,7 +167,27 @@ export default function LandingPage() {
           <h2 className="max-w-[11ch] text-[52px] leading-none font-medium tracking-[-0.03em] sm:text-[72px]">
             One engine, three integrations
           </h2>
-          <div className="mt-14 grid gap-8 lg:grid-cols-3 lg:gap-6">
+
+          <ol className="mt-12 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0" aria-label="How a trade flows through Hairline">
+            {PIPELINE.map((p, i) => (
+              <li key={p.k} className="relative flex items-center">
+                <div className="w-full rounded-2xl bg-white/45 p-5 ring-1 ring-black/5 backdrop-blur-sm lg:mr-8">
+                  <div className="text-[12px] font-bold tracking-[0.12em] text-[#1C1C1C]/55 uppercase">Step {i + 1}</div>
+                  <div className="mt-1.5 text-[19px] font-extrabold tracking-[-0.02em]">{p.k}</div>
+                  <div className="mt-1 text-[14px] leading-snug font-medium text-[#1C1C1C]/70">{p.d}</div>
+                </div>
+                {i < PIPELINE.length - 1 && (
+                  <span className="absolute top-1/2 right-0 hidden size-8 -translate-y-1/2 place-items-center text-[#1C1C1C]/60 lg:grid" aria-hidden>
+                    <svg width="18" height="18" viewBox="0 0 16 16">
+                      <path d="M2 8h11m0 0L8.5 3.5M13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-6 grid gap-8 lg:grid-cols-3 lg:gap-6">
             {SURFACES.map((s) => (
               <div key={s.track}>
                 <article className="rounded-xl bg-white p-6 text-[#151619] shadow-[0_20px_60px_rgb(0_0_0/0.18)]">
@@ -214,7 +229,7 @@ export default function LandingPage() {
       </section>
 
       {/* ───────── Audiences ───────── */}
-      <section className="mx-auto w-full max-w-[1600px] px-5 py-20 sm:px-16 lg:py-28">
+      <section className="mx-auto w-full max-w-[1240px] px-5 py-20 sm:px-10 lg:py-28">
         <AudienceToggle />
       </section>
 
@@ -322,38 +337,41 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
 }
 
 /**
- * Staircase of bars in the hero's right side (Loopscale's geometry): 140px rows, each shifted
- * 72px right; every row has four bars 40/72/96/146px wide at fixed gaps. Bars are the hero
- * colour lightened, and breathe slightly so the gaps stay crisp.
+ * Static staircase in the hero's right side, in Loopscale's proportions (measured from their hero
+ * at 2000px wide): rows 9.5% of the width tall, each starting 4.9% further right. Every row is
+ * the same band: a narrow light bar, a medium one, a wide one, then light to the edge.
+ * Sized in vw so it scales with the full-width hero.
  */
 function HeroBars() {
-  const rows = Array.from({ length: 7 }, (_, r) => r);
-  const cols = [
-    { x: 0, w: 40, s: 1.12 },
-    { x: 136, w: 72, s: 1.08 },
-    { x: 280, w: 96, s: 1.1 },
-    { x: 416, w: 146, s: 1.06 },
+  const ROW = 9.5; // vw
+  const START = 55; // % of width where the first row begins
+  const STEP = 4.9; // % shift per row
+  const SEGMENTS = [
+    { from: 0, to: 2.75 },
+    { from: 9.25, to: 14.15 },
+    { from: 19, to: 25.5 },
+    { from: 28.25, to: 100 },
   ];
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-0 left-[56%] hidden overflow-hidden lg:block" aria-hidden>
-      {rows.flatMap((r) =>
-        cols.map((c, i) => (
-          <div
-            key={`${r}-${i}`}
-            className="hairline-bar absolute"
-            style={
-              {
-                top: r * 140,
-                left: (r - 1) * 72 + c.x,
-                width: c.w,
-                height: 140,
+    <div className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block" aria-hidden>
+      {Array.from({ length: 8 }, (_, r) =>
+        SEGMENTS.map((seg, i) => {
+          const left = START + r * STEP + seg.from;
+          if (left >= 100) return null;
+          return (
+            <div
+              key={`${r}-${i}`}
+              className="absolute"
+              style={{
+                top: `${r * ROW}vw`,
+                height: `${ROW}vw`,
+                left: `${left}%`,
+                width: `${Math.min(seg.to - seg.from, 100 - left)}%`,
                 background: BAR,
-                "--bar-scale": c.s,
-                animationDelay: `${-(r * 0.7 + i * 1.3)}s`,
-              } as React.CSSProperties
-            }
-          />
-        )),
+              }}
+            />
+          );
+        }),
       )}
     </div>
   );
