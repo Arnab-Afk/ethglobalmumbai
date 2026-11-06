@@ -146,7 +146,8 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
     .writeReport(runtime, {
       receiver: config.quoteOracle,
       report,
-      gasConfig: { gasLimit: config.gasLimit ?? "500000" },
+      // QuoteOracle.onReport needs ~1.15M gas for a first 3-point curve (fresh storage slots).
+      gasConfig: { gasLimit: config.gasLimit ?? "1500000" },
     })
     .result();
 
