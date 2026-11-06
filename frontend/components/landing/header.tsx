@@ -14,7 +14,7 @@ const LINKS = [
 
 /**
  * Landing header: transparent over the lavender hero (dark ink), solid white once scrolled.
- * Wordmark left, links beside it, Connect wallet pill on the right.
+ * Wordmark left, links centered, Connect wallet pill on the right.
  */
 export function LandingHeader() {
   const [menu, setMenu] = useState(false);
@@ -35,19 +35,17 @@ export function LandingHeader() {
         solid ? "bg-white/90 text-[#151619] shadow-[0_1px_0_rgb(0_0_0/0.06)] backdrop-blur-md" : "text-[#1C1C1C]"
       }`}
     >
-      <div className="flex h-[82px] items-center justify-between px-5 sm:px-16">
-        <div className="flex items-center gap-12">
-          <Link href="/" className="text-[24px] font-extrabold tracking-[-0.03em]" aria-label="Hairline home">
-            Hairline
-          </Link>
-          <nav className="hidden items-center gap-8 text-[16px] font-bold lg:flex">
-            {LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+      <div className="relative flex h-14 items-center justify-between px-5 sm:px-16">
+        <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em]" aria-label="Hairline home">
+          Hairline
+        </Link>
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[15px] font-bold lg:flex">
+          {LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
+              {l.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="flex items-center gap-2">
           <WalletPill solid={solid} />
@@ -56,7 +54,7 @@ export function LandingHeader() {
             aria-label="Menu"
             aria-expanded={menu}
             onClick={() => setMenu((v) => !v)}
-            className="grid size-11 place-items-center lg:hidden"
+            className="grid size-8 place-items-center lg:hidden"
           >
             <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden>
               <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -90,16 +88,16 @@ function WalletPill({ solid }: { solid: boolean }) {
           type="button"
           onClick={connect}
           disabled={connecting}
-          className={`h-10 rounded-full px-5 text-[15px] font-bold transition-colors disabled:opacity-70 ${tone}`}
+          className={`h-8 rounded-full px-4 text-[14px] font-bold transition-colors disabled:opacity-70 ${tone}`}
         >
           {connecting ? "Connecting…" : "Connect wallet"}
         </button>
       ) : !onSepolia ? (
-        <button type="button" onClick={switchToSepolia} className={`h-10 rounded-full px-5 text-[15px] font-bold ${tone}`}>
+        <button type="button" onClick={switchToSepolia} className={`h-8 rounded-full px-4 text-[14px] font-bold ${tone}`}>
           Switch to Sepolia
         </button>
       ) : (
-        <Link href="/swap" className={`flex h-10 items-center gap-2 rounded-full pl-1.5 pr-4 text-[15px] font-bold ${tone}`}>
+        <Link href="/swap" className={`flex h-8 items-center gap-2 rounded-full pl-1 pr-3 text-[14px] font-bold ${tone}`}>
           <span
             aria-hidden
             className="size-7 rounded-full"
@@ -126,13 +124,13 @@ export function LaunchButton({ dark, className = "" }: { dark?: boolean; classNa
   return (
     <Link
       href="/swap"
-      className={`group h-[50px] items-center gap-10 rounded-[10px] px-[18px] text-[16px] font-bold transition-colors ${
-        dark ? "bg-[#151619] text-white hover:bg-black" : "bg-white text-[#151619] hover:bg-[#f1efec]"
-      } ${className || "inline-flex"}`}
+      className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[16px] font-bold transition-colors ${
+        dark ? "bg-[#151619] text-white hover:bg-black" : "bg-white text-[#151619] hover:bg-zinc-200"
+      } ${className}`}
     >
       Launch App
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="transition-transform group-hover:translate-x-0.5">
-        <path d="M2 8h11m0 0L8.5 3.5M13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden className="ml-10 transition-transform group-hover:translate-x-0.5">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </Link>
   );

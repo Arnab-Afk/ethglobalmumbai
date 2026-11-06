@@ -79,7 +79,7 @@ export default function LandingPage() {
       {/* ───────── Hero: pitch on the left, live swap card on the right ───────── */}
       <section className="relative overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
         <HeroBars />
-        <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-[132px] pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16 lg:pt-[150px] lg:pb-24">
+        <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-24 pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16 lg:pt-28 lg:pb-24">
           <div>
             <h1 className="text-[58px] leading-[0.98] font-semibold tracking-[-0.055em] sm:text-[84px] xl:text-[100px]">
               Best price,
@@ -125,7 +125,7 @@ export default function LandingPage() {
       {/* ───────── Split: sticky panel + features ───────── */}
       <section className="mx-auto grid w-full max-w-[1600px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
         <div className="hidden lg:block">
-          <div className="sticky top-[82px] flex h-[calc(100vh-82px)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
+          <div className="sticky top-14 flex h-[calc(100vh-3.5rem)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
             <h2 className="text-[72px] leading-none font-medium tracking-[-0.03em]">
               A fee that&apos;s never too high…
             </h2>
@@ -253,20 +253,20 @@ export default function LandingPage() {
       </section>
 
       {/* ───────── Final CTA ───────── */}
-      <section className="relative overflow-hidden bg-[#151619] text-white">
+      <section className="relative overflow-hidden bg-[#151619] px-6 py-20 text-white md:px-10 lg:px-16">
         <BlockPattern />
-        <div className="relative mx-auto w-full max-w-[1600px] px-5 py-24 sm:px-16 lg:py-32">
-          <h2 className="max-w-[14ch] text-[48px] leading-[1.05] font-medium tracking-[-0.03em] sm:text-[60px]">
-            Trade at the best price, by a hair
+        <div className="relative mx-auto w-full max-w-[1272px]">
+          <h2 className="mb-16 max-w-2xl text-5xl leading-[1.05] font-bold tracking-[-0.03em] md:mb-32">
+            Trade at the best
+            <br />
+            price, by a hair
           </h2>
-          <div className="mt-12">
-            <LaunchButton />
-          </div>
+          <LaunchButton />
         </div>
       </section>
 
       {/* ───────── Footer ───────── */}
-      <footer className="mx-auto grid w-full max-w-[1600px] gap-12 px-5 py-16 sm:px-16 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <footer className="mx-auto grid w-full max-w-[1272px] gap-12 px-6 py-20 md:px-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-16">
         <div className="flex flex-col justify-between gap-10">
           <div>
             <div className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: INK }}>
@@ -316,16 +316,16 @@ function Stat({ value, label }: { value: string; label: string }) {
 function FooterCol({ title, links }: { title: string; links: { label: string; href: string; external?: boolean }[] }) {
   return (
     <div>
-      <div className="text-[17px] text-[#8A847E]">{title}</div>
+      <div className="text-[16px] text-[#8A847E]">{title}</div>
       <ul className="mt-4 space-y-3">
         {links.map((l) => (
           <li key={l.label}>
             {l.external ? (
-              <a href={l.href} target="_blank" rel="noreferrer" className="text-[17px] font-bold hover:opacity-70">
+              <a href={l.href} target="_blank" rel="noreferrer" className="text-[16px] font-medium hover:opacity-70">
                 {l.label} ↗
               </a>
             ) : (
-              <Link href={l.href} className="text-[17px] font-bold hover:opacity-70">
+              <Link href={l.href} className="text-[16px] font-medium hover:opacity-70">
                 {l.label}
               </Link>
             )}
@@ -398,22 +398,39 @@ function BandArcs() {
   );
 }
 
-/** Lavender and black squares on the right of the final CTA. */
+/**
+ * Same staircase as Loopscale's closing band: four rows, each shifted 72px right,
+ * bars 40 / 72 / 96 then a bar that runs off the right edge. Anchored bottom-right
+ * and nudged so the bars bleed off the top and right of the black band.
+ */
 function BlockPattern() {
-  const grid = [
-    "..o.o",
-    ".o.oo",
-    "o.oo.",
-    ".oo.o",
-    "oo.o.",
+  const rows = [420, 280, 140, 0];
+  const bars = [
+    { w: 40, gap: 96 },
+    { w: 72, gap: 72 },
+    { w: 96, gap: 40 },
+    { w: 852, gap: 0 },
   ];
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] grid-cols-5 grid-rows-5 lg:grid" aria-hidden>
-      {grid.flatMap((row, r) =>
-        row.split("").map((c, k) => (
-          <div key={`${r}-${k}`} style={{ background: c === "o" ? LAVENDER : "transparent", opacity: c === "o" ? 0.9 : 1 }} />
-        )),
-      )}
+    <div className="pointer-events-none absolute inset-0 hidden items-end justify-end lg:flex" aria-hidden>
+      <div className="relative h-[488px] w-[624px]">
+        <div className="absolute top-[-18%] right-[-5%] h-full w-full">
+          {rows.map((top) => {
+            let left = ((420 - top) / 140) * 72;
+            return bars.map((bar) => {
+              const x = left;
+              left += bar.w + bar.gap;
+              return (
+                <div
+                  key={`${top}-${x}`}
+                  className="absolute h-[140px]"
+                  style={{ top, left: x, width: bar.w, background: LAVENDER }}
+                />
+              );
+            });
+          })}
+        </div>
+      </div>
     </div>
   );
 }
