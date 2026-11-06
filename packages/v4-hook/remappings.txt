@@ -1,0 +1,4 @@
+forge-std/=../fee-core/lib/forge-std/src/
+@openzeppelin/contracts/=../fee-core/lib/openzeppelin-contracts/contracts/
+fee-core/=../fee-core/src/
+oracle/=../oracle/src/
