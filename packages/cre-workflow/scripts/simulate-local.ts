@@ -19,7 +19,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { parseWorkflowConfig } from "../src/config.js";
 import { encodeCurveReport } from "../src/encodeReport.js";
-import { quotePairCurve } from "../src/quotePair.js";
+import { formatBucketLines } from "../src/describeCurve.js";
+import { quotePairDetailed } from "../src/quotePair.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dir, "..");
@@ -45,16 +46,12 @@ async function main() {
   const observedAt = BigInt(Math.floor(Date.now() / 1000));
   const updates = [];
   for (const pair of config.pairs) {
-    const update = await quotePairCurve(pair, observedAt, client);
+    const { update, buckets } = await quotePairDetailed(pair, observedAt, client);
     console.log("\n--- curve ---");
     console.log("pair", update.tokenIn, "→", update.tokenOut);
     console.log("observedAt", update.observedAt.toString());
     console.log("venueIds", update.venueIds);
-    for (let i = 0; i < update.amountsIn.length; i++) {
-      console.log(
-        `  amountIn=${update.amountsIn[i]} bestOut=${update.bestOuts[i]}`,
-      );
-    }
+    for (const line of formatBucketLines(buckets, pair)) console.log(`  ${line}`);
     updates.push(update);
   }
 

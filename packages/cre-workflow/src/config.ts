@@ -26,6 +26,8 @@ const pairSchema = z.object({
   tokenOut: address,
   amountsIn: z.array(z.string()).min(1).max(16),
   venues: z.array(venueSchema).min(1),
+  decimalsIn: z.number().int().min(0).max(36).optional(),
+  decimalsOut: z.number().int().min(0).max(36).optional(),
 });
 
 export const workflowConfigSchema = z.object({

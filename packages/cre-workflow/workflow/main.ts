@@ -19,6 +19,7 @@ import {
   type Runtime,
 } from "@chainlink/cre-sdk";
 import { buildCurveUpdate } from "../src/buildCurve.js";
+import { formatBucketLines, summarizeBuckets } from "../src/describeCurve.js";
 import { parseWorkflowConfig } from "../src/config.js";
 import { encodeCurveReport } from "../src/encodeReport.js";
 import type { CurveUpdate, PairConfig, WorkflowConfig } from "../src/types.js";
@@ -27,7 +28,11 @@ import { quoteMockXyk } from "../src/venues/mockXyk.js";
 /** EVM TxStatus values from the CRE SDK (FATAL = 0, REVERTED = 1, SUCCESS = 2). */
 const TX_STATUS: Record<number, string> = { 0: "FATAL", 1: "REVERTED", 2: "SUCCESS" };
 
-function quotePairMockOnly(pair: PairConfig, observedAt: bigint): CurveUpdate {
+function quotePairMockOnly(
+  runtime: Runtime<WorkflowConfig>,
+  pair: PairConfig,
+  observedAt: bigint,
+): CurveUpdate {
   const venues = pair.venues.filter((v) => !v.exclude && v.kind === "mock-xyk");
   if (venues.length === 0) {
     throw new Error(`pair ${pair.tokenIn}->${pair.tokenOut}: no mock-xyk venues`);
@@ -44,6 +49,10 @@ function quotePairMockOnly(pair: PairConfig, observedAt: bigint): CurveUpdate {
       ),
     })),
   );
+  runtime.log(`cre-workflow: pair ${pair.tokenIn} → ${pair.tokenOut}`);
+  for (const line of formatBucketLines(summarizeBuckets(amountsIn, quotesByBucket), pair)) {
+    runtime.log(`cre-workflow:   ${line}`);
+  }
   return buildCurveUpdate({
     tokenIn: pair.tokenIn,
     tokenOut: pair.tokenOut,
@@ -63,7 +72,7 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
   if (!network) throw new Error(`unknown network ${config.chainSelectorName}`);
 
   const observedAt = BigInt(Math.floor(Date.now() / 1000));
-  const updates = config.pairs.map((pair) => quotePairMockOnly(pair, observedAt));
+  const updates = config.pairs.map((pair) => quotePairMockOnly(runtime, pair, observedAt));
   const payload = encodeCurveReport(updates);
   runtime.log(`cre-workflow: encoded ${updates.length} curve(s), payload=${payload.slice(0, 18)}…`);
 

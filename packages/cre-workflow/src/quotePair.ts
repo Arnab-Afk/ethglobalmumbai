@@ -1,5 +1,6 @@
 import type { PublicClient } from "viem";
 import { buildCurveUpdate } from "./buildCurve.js";
+import { type BucketSummary, summarizeBuckets } from "./describeCurve.js";
 import type { CurveUpdate, PairConfig, VenueConfig, VenueQuote } from "./types.js";
 import { quoteMockXyk } from "./venues/mockXyk.js";
 import { quoteUniv2 } from "./venues/univ2.js";
@@ -54,6 +55,15 @@ export async function quotePairCurve(
   observedAt: bigint,
   client?: PublicClient,
 ): Promise<CurveUpdate> {
+  return (await quotePairDetailed(pair, observedAt, client)).update;
+}
+
+/** Same as quotePairCurve, plus every venue's quote and the winner per bucket (for logs). */
+export async function quotePairDetailed(
+  pair: PairConfig,
+  observedAt: bigint,
+  client?: PublicClient,
+): Promise<{ update: CurveUpdate; buckets: BucketSummary[] }> {
   const venues = activeVenues(pair.venues);
   if (venues.length === 0) throw new Error("no venues after exclude filter");
 
@@ -68,11 +78,12 @@ export async function quotePairCurve(
     quotesByBucket.push(row);
   }
 
-  return buildCurveUpdate({
+  const update = buildCurveUpdate({
     tokenIn: pair.tokenIn,
     tokenOut: pair.tokenOut,
     observedAt,
     amountsIn,
     quotesByBucket,
   });
+  return { update, buckets: summarizeBuckets(amountsIn, quotesByBucket) };
 }

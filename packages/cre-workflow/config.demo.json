@@ -8,6 +8,8 @@
     {
       "tokenIn": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
       "tokenOut": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      "decimalsIn": 18,
+      "decimalsOut": 6,
       "amountsIn": [
         "100000000000000000",
         "1000000000000000000",
