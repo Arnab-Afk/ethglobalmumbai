@@ -1,16 +1,19 @@
 import { createGetUrl } from 'fumadocs-core/source';
 
-export const appName = 'My App';
+export const appName = 'neat';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
-// fill this with your actual GitHub info, for example:
 export const gitConfig = {
-  user: 'fuma-nama',
-  repo: 'fumadocs',
+  user: 'Arnab-Afk',
+  repo: 'ethglobalmumbai',
   branch: 'main',
+  // The docs live in a monorepo subfolder, so edit links must include it.
+  contentDir: 'apps/docs/content/docs',
 };
+
+export const npmUrl = 'https://www.npmjs.com/package/neat3-sdk';
 
 const getContentUrl = createGetUrl(docsContentRoute);
 
