@@ -1,38 +1,55 @@
 {
   "name": "@lastlook/sdk",
   "version": "0.1.0",
-  "private": true,
+  "description": "Client for the last-look competitive-fee AMM: quote (optionally via Anon-RPC), encode and submit swaps as EIP-8141 frame transactions.",
   "type": "module",
-  "description": "Client SDK for the last-look competitive-fee AMM: quote, oracle bestOut, swap helpers.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "license": "MIT",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./anon": {
+      "types": "./dist/anon.d.ts",
+      "default": "./dist/anon.js"
+    },
+    "./frame": {
+      "types": "./dist/frame.d.ts",
+      "default": "./dist/frame.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20.12"
   },
   "peerDependencies": {
+    "@anon-rpc/browser-harness": "0.4.0",
+    "@forshtat/hegota-support": "0.0.1",
     "viem": "^2.57.0"
   },
-  "devDependencies": {
-    "@types/node": "^22.13.10",
-    "typescript": "^5.8.2",
-    "viem": "^2.57.16",
-    "vitest": "^3.0.9"
+  "peerDependenciesMeta": {
+    "@anon-rpc/browser-harness": {
+      "optional": true
+    },
+    "@forshtat/hegota-support": {
+      "optional": true
+    }
   },
-  "files": [
-    "src",
-    "dist",
-    "README.md"
-  ]
+  "devDependencies": {
+    "@anon-rpc/browser-harness": "^0.4.0",
+    "@forshtat/hegota-support": "^0.0.1",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "viem": "^2.57.16",
+    "vitest": "^5.1.0"
+  }
 }
