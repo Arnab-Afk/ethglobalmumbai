@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SEPOLIA } from "@/lib/deployments";
 import { fmtAge, shortAddr } from "@/lib/format";
-import { CHAINLINK_ETH_USD, HEADLINE_SIZE, getMarket, type MarketSnapshot } from "@/lib/market";
-import { DEFAULT_BUY, DEFAULT_SELL } from "@/lib/tokens";
+import { CHAINLINK_ETH_USD, getMarket, type MarketSnapshot } from "@/lib/market";
+import { DEFAULT_BUY, DEFAULT_SELL, type Token } from "@/lib/tokens";
 import { CurveChart } from "./curve-chart";
 
 const REFRESH_MS = 12_000;
@@ -13,19 +13,46 @@ const MAX_QUOTE_AGE = 120;
 
 const fmtUsd = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 const tx = (hash: string) => `${SEPOLIA.explorer}/tx/${hash}`;
+/** Dollar tokens to 2 decimals, others to 4 (0.8941 WETH). */
+const fmtTok = (v: number, t: Token) =>
+  v.toLocaleString("en-US", { maximumFractionDigits: t.usd ? 2 : 4, minimumFractionDigits: t.usd ? 2 : 4 });
+const fmtSize = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+/** Both directions the CRE workflow publishes. */
+const DIRECTIONS: { key: string; tokenIn: Token; tokenOut: Token }[] = [
+  { key: "sell", tokenIn: DEFAULT_SELL, tokenOut: DEFAULT_BUY },
+  { key: "buy", tokenIn: DEFAULT_BUY, tokenOut: DEFAULT_SELL },
+];
 
 export function MarketView() {
+  const [dirKey, setDirKey] = useState(DIRECTIONS[0].key);
+  const dir = DIRECTIONS.find((d) => d.key === dirKey) ?? DIRECTIONS[0];
+  const { tokenIn, tokenOut } = dir;
   const [data, setData] = useState<MarketSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Direction currently shown; a read that finishes after the user switched is dropped.
+  const shown = useRef(dirKey);
+  useEffect(() => {
+    shown.current = dirKey;
+  }, [dirKey]);
 
   const load = useCallback(async () => {
+    const key = dirKey;
     try {
-      setData(await getMarket(DEFAULT_SELL, DEFAULT_BUY));
+      const snap = await getMarket(tokenIn, tokenOut);
+      if (shown.current !== key) return;
+      setData(snap);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? (e as { shortMessage?: string }).shortMessage ?? e.message : String(e));
     }
-  }, []);
+  }, [dirKey, tokenIn, tokenOut]);
+
+  const switchTo = (key: string) => {
+    if (key === dirKey) return;
+    setData(null);
+    setDirKey(key);
+  };
 
   useEffect(() => {
     const first = setTimeout(load, 0);
@@ -36,15 +63,33 @@ export function MarketView() {
     };
   }, [load]);
 
-  const one = data?.samples.find((s) => s.size === HEADLINE_SIZE);
+  const one = data?.samples.find((s) => s.size === data.headlineSize);
   const age = data && data.observedAt ? data.blockTime - data.observedAt : null;
   const fresh = age !== null && age <= MAX_QUOTE_AGE;
 
   return (
     <div className="w-full max-w-[960px]">
-      <h1 className="text-[40px] font-semibold leading-tight tracking-[-0.03em]">Market</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-[40px] font-semibold leading-tight tracking-[-0.03em]">Market</h1>
+        <div role="tablist" aria-label="Trade direction" className="panel flex h-9 items-center rounded-full p-1 text-sm">
+          {DIRECTIONS.map((d) => (
+            <button
+              key={d.key}
+              role="tab"
+              aria-selected={d.key === dirKey}
+              onClick={() => switchTo(d.key)}
+              className={`flex h-7 items-center rounded-full px-3 transition-colors ${
+                d.key === dirKey ? "bg-surface-3 font-medium text-fg" : "text-fg-2 hover:text-fg"
+              }`}
+            >
+              {d.tokenIn.symbol} → {d.tokenOut.symbol}
+            </button>
+          ))}
+        </div>
+      </div>
       <p className="mt-1 text-base text-fg-2">
-        What competing venues pay for WETH → USDC, published on-chain by the Chainlink CRE workflow.
+        What competing venues pay for {tokenIn.symbol} → {tokenOut.symbol}, published on-chain by the Chainlink CRE
+        workflow.
       </p>
 
       {error && <p className="mt-4 text-sm text-lose">Couldn&apos;t reach Sepolia: {error}</p>}
@@ -68,12 +113,12 @@ export function MarketView() {
           }
         />
         <Stat
-          label="Best venue · 1 WETH"
-          value={one ? `${fmtUsd(one.out / one.size)} USDC` : data ? "No curve" : "—"}
+          label={`Best venue · ${fmtSize(data?.headlineSize ?? (tokenIn.usd ? 2000 : 1))} ${tokenIn.symbol}`}
+          value={one ? `${fmtTok(one.out, tokenOut)} ${tokenOut.symbol}` : data ? "No curve" : "—"}
           sub={
             one && data ? (
-              <span className={one.price >= data.feed.price ? "text-win" : "text-lose"}>
-                {(((one.price - data.feed.price) / data.feed.price) * 100).toFixed(2)}% vs Chainlink
+              <span className={one.vsFair >= 0 ? "text-win" : "text-lose"}>
+                {one.vsFair.toFixed(2)}% vs Chainlink
               </span>
             ) : (
               "From QuoteOracle.getBestOut"
@@ -102,19 +147,22 @@ export function MarketView() {
           <div>
             <h2 className="text-base font-medium">Best competing price by trade size</h2>
             <p className="text-sm text-fg-2">
-              USDC per WETH. Bigger trades move the venue&apos;s price; Hairline only has to beat this line.
+              {data?.sellingBase === false
+                ? "USDC paid per WETH received (lower is better for the trader)."
+                : "USDC received per WETH sold (higher is better for the trader)."}{" "}
+              Bigger trades move the venue&apos;s price; Hairline only has to beat this line.
             </p>
           </div>
           {data && (
             <span className="text-sm text-fg-2">
-              Covers up to <span className="tnum text-fg">{data.maxSize.toLocaleString("en-US", { maximumFractionDigits: 2 })} WETH</span> · read in{" "}
+              Covers up to <span className="tnum text-fg">{fmtSize(data.maxSize)} {tokenIn.symbol}</span> · read in{" "}
               <span className="text-win">{Math.round(data.latencyMs)}ms</span>
             </span>
           )}
         </div>
         <div className="mt-4">
           {data && data.samples.length > 1 ? (
-            <CurveChart samples={data.samples} reference={data.feed.price} />
+            <CurveChart samples={data.samples} reference={data.feed.price} tokenIn={tokenIn} tokenOut={tokenOut} />
           ) : (
             <div className="grid h-[240px] place-items-center text-sm text-muted">
               {data ? "No competitor curve on-chain for this pair yet." : "Loading curve…"}
@@ -158,7 +206,9 @@ export function MarketView() {
               {data?.updates.map((u) => (
                 <tr key={u.tx} className="border-b border-line last:border-0 hover:bg-surface">
                   <td className="px-4 py-3">{fmtAge(data.blockTime - u.observedAt)} ago</td>
-                  <td className="px-4 py-3">WETH → USDC</td>
+                  <td className="px-4 py-3">
+                    {tokenIn.symbol} → {tokenOut.symbol}
+                  </td>
                   <td className="px-4 py-3">{u.points}</td>
                   <td className="px-4 py-3 text-fg-2">{u.venues ? summarizeVenues(u.venues) : "unknown venues"}</td>
                   <td className="px-4 py-3 text-fg-2">{u.block.toString()}</td>

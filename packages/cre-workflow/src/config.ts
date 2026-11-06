@@ -51,6 +51,7 @@ export const workflowConfigSchema = z.object({
   chainSelectorName: z.string(),
   rpcUrl: z.string().optional(),
   quoteOracle: address,
+  multicall3: address.optional(),
   gasLimit: z.string().optional(),
   pairs: z.array(pairSchema).min(1),
 });
