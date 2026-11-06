@@ -1,4 +1,4 @@
-# @hairline/sdk
+# neat3-sdk
 
 Client for the **last-look competitive-fee AMM**: a pool that sets its fee per trade, just low enough to beat the best competing venue. Quote it, encode the swap, submit it. No Solidity needed.
 
@@ -11,7 +11,7 @@ submit()  →  one EIP-8141 frame tx (atomic) to the alt-mempool
 ## Install
 
 ```sh
-npm install @hairline/sdk viem
+npm install neat3-sdk viem
 # optional, per feature:
 npm install @anon-rpc/browser-harness@0.4.0   # private quotes (browser only)
 npm install @forshtat/hegota-support@0.0.1    # frame-tx submit
@@ -22,7 +22,7 @@ Not on npm yet. From this repo: `cd packages/sdk && npm install && npm run build
 ## Quote in 5 minutes (Node)
 
 ```ts
-import { CompetitiveFeeClient, DEVNET } from "@hairline/sdk";
+import { CompetitiveFeeClient, DEVNET } from "neat3-sdk";
 import { parseEther, formatUnits } from "viem";
 
 const client = new CompetitiveFeeClient({
@@ -41,8 +41,8 @@ console.log(`fee ${q.feePips / 1e4}%  you get ${formatUnits(q.amountOut, 6)}  be
 `quoteMode` defaults to `"private"`: reads go through [Anon-RPC](https://github.com/ethereum/anon-rpc), so the RPC never learns who asked, for which pair, or how much. Without `anonFetch` it **throws**; it never falls back to a plain fetch.
 
 ```ts
-import { CompetitiveFeeClient, DEVNET } from "@hairline/sdk";
-import { createAnonFetch } from "@hairline/sdk/anon";
+import { CompetitiveFeeClient, DEVNET } from "neat3-sdk";
+import { createAnonFetch } from "neat3-sdk/anon";
 
 const anon = createAnonFetch({ network: "tor-js" });   // or "nym" | "nox"; "passthrough" does NOT anonymize
 const client = new CompetitiveFeeClient({ rpcUrl: DEVNET.rpcUrl, pool, anonFetch: anon.fetch });
@@ -62,7 +62,7 @@ for (const call of client.encodeSwap(q)) await wallet.sendTransaction({ to: call
 Or as one EIP-8141 frame transaction to the standard alt-mempool:
 
 ```ts
-import { createFrameSubmitter } from "@hairline/sdk/frame";
+import { createFrameSubmitter } from "neat3-sdk/frame";
 
 client.setFrameSubmitter(createFrameSubmitter({ privateKey: DEVNET_ONLY_KEY }));
 const txHash = await client.submit(q);   // waits for inclusion; see it on DEVNET.explorerUrl
@@ -90,8 +90,8 @@ From this repo, `cd packages/private-quoting && npm run quote:sdk -- 10` quotes 
 | `quote({ tokenIn, amountIn, mode? })` | `{ amountOut, feePips, bestOut, zeroFeeOut, beatsBestVenue, mode }`. `bestOut = 0` → no fresh competitor quote, pool used its fallback fee |
 | `encodeSwap(quote, { minOut?, deadline? })` | `[approve, swap]` calls; `deadline` in unix seconds |
 | `setFrameSubmitter(fn)` / `submit(quote, { minOut?, deadline? })` | `fn(calls) => txHash`; any submitter works, `createFrameSubmitter` is the EIP-8141 one |
-| `createAnonFetch({ network?, config?, bootstrapRpc? })` | `@hairline/sdk/anon`. `{ fetch, ready, anonymous, close }`; create once, reuse |
-| `createFrameSubmitter({ privateKey, rpcUrl?, chainId?, maxFeePerGas?, wait? })` | `@hairline/sdk/frame` |
+| `createAnonFetch({ network?, config?, bootstrapRpc? })` | `neat3-sdk/anon`. `{ fetch, ready, anonymous, close }`; create once, reuse |
+| `createFrameSubmitter({ privateKey, rpcUrl?, chainId?, maxFeePerGas?, wait? })` | `neat3-sdk/frame` |
 
 Fees are in **pips**: 1e6 = 100%, 3000 = 0.30%.
 
