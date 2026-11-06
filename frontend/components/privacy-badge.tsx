@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { activeNetwork, anonNetwork, getAnon, isDirectReads, readsAnonymized, subscribeRpcState } from "@/lib/rpc";
 
 const LABEL = { nox: "Nox mixnet", "tor-js": "Tor", nym: "Nym mixnet", passthrough: "passthrough" } as const;
@@ -9,6 +10,8 @@ const LABEL = { nox: "Nox mixnet", "tor-js": "Tor", nym: "Nym mixnet", passthrou
 export function PrivacyBadge() {
   // Per network, so a switch to a fallback shows "connecting" until that worker is up.
   const [states, setStates] = useState<Record<string, "ready" | "failed">>({});
+  const pathname = usePathname();
+  const light = pathname === "/swap" || pathname === "/market";
   const direct = useSyncExternalStore(subscribeRpcState, isDirectReads, () => false);
   const net = useSyncExternalStore(subscribeRpcState, activeNetwork, () => anonNetwork);
 
@@ -27,7 +30,7 @@ export function PrivacyBadge() {
 
   if (direct) {
     return (
-      <span className="text-warn" title="You chose a direct connection after the private one failed. Reload the page to go private again.">
+      <span className={light ? "text-[#8A5A12]" : "text-warn"} title="You chose a direct connection after the private one failed. Reload the page to go private again.">
         Reads: direct RPC (private connection off)
       </span>
     );
@@ -35,14 +38,24 @@ export function PrivacyBadge() {
 
   if (!anonNetwork || !readsAnonymized) {
     return (
-      <span className="text-warn" title="Set NEXT_PUBLIC_ANON_RPC to nox,nym,tor-js to anonymize reads">
+      <span className={light ? "text-[#8A5A12]" : "text-warn"} title="Set NEXT_PUBLIC_ANON_RPC to nox,nym,tor-js to anonymize reads">
         Reads: {anonNetwork ? "Anon-RPC passthrough" : "direct RPC"}, not private
       </span>
     );
   }
 
   const state = (net && states[net]) || "starting";
-  const tone = state === "failed" ? "text-lose" : state === "ready" ? "text-win" : "text-muted";
+  const tone = light
+    ? state === "failed"
+      ? "text-[#B42318]"
+      : state === "ready"
+        ? "text-[#1F8A5B]"
+        : "text-[#8A8680]"
+    : state === "failed"
+      ? "text-lose"
+      : state === "ready"
+        ? "text-win"
+        : "text-muted";
   const status = state === "failed" ? "failed to start, reads paused" : state === "ready" ? "on" : "connecting…";
   return (
     <span

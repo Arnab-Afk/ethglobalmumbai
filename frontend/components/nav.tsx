@@ -14,11 +14,20 @@ const LINKS = [
 /** App header: wordmark left, links centered, network + wallet on the right. */
 export function Nav() {
   const pathname = usePathname();
+  const light = pathname === "/swap" || pathname === "/market";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#07070a]/70 backdrop-blur-xl">
+    <header
+      className={`sticky top-0 z-40 border-b backdrop-blur-xl ${
+        light ? "border-[#E7E4DF] bg-[#F3F2EE]/90" : "border-white/[0.06] bg-[#07070a]/70"
+      }`}
+    >
       <div className="relative flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="text-[18px] font-semibold tracking-[-0.03em] text-fg" aria-label="Hairline home">
+        <Link
+          href="/"
+          className={`text-[18px] font-semibold tracking-[-0.03em] ${light ? "text-[#151619]" : "text-fg"}`}
+          aria-label="Hairline home"
+        >
           Hairline
         </Link>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 sm:flex">
@@ -30,7 +39,13 @@ export function Nav() {
                 href={l.href}
                 aria-current={active ? "page" : undefined}
                 className={`flex h-8 items-center rounded-xl px-3 text-[15px] font-medium transition-colors ${
-                  active ? "text-fg" : "text-muted hover:text-fg"
+                  light
+                    ? active
+                      ? "text-[#151619]"
+                      : "text-[#8A8680] hover:text-[#151619]"
+                    : active
+                      ? "text-fg"
+                      : "text-muted hover:text-fg"
                 }`}
               >
                 {l.label}
@@ -40,8 +55,12 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span className="hidden h-8 items-center gap-2 rounded-full border border-line-hi px-3 text-[14px] font-medium text-fg-2 md:flex">
-            <span className="size-2 rounded-full bg-accent" aria-hidden />
+          <span
+            className={`hidden h-8 items-center gap-2 rounded-full border px-3 text-[14px] font-medium md:flex ${
+              light ? "border-[#E7E4DF] text-[#3A3A3A]" : "border-line-hi text-fg-2"
+            }`}
+          >
+            <span className={`size-2 rounded-full ${light ? "bg-[#2F6BFF]" : "bg-accent"}`} aria-hidden />
             Sepolia
           </span>
           <WalletButton />
@@ -55,7 +74,13 @@ export function Nav() {
             key={l.href}
             href={l.href}
             className={`flex h-8 shrink-0 items-center rounded-full px-3 text-[14px] font-medium ${
-              pathname === l.href ? "bg-surface-3 text-fg" : "text-muted"
+              light
+                ? pathname === l.href
+                  ? "bg-white text-[#151619]"
+                  : "text-[#8A8680]"
+                : pathname === l.href
+                  ? "bg-surface-3 text-fg"
+                  : "text-muted"
             }`}
           >
             {l.label}

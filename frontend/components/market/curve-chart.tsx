@@ -44,7 +44,7 @@ export function CurveChart({
       PAD.left + ((Math.log10(size) - xMin) / (xMax - xMin || 1)) * (W - PAD.left - PAD.right);
     const y = (price: number) => PAD.top + (1 - (price - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
     const path = samples.map((s, i) => `${i ? "L" : "M"}${x(s.size).toFixed(1)},${y(s.price).toFixed(1)}`).join("");
-    const area = `${path}L${x(xs[xs.length - 1]).toFixed(1)},${H - PAD.bottom}L${x(xs[0]).toFixed(1)},${H - PAD.bottom}Z`;
+    const area = `${path}L${x(xs[xs.length - 1]).toFixed(1)},${(H - PAD.bottom).toFixed(1)}L${x(xs[0]).toFixed(1)},${(H - PAD.bottom).toFixed(1)}Z`;
     const xTicks = [0.05, 0.1, 0.5, 1, 5, 10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000, 200_000].filter((t) => t >= xs[0] * 0.999 && t <= xs[xs.length - 1] * 1.001);
     const yTicks = Array.from({ length: 4 }, (_, i) => yMin + ((i + 0.5) * (yMax - yMin)) / 4);
     return { x, y, path, area, xTicks, yTicks };
@@ -78,50 +78,47 @@ export function CurveChart({
       >
         <defs>
           <linearGradient id="curve-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--accent)" stopOpacity="0.22" />
-            <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
+            <stop offset="0" stopColor="#2F6BFF" stopOpacity="0.22" />
+            <stop offset="1" stopColor="#2F6BFF" stopOpacity="0.02" />
           </linearGradient>
         </defs>
-
-        {/* Recessive grid + y labels */}
         {geo.yTicks.map((t) => (
           <g key={t}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={geo.y(t)} y2={geo.y(t)} stroke="var(--line)" />
-            <text x={PAD.left - 10} y={geo.y(t) + 4} textAnchor="end" fontSize="12" fill="var(--muted)" className="tnum">
+            <line x1={PAD.left} x2={W - PAD.right} y1={geo.y(t)} y2={geo.y(t)} stroke="#fff" />
+            <text x={PAD.left - 10} y={geo.y(t) + 4} textAnchor="end" fontSize="12" fill="#8A8680" className="tnum">
               {fmtUsd(t)}
             </text>
           </g>
         ))}
-        {/* x axis */}
-        <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="var(--line-hi)" />
+        <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#fff" />
         {geo.xTicks.map((t) => (
-          <text key={t} x={geo.x(t)} y={H - PAD.bottom + 20} textAnchor="middle" fontSize="12" fill="var(--muted)" className="tnum">
+          <text key={t} x={geo.x(t)} y={H - PAD.bottom + 20} textAnchor="middle" fontSize="12" fill="#8A8680" className="tnum">
             {fmtSize(t)}
           </text>
         ))}
 
-        {/* Chainlink reference */}
-        <line x1={PAD.left} x2={W - PAD.right} y1={refY} y2={refY} stroke="var(--fg-2)" strokeOpacity="0.7" strokeDasharray="4 5" />
-        <text x={W - PAD.right} y={refY - 8} textAnchor="end" fontSize="12" fill="var(--fg-2)">
+        <line x1={PAD.left} x2={W - PAD.right} y1={refY} y2={refY} stroke="#5B46C7" strokeDasharray="4 5" />
+        <text x={W - PAD.right} y={refY - 8} textAnchor="end" fontSize="12" fill="#5B46C7">
           Chainlink ETH/USD {fmtUsd(reference)}
         </text>
 
-        {/* Competitor curve */}
         <path d={geo.area} fill="url(#curve-fill)" />
-        <path d={geo.path} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={geo.path} fill="none" stroke="#2F6BFF" strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
+        <text x={PAD.left + 10} y={geo.y(samples[0].price) + (geo.y(samples[0].price) < H * 0.62 ? 32 : -12)} fontSize="12" fill="#2F6BFF">
+          Best venue
+        </text>
 
-        {/* Hover crosshair */}
         {h && (
           <g pointerEvents="none">
-            <line x1={geo.x(h.size)} x2={geo.x(h.size)} y1={PAD.top} y2={H - PAD.bottom} stroke="var(--line-hi)" />
-            <circle cx={geo.x(h.size)} cy={geo.y(h.price)} r="5" fill="var(--accent)" stroke="var(--bg)" strokeWidth="2" />
+            <line x1={geo.x(h.size)} x2={geo.x(h.size)} y1={PAD.top} y2={H - PAD.bottom} stroke="#C9C0FA" />
+            <circle cx={geo.x(h.size)} cy={geo.y(h.price)} r="4.5" fill="#2F6BFF" stroke="#fff" strokeWidth="2" />
           </g>
         )}
       </svg>
 
       {h && (
         <div
-          className="panel pointer-events-none absolute top-2 z-10 w-52 rounded-lg bg-panel px-3 py-2 text-sm shadow-xl shadow-black/40"
+          className="pointer-events-none absolute top-2 z-10 w-52 rounded-xl bg-white px-3 py-2 text-[13px] text-[#151619] shadow-[0_8px_24px_rgb(40_28_96/0.12)]"
           style={{
             left: `${(geo.x(h.size) / W) * 100}%`,
             transform: geo.x(h.size) > W * 0.6 ? "translateX(calc(-100% - 12px))" : "translateX(12px)",
@@ -130,20 +127,23 @@ export function CurveChart({
           <div className="tnum font-medium">
             {fmtSize(h.size)} {tokenIn.symbol}
           </div>
-          <dl className="tnum mt-1 space-y-0.5 text-fg-2">
+          <dl className="tnum mt-1.5 space-y-1 text-[#8A847E]">
             <div className="flex justify-between gap-3">
               <dt>Best venue pays</dt>
-              <dd className="text-fg">
+              <dd className="font-medium text-[#151619]">
                 {h.out.toLocaleString("en-US", { maximumFractionDigits: tokenOut.usd ? 2 : 4 })} {tokenOut.symbol}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt>USDC per WETH</dt>
-              <dd className="text-fg">{fmtUsd(h.price)}</dd>
+              <dd className="font-medium text-[#151619]">{fmtUsd(h.price)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt>vs Chainlink</dt>
-              <dd className="text-fg">{h.vsFair.toFixed(2)}%</dd>
+              <dd className={h.vsFair >= 0 ? "font-medium text-[#1F8A5B]" : "font-medium text-[#B42318]"}>
+                {h.vsFair >= 0 ? "+" : ""}
+                {h.vsFair.toFixed(2)}%
+              </dd>
             </div>
           </dl>
         </div>

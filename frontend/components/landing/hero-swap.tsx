@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { parseUnits } from "viem";
+import { TokenIcon } from "@/components/quote/token-pill";
 import { fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
 import { getLiveQuote, pipsToPercent, type LiveQuote } from "@/lib/quote";
-import { DEFAULT_BUY, DEFAULT_SELL } from "@/lib/tokens";
+import { DEFAULT_BUY, DEFAULT_SELL, type Token } from "@/lib/tokens";
 import { useWallet } from "../wallet/wallet-provider";
 
 const SELL = DEFAULT_SELL; // WETH
@@ -75,88 +76,77 @@ export function HeroSwap() {
       : null;
 
   return (
-    <div className="w-full max-w-[440px]">
-      <div className="rounded-[20px] bg-white p-2 text-[#151619] shadow-[0_30px_80px_rgb(40_28_96/0.28)]">
-        {/* Pay */}
-        <div className="rounded-[14px] bg-[#F7F5F2] px-5 pt-4 pb-5">
-          <div className="text-[13px] font-semibold text-[#6B6560]">You pay</div>
-          <div className="mt-2 flex items-center gap-3">
-            <input
-              inputMode="decimal"
-              aria-label="Amount of WETH to pay"
-              value={amount}
-              onChange={(e) => {
-                const v = e.target.value.replace(",", ".");
-                if (/^\d*\.?\d*$/.test(v)) setAmount(v);
-              }}
-              className="min-w-0 flex-1 bg-transparent text-[36px] font-semibold tracking-[-0.03em] outline-none [font-variant-numeric:tabular-nums]"
-            />
-            <TokenChip symbol={SELL.symbol} color="#6c7299" />
-          </div>
-        </div>
+    <div className="w-full max-w-[460px]">
+      <div className="rounded-[28px] bg-white p-3 text-[#111] shadow-[0_24px_70px_rgb(40_28_96/0.22)]">
+        <Field label="You pay">
+          <input
+            inputMode="decimal"
+            aria-label="Amount of WETH to pay"
+            value={amount}
+            onChange={(e) => {
+              const v = e.target.value.replace(",", ".");
+              if (/^\d*\.?\d*$/.test(v)) setAmount(v);
+            }}
+            className="min-w-0 flex-1 bg-transparent text-[40px] leading-none font-bold tracking-[-0.045em] text-[#111] outline-none [font-variant-numeric:tabular-nums]"
+          />
+          <TokenChip token={SELL} />
+        </Field>
 
-        {/* Divider arrow */}
-        <div className="relative z-10 -my-3 flex justify-center">
-          <span className="grid size-9 place-items-center rounded-full border-4 border-white bg-[#F7F5F2] text-[#6B6560]" aria-hidden>
+        <div className="relative z-10 -my-3.5 flex justify-center">
+          <span className="grid size-8 place-items-center rounded-full border-[3px] border-white bg-[#F4F2EE] text-[#6F6A64]" aria-hidden>
             <svg width="14" height="14" viewBox="0 0 16 16">
-              <path d="M8 3v10M8 13l-3.2-3.2M8 13l3.2-3.2" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+              <path d="M4 6.5 8 10.5 12 6.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
         </div>
 
-        {/* Receive */}
-        <div className="rounded-[14px] bg-[#F7F5F2] px-5 pt-4 pb-5">
-          <div className="text-[13px] font-semibold text-[#6B6560]">You receive</div>
-          <div className="mt-2 flex items-center gap-3">
-            <div
-              className={`min-w-0 flex-1 truncate text-[36px] font-semibold tracking-[-0.03em] [font-variant-numeric:tabular-nums] transition-opacity ${
-                loading ? "opacity-40" : ""
-              }`}
-            >
-              {shown ? fmtSmart(shown.ourOut, BUY.decimals, 8) : "0"}
-            </div>
-            <TokenChip symbol={BUY.symbol} color="#2775ca" />
+        <Field label="You receive">
+          <div
+            className={`min-w-0 flex-1 truncate text-[40px] leading-none font-bold tracking-[-0.045em] text-[#111] [font-variant-numeric:tabular-nums] transition-opacity ${
+              loading ? "opacity-40" : ""
+            }`}
+          >
+            {shown ? fmtSmart(shown.ourOut, BUY.decimals, 8) : "0"}
           </div>
-          <div className="mt-1 text-[13px] font-medium text-[#6B6560] [font-variant-numeric:tabular-nums]">
-            {shown ? `$${fmtAmount(shown.ourOut, BUY.decimals, 2)}` : failed ? "Couldn't reach Sepolia, retrying…" : "Quoting…"}
+          <TokenChip token={BUY} />
+          <div className="col-span-2 -mt-1 text-[13px] font-medium text-[#9A948C] [font-variant-numeric:tabular-nums]">
+            {shown ? `$${fmtAmount(shown.ourOut, BUY.decimals, 1)}` : failed ? "Couldn't reach Sepolia, retrying…" : "Quoting…"}
           </div>
-        </div>
+        </Field>
 
-        {/* Fee line */}
-        <div className="flex items-center justify-between px-4 pt-3.5 pb-2 text-[13px] font-semibold">
-          <span className="text-[#6B6560]">Fee on this trade</span>
-          <span className="[font-variant-numeric:tabular-nums]">
+        <div className="flex items-baseline justify-between gap-4 px-5 pt-4 pb-3.5 text-[13.5px]">
+          <span className="shrink-0 font-medium text-[#8A847E]">Fee on this trade</span>
+          <span className="text-right [font-variant-numeric:tabular-nums]">
             {shown ? (
               <>
-                {pipsToPercent(shown.feePips)}{" "}
+                <span className="font-bold text-[#111]">{pipsToPercent(shown.feePips)}</span>
                 <span className="font-medium text-[#8A847E]">
                   {shown.status === "live"
-                    ? `· beats best venue by $${edge.toFixed(2)}`
-                    : "· fallback, no live competitor quote"}
+                    ? ` · beats best venue by $${edge.toFixed(2)}`
+                    : " · fallback, no live competitor quote"}
                 </span>
               </>
             ) : (
-              "—"
+              <span className="font-medium text-[#8A847E]">—</span>
             )}
           </span>
         </div>
 
-        {/* CTA */}
         {cta ? (
           <button
             type="button"
             onClick={cta.onClick}
             disabled={wallet.connecting}
-            className="mt-1 h-14 w-full rounded-[14px] bg-[#151619] text-[16px] font-bold text-white transition-colors hover:bg-black disabled:opacity-70"
+            className="h-[54px] w-full rounded-[18px] bg-[#111] text-[16px] font-semibold text-white transition-colors hover:bg-black disabled:opacity-70"
           >
             {cta.label}
           </button>
         ) : (
           <Link
             href={`/swap?sell=${SELL.symbol}&buy=${BUY.symbol}&amount=${encodeURIComponent(amount || "1")}`}
-            className="mt-1 flex h-14 w-full items-center justify-center rounded-[14px] bg-[#151619] text-[16px] font-bold text-white transition-colors hover:bg-black"
+            className="flex h-[54px] w-full items-center justify-center rounded-[18px] bg-[#111] text-[16px] font-semibold text-white transition-colors hover:bg-black"
           >
-            Review quote →
+            Review quote
           </Link>
         )}
       </div>
@@ -165,13 +155,20 @@ export function HeroSwap() {
   );
 }
 
-function TokenChip({ symbol, color }: { symbol: string; color: string }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <span className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-white pr-3.5 pl-1 text-[15px] font-bold shadow-[0_1px_2px_rgb(0_0_0/0.06)] ring-1 ring-black/5">
-      <span className="grid size-8 place-items-center rounded-full text-[10px] font-extrabold text-white" style={{ background: color }} aria-hidden>
-        {symbol === "WETH" ? "Ξ" : "$"}
-      </span>
-      {symbol}
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-[18px] bg-[#F4F2EE] px-5 pt-4 pb-4">
+      <div className="col-span-2 text-[14px] font-medium text-[#8A847E]">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function TokenChip({ token }: { token: Token }) {
+  return (
+    <span className="row-span-1 flex h-11 shrink-0 items-center gap-2 self-center rounded-full bg-white pr-4 pl-1.5 text-[15px] font-bold tracking-[-0.02em] text-[#111] shadow-[0_1px_2px_rgb(0_0_0/0.05)] ring-1 ring-black/[0.06]">
+      <TokenIcon token={token} size={32} />
+      {token.symbol}
     </span>
   );
 }

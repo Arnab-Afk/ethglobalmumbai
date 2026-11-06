@@ -76,173 +76,164 @@ export function MarketView() {
   const age = data && data.observedAt ? data.blockTime - data.observedAt : null;
   const fresh = age !== null && age <= MAX_QUOTE_AGE;
 
+  const sizeLabel = fmtSize(data?.headlineSize ?? (tokenIn.usd ? 2000 : 1));
+
   return (
-    <div className="w-full max-w-[960px]">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-[40px] font-semibold leading-tight tracking-[-0.03em]">Market</h1>
-        <div role="tablist" aria-label="Trade direction" className="panel flex h-9 items-center rounded-full p-1 text-sm">
-          {DIRECTIONS.map((d) => (
-            <button
-              key={d.key}
-              role="tab"
-              aria-selected={d.key === dirKey}
-              onClick={() => switchTo(d.key)}
-              className={`flex h-7 items-center rounded-full px-3 transition-colors ${
-                d.key === dirKey ? "bg-surface-3 font-medium text-fg" : "text-fg-2 hover:text-fg"
-              }`}
-            >
-              {d.tokenIn.symbol} → {d.tokenOut.symbol}
-            </button>
-          ))}
+    <div className="w-full max-w-[960px] text-[#151619]">
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+        <div>
+          <p className="font-mono text-[12px] tracking-[0.14em] text-[#5B46C7] uppercase">Mainnet venues</p>
+          <h1 className="mt-3 text-[44px] leading-none font-medium tracking-[-0.04em]">Market</h1>
+          <p className="mt-3 max-w-[36ch] text-[16px] leading-[1.5] text-[#6B6560]">
+            Best mainnet output for {tokenIn.symbol} → {tokenOut.symbol}, by size.
+          </p>
+        </div>
+        <div role="tablist" aria-label="Trade direction" className="flex h-11 items-center rounded-full bg-white p-1 ring-1 ring-black/[0.06]">
+          {DIRECTIONS.map((d) => {
+            const on = d.key === dirKey;
+            return (
+              <button
+                key={d.key}
+                role="tab"
+                aria-selected={on}
+                onClick={() => switchTo(d.key)}
+                className={`flex h-9 items-center rounded-full px-4 text-[14px] font-medium transition-colors ${
+                  on ? "bg-[#2F6BFF] text-white" : "text-[#6B6560] hover:text-[#151619]"
+                }`}
+              >
+                {d.tokenIn.symbol} → {d.tokenOut.symbol}
+              </button>
+            );
+          })}
         </div>
       </div>
-      <p className="mt-1 text-base text-fg-2">
-        What Uniswap v3 on Ethereum mainnet pays for {tokenIn.symbol} → {tokenOut.symbol}. The Chainlink CRE
-        workflow&apos;s own curve is in the table below.
-      </p>
 
-      {error && <p className="mt-4 text-sm text-lose">Couldn&apos;t reach Sepolia: {error}</p>}
+      {error && <p className="mt-6 text-[14px] text-[#B42318]">Couldn&apos;t reach Sepolia: {error}</p>}
 
-      {/* Stat cards */}
-      <div className="mt-6 grid gap-2 sm:grid-cols-3">
-        <Stat
-          label="Chainlink ETH / USD"
-          value={data ? `$${fmtUsd(data.feed.price)}` : "—"}
-          sub={
-            data ? (
-              <>
-                Updated {fmtAge(data.blockTime - data.feed.updatedAt)} ago ·{" "}
-                <a className="hover:text-fg" href={`${SEPOLIA.explorer}/address/${CHAINLINK_ETH_USD}`} target="_blank" rel="noreferrer">
-                  {shortAddr(CHAINLINK_ETH_USD)} ↗
-                </a>
-              </>
-            ) : (
-              "Loading…"
-            )
-          }
-        />
-        <Stat
-          label={`Best venue · ${fmtSize(data?.headlineSize ?? (tokenIn.usd ? 2000 : 1))} ${tokenIn.symbol}`}
-          value={one ? `${fmtTok(one.out, tokenOut)} ${tokenOut.symbol}` : data ? "No curve" : "—"}
-          sub={
-            one && data ? (
-              <span className={one.vsFair >= 0 ? "text-win" : "text-lose"}>
-                {one.vsFair.toFixed(2)}% vs Chainlink
-              </span>
-            ) : (
-              "From the mainnet v3 quoter"
-            )
-          }
-        />
-        <Stat
-          label="v3 quote age"
-          value={age !== null ? `${fmtAge(age)} ago` : data ? "Never" : "—"}
-          sub={
-            age !== null ? (
-              <span className="flex items-center gap-1.5">
-                <span className={`size-1.5 rounded-full ${fresh ? "bg-win" : "bg-warn"}`} />
-                {fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s, fee falls back`}
-              </span>
-            ) : (
-              "Waiting for the first report"
-            )
-          }
-        />
-      </div>
-
-      {/* Curve */}
-      <section className="panel mt-2 rounded-lg p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h2 className="text-base font-medium">Best competing price by trade size</h2>
-            <p className="text-sm text-fg-2">
-              {data?.sellingBase === false
-                ? "USDC paid per WETH received (lower is better for the trader)."
-                : "USDC received per WETH sold (higher is better for the trader)."}{" "}
-              Bigger trades move the venue&apos;s price; Hairline only has to beat this line.
-            </p>
-          </div>
-          {data && (
-            <span className="text-sm text-fg-2">
-              Covers up to <span className="tnum text-fg">{fmtSize(data.maxSize)} {tokenIn.symbol}</span> · read in{" "}
-              <span className="text-win">{Math.round(data.latencyMs)}ms</span>
-            </span>
-          )}
+      <section className="mt-8 rounded-[28px] bg-white px-5 py-6 shadow-[0_24px_60px_rgb(40_28_96/0.07)] ring-1 ring-black/[0.04] sm:px-7 sm:py-7">
+        <div className="grid items-end gap-8 sm:grid-cols-[minmax(0,1.45fr)_1fr_1fr]">
+          <Figure
+            large
+            tone="blue"
+            label={`Best venue · ${sizeLabel} ${tokenIn.symbol}`}
+            value={one ? `${fmtTok(one.out, tokenOut)}` : data ? "No curve" : "—"}
+            unit={one ? tokenOut.symbol : undefined}
+            note={
+              one && data ? (
+                <span className={one.vsFair >= 0 ? "text-[#1F8A5B]" : "text-[#6B6560]"}>
+                  {one.vsFair >= 0 ? "+" : ""}
+                  {one.vsFair.toFixed(2)}% vs Chainlink
+                </span>
+              ) : (
+                "Mainnet v3 quoter"
+              )
+            }
+          />
+          <Figure
+            tone="purple"
+            label="Chainlink ETH/USD"
+            value={data ? `$${fmtUsd(data.feed.price)}` : "—"}
+            note={
+              data ? (
+                <>
+                  {fmtAge(data.blockTime - data.feed.updatedAt)} ago ·{" "}
+                  <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${CHAINLINK_ETH_USD}`} target="_blank" rel="noreferrer">
+                    {shortAddr(CHAINLINK_ETH_USD)}
+                  </a>
+                </>
+              ) : (
+                "Loading"
+              )
+            }
+          />
+          <Figure
+            tone={fresh ? "green" : undefined}
+            label="Quote age"
+            value={age !== null ? fmtAge(age) : data ? "Never" : "—"}
+            unit={age !== null ? "ago" : undefined}
+            note={age !== null ? (fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s. Fee falls back.`) : "Waiting for a report"}
+          />
         </div>
-        <div className="mt-4">
+
+        <div className="mt-7 overflow-hidden rounded-[20px] bg-[#F4F1FE]">
           {data && data.samples.length > 1 ? (
             <CurveChart samples={data.samples} reference={data.feed.price} tokenIn={tokenIn} tokenOut={tokenOut} />
           ) : (
-            <div className="grid h-[240px] place-items-center text-sm text-muted">
-              {data ? "No competitor curve on-chain for this pair yet." : "Loading curve…"}
+            <div className="grid h-[240px] place-items-center text-[14px] text-[#8A847E]">
+              {data ? "No competitor curve on-chain for this pair yet." : "Loading curve"}
             </div>
           )}
         </div>
-        <p className="mt-3 border-t border-line pt-3 text-sm text-fg-2">
-          <span className="mr-1.5 inline-block size-1.5 rounded-full bg-win align-middle" />
-          The swap screen runs this mainnet output through{" "}
-          <a className="text-fg hover:underline" href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.GivenQuotePreview}`} target="_blank" rel="noreferrer">
+        <p className="mt-4 text-[13px] leading-relaxed text-[#6B6560]">
+          {data?.sellingBase === false ? "USDC paid per WETH. Lower is better." : "USDC received per WETH. Higher is better."}
+          {data && (
+            <>
+              {" "}
+              Up to <span className="tnum font-medium text-[#151619]">{fmtSize(data.maxSize)} {tokenIn.symbol}</span>.
+            </>
+          )}{" "}
+          The swap screen sends this output to{" "}
+          <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.GivenQuotePreview}`} target="_blank" rel="noreferrer">
             GivenQuotePreview
-          </a>{" "}
-          on Sepolia, which calls fee-core. The CRE table below is the workflow&apos;s own curve.
+          </a>
+          , which calls fee-core.
         </p>
       </section>
 
-      {/* Updates table */}
-      <section className="panel mt-2 overflow-hidden rounded-lg">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4">
-          <h2 className="text-base font-medium">
-            CRE curve updates
+      <section className="mt-5 overflow-hidden rounded-[28px] bg-white ring-1 ring-black/[0.04]">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F7F5FF] px-5 py-4 sm:px-7">
+          <h2 className="flex items-center gap-2.5 text-[18px] font-medium tracking-[-0.03em]">
+            CRE curve
             {updates.length > 0 && (
-              <span className="tnum ml-2 text-sm font-normal text-fg-2">
-                {showAll || hiddenUpdates === 0 ? `${updates.length}` : `latest ${visibleUpdates.length} of ${updates.length}`}
+              <span className="tnum rounded-full bg-white px-2.5 py-0.5 text-[12px] font-medium text-[#5B46C7] ring-1 ring-[#E4DFF8]">
+                {showAll || hiddenUpdates === 0 ? updates.length : `${visibleUpdates.length} of ${updates.length}`}
               </span>
             )}
           </h2>
-          <a href={eventsUrl} target="_blank" rel="noreferrer" className="text-sm text-fg-2 hover:text-fg">
-            QuoteOracle {shortAddr(SEPOLIA.contracts.QuoteOracle)} ↗
+          <a href={eventsUrl} target="_blank" rel="noreferrer" className="text-[13px] text-[#5B46C7] hover:underline">
+            QuoteOracle {shortAddr(SEPOLIA.contracts.QuoteOracle)}
           </a>
         </div>
-        <div className={`mt-3 overflow-x-auto ${showAll ? "max-h-[420px] overflow-y-auto" : ""}`}>
-          <table className="tnum w-full min-w-[640px] text-sm">
-            <thead className="sticky top-0 bg-panel">
-              <tr className="border-b border-line text-left text-fg-2">
-                <th className="px-4 py-2.5 font-medium">Observed</th>
-                <th className="px-4 py-2.5 font-medium">Pair</th>
-                <th className="px-4 py-2.5 font-medium">Points</th>
-                <th className="px-4 py-2.5 font-medium">Winning venues</th>
-                <th className="px-4 py-2.5 font-medium">Block</th>
-                <th className="px-4 py-2.5 text-right font-medium">Transaction</th>
+        <div className={`overflow-x-auto ${showAll ? "max-h-[440px] overflow-y-auto" : ""}`}>
+          <table className="tnum w-full min-w-[640px] text-[14px]">
+            <thead className="sticky top-0 bg-white">
+              <tr className="text-left font-mono text-[11px] tracking-[0.12em] text-[#8A847E] uppercase">
+                <th className="py-3 pr-4 pl-5 font-normal whitespace-nowrap sm:pl-7">Observed</th>
+                <th className="px-4 py-3 font-normal whitespace-nowrap">Pair</th>
+                <th className="px-4 py-3 font-normal whitespace-nowrap">Points</th>
+                <th className="px-4 py-3 font-normal whitespace-nowrap">Winning venues</th>
+                <th className="px-4 py-3 font-normal whitespace-nowrap">Block</th>
+                <th className="py-3 pr-5 pl-4 text-right font-normal whitespace-nowrap sm:pr-7">Transaction</th>
               </tr>
             </thead>
             <tbody>
-              {data && visibleUpdates.map((u) => (
-                <tr key={u.tx} className="border-b border-line last:border-0 hover:bg-surface">
-                  <td className="px-4 py-3">{fmtAge(data.blockTime - u.observedAt)} ago</td>
-                  <td className="px-4 py-3">
+              {data && visibleUpdates.map((u, i) => (
+                <tr key={u.tx} className={`border-t border-[#EFEDE8] ${i === 0 ? "bg-[#F7F5FF]" : ""}`}>
+                  <td className="py-3.5 pr-4 pl-5 whitespace-nowrap sm:pl-7">{fmtAge(data.blockTime - u.observedAt)} ago</td>
+                  <td className="px-4 py-3.5 font-medium whitespace-nowrap">
                     {tokenIn.symbol} → {tokenOut.symbol}
                   </td>
-                  <td className="px-4 py-3">{u.points}</td>
-                  <td className="px-4 py-3 text-fg-2">{u.venues ? summarizeVenues(u.venues) : "unknown venues"}</td>
-                  <td className="px-4 py-3 text-fg-2">{u.block.toString()}</td>
-                  <td className="px-4 py-3 text-right">
-                    <a href={tx(u.tx)} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-                      {u.tx.slice(0, 6)}…{u.tx.slice(-4)} ↗
+                  <td className="px-4 py-3.5">{u.points}</td>
+                  <td className="px-4 py-3.5 text-[#6B6560]">{u.venues ? summarizeVenues(u.venues) : "unknown venues"}</td>
+                  <td className="px-4 py-3.5 text-[#6B6560]">{u.block.toString()}</td>
+                  <td className="py-3.5 pr-5 pl-4 text-right sm:pr-7">
+                    <a href={tx(u.tx)} target="_blank" rel="noreferrer" className="text-[#5B46C7] hover:underline">
+                      {u.tx.slice(0, 6)}…{u.tx.slice(-4)}
                     </a>
                   </td>
                 </tr>
               ))}
               {data && data.updates.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={6} className="border-t border-[#E7E4DF] py-8 text-[#8A847E]">
                     No CRE reports for this pair yet.
                   </td>
                 </tr>
               )}
               {!data && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted">
-                    Loading…
+                  <td colSpan={6} className="border-t border-[#E7E4DF] py-8 text-[#8A847E]">
+                    Loading
                   </td>
                 </tr>
               )}
@@ -250,17 +241,12 @@ export function MarketView() {
           </table>
         </div>
         {updates.length > LATEST_UPDATES && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5 text-sm">
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              aria-expanded={showAll}
-              className="text-fg-2 hover:text-fg"
-            >
-              {showAll ? `Show latest ${LATEST_UPDATES}` : `Show all ${updates.length}`}
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-[#EFEDE8] px-5 py-3 text-[13px] sm:px-7">
+            <button type="button" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="text-[#151619] hover:underline">
+              {showAll ? `Latest ${LATEST_UPDATES}` : `All ${updates.length}`}
             </button>
-            <a href={eventsUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-              Every report on Etherscan ↗
+            <a href={eventsUrl} target="_blank" rel="noreferrer" className="text-[#5B46C7] hover:underline">
+              Every report
             </a>
           </div>
         )}
@@ -269,12 +255,31 @@ export function MarketView() {
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub: React.ReactNode }) {
+const FIGURE = { purple: "text-[#5B46C7]", blue: "text-[#2F6BFF]", green: "text-[#1F8A5B]" } as const;
+
+function Figure({
+  label,
+  value,
+  unit,
+  note,
+  tone,
+  large,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  note: React.ReactNode;
+  tone?: keyof typeof FIGURE;
+  large?: boolean;
+}) {
   return (
-    <div className="panel rounded-lg p-4">
-      <div className="text-sm text-fg-2">{label}</div>
-      <div className="tnum mt-1 text-[28px] font-medium tracking-[-0.02em]">{value}</div>
-      <div className="mt-1 text-sm text-fg-2">{sub}</div>
+    <div>
+      <div className="font-mono text-[11px] tracking-[0.12em] text-[#8A847E] uppercase">{label}</div>
+      <div className={`tnum mt-2 leading-none font-medium tracking-[-0.04em] ${large ? "text-[40px] sm:text-[48px]" : "text-[28px]"} ${tone ? FIGURE[tone] : ""}`}>
+        {value}
+        {unit && <span className="ml-1.5 text-[15px] font-normal tracking-normal text-[#6B6560]">{unit}</span>}
+      </div>
+      <div className="mt-2 text-[13px] text-[#6B6560]">{note}</div>
     </div>
   );
 }
