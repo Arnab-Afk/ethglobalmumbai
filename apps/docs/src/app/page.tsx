@@ -30,6 +30,19 @@ const GUIDES = [
   },
   {
     track: 'Guides',
+    card: 'Uniswap v4 on Base',
+    sub: 'Fee-last hook and live AXIS/USDC pool on Uniswap v4.',
+    rows: [
+      ['Chain', 'Base 8453'],
+      ['Hook', 'FeeLast'],
+      ['Pool', 'AXIS / USDC'],
+      ['Fee', 'Signed / 0'],
+    ],
+    link: { label: 'Read the Uniswap guide', href: '/docs/guides/uniswap' },
+    desc: 'How the Base hook bids after rivals, where the contracts live, and how to quote or fork-rank locally.',
+  },
+  {
+    track: 'Guides',
     card: 'Private quotes',
     sub: "Reads over Anon-RPC, so the RPC doesn't learn who asked.",
     rows: [
@@ -60,7 +73,7 @@ const REFERENCE = [
   { name: 'CompetitiveFeeClient', body: 'quote, encodeSwap, submit and setFrameSubmitter, with the Quote type field by field.', href: '/docs/reference/client' },
   { name: 'neat3-sdk/anon', body: 'createAnonFetch and the Anon-RPC network table. Browser only.', href: '/docs/reference/anon' },
   { name: 'neat3-sdk/frame', body: 'createFrameSubmitter and buildFrames for EIP-8141 frame transactions.', href: '/docs/reference/frame' },
-  { name: 'Networks and addresses', body: 'The devnet and the Sepolia demo pool, with the endpoints the SDK uses.', href: '/docs/reference/networks' },
+  { name: 'Networks and addresses', body: 'Devnet, Sepolia demo, and the live Base Uniswap fee-last pool.', href: '/docs/reference/networks' },
 ];
 
 const QUESTIONS = [
@@ -74,7 +87,7 @@ const QUESTIONS = [
   },
   {
     q: 'Where can I use it today?',
-    a: 'The EIP-8141 devnet (chain 1337) is the default target. The Sepolia demo pool is the same contract, but the SDK has not been run against it yet. The Aqua and SwapVM pool is not wrapped.',
+    a: 'The EIP-8141 devnet (chain 1337) is the default SDK target. The Sepolia demo pool is the same contract, but the SDK has not been run against it yet. The Uniswap fee-last hook is live on Base (AXIS/USDC); the neat app quotes it directly. Aqua / SwapVM is not wrapped by the SDK yet.',
   },
   {
     q: 'Does submit() hide my swap?',
@@ -197,7 +210,7 @@ export default function DocsLanding() {
             note="One quickstart to see a fee on screen, then a guide for each thing you can do with it."
           />
 
-          <div className="mt-14 grid gap-10 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-5">
+          <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:gap-x-6 lg:gap-y-5">
             {GUIDES.map((g) => (
               <div key={g.card} className="lg:row-span-2 lg:grid lg:grid-rows-subgrid">
                 <article className="flex flex-col rounded-2xl bg-white p-6 text-[#151619] shadow-[0_1px_2px_rgb(0_0_0/0.04),0_16px_48px_rgb(28_21_48/0.12)]">

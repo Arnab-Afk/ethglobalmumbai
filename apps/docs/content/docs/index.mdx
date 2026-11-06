@@ -19,6 +19,9 @@ submit()      →  one atomic EIP-8141 frame transaction
   <Card title="Quote" href="/docs/quickstart">
     Read the pool's output and fee for an exact trade, plus the best competing venue's output.
   </Card>
+  <Card title="Uniswap v4 on Base" href="/docs/guides/uniswap">
+    Fee-last hook, router, and live AXIS/USDC pool. Same rule, on Uniswap v4.
+  </Card>
   <Card title="Private reads" href="/docs/guides/private-quotes">
     Route quotes through Anon-RPC so the RPC never learns who asked, for which pair, or how much.
   </Card>
@@ -45,6 +48,7 @@ Requires Node 20.12 or newer.
 ## Where it works today
 
 - The SDK targets the `DevnetCompetitivePool` contract. It is deployed on the self-hosted EIP-8141 devnet (chain 1337) and, as a demo pool, on Sepolia. See [Networks](/docs/reference/networks).
+- The Uniswap surface is a **fee-last v4 hook on Base** with a live AXIS/USDC pool. See [Uniswap v4 on Base](/docs/guides/uniswap). It is not wrapped by `neat3-sdk` yet; the neat app quotes it directly.
 - Swaps are exact-input only.
 - The Aqua / SwapVM pool prices through the SwapVM router and isn't wrapped by this SDK yet.
-- This is hackathon software. The devnet and demo tokens have no value, and gas limits for frame transactions are estimates until more live runs land.
+- This is hackathon software. The Base AXIS pool is real mainnet liquidity in a narrow range. The EIP-8141 devnet and Sepolia demo tokens have no value, and gas limits for frame transactions are estimates until more live runs land.

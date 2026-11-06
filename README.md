@@ -9,6 +9,7 @@ Built for **ETHGlobal Mumbai**. One fee engine, three integrations:
 | Surface | What it is | Prize track | Doc |
 |---|---|---|---|
 | **1inch SwapVM opcode** (core) | Custom instruction that computes the competitive fee inside a SwapVM program running on Aqua liquidity | 1inch — Aqua | [docs/04-swapvm-opcode.md](docs/04-swapvm-opcode.md) |
+| **Uniswap v4 fee-last (Base)** | Signed exclusive fee hook + AXIS/USDC pool; fee set after rival quotes | Uniswap | [packages/fee-last](packages/fee-last/README.md) · [docs site guide](apps/docs/content/docs/guides/uniswap.mdx) |
 | **Private & competitive quoting** | Every app read goes through Anon-RPC, so the RPC never sees who asked for which pair or size. Swaps can go out as one atomic EIP-8141 frame tx to the alt mempool, where `minOut` makes a front-run revert the whole batch (the alt mempool itself is public) | Ethereum Foundation | [docs/05-ef-private-quoting.md](docs/05-ef-private-quoting.md) |
 | **Chainlink CRE workflow** | Off-chain workflow that quotes competing venues and writes a signed quote curve on-chain | Chainlink CRE | [docs/06-chainlink-cre.md](docs/06-chainlink-cre.md) |
 
@@ -79,6 +80,8 @@ The fee engine already works. A real frame swap on our EIP-8141 devnet beat the 
 7. [Prize strategy & build plan](docs/07-prize-strategy-and-plan.md)
 8. [Risks & open questions](docs/08-risks-and-open-questions.md)
 9. [Team assignments](docs/09-team-assignments.md) — who owns what (Arnab, Soham, Saish, Ishika)
+10. [Live tasklist](docs/10-tasklist.md)
+11. Public docs site (`apps/docs`): [Uniswap v4 on Base](apps/docs/content/docs/guides/uniswap.mdx) + [networks](apps/docs/content/docs/reference/networks.mdx) (fee-last hook, AXIS/USDC addresses)
 
 ## Agent files
 

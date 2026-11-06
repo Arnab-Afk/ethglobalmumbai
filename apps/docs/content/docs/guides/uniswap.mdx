@@ -1,0 +1,86 @@
+---
+title: Uniswap v4 on Base
+description: The fee-last Uniswap v4 hook, router, and live AXIS/USDC pool on Base.
+---
+
+neat also ships as a **Uniswap v4 hook on Base**. The pool fee field is zero. After the swap runs on the raw curve, the hook takes an output fee: the largest fee that still pays the trader more than the best rival quote for that exact trade. A swap without a fresh controller signature reverts.
+
+This is the Uniswap prize surface. The TypeScript in `neat3-sdk` still targets the EIP-8141 / Sepolia demo pools; Base reads and bids live in `packages/fee-last` and in the neat app (`frontend/lib/base-axis.ts`).
+
+## Live on Base
+
+Snapshot from Nov 7 2026. Confirm against [`deployments/base.json`](https://github.com/Arnab-Afk/ethglobalmumbai/blob/main/deployments/base.json) before you rely on an address.
+
+| Piece | Address |
+|---|---|
+| Chain | Base (`8453`) |
+| PoolManager | `0x498581fF718922c3f8e6A244956aF099B2652b2b` |
+| Hook (`FeeLastHook`) | `0x8efBdAed7Da3dB6250d4cD66b47aF20596C9aAC4` |
+| Router (`FeeLastRouter`) | `0xE1275AbA5f2215B03CC389B6E594AC8b078Aef07` |
+| Position (withdraw) | `0x93F95e100dcd0BeaB52457EF11A5C8A14F044dE4` |
+| Pool | AXIS / USDC, fee `0`, tick spacing `1` |
+| Pool id | `0x2202177fdd95fe55e32170a1a94261f111b5c3cd3318f7805deca8d792ac01c9` |
+| Ticks | `-296999` … `-296939` |
+| AXIS | `0x5bE75e3b0aFf5D1A042A5363Ae36AcB1d6d755ea` |
+| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+
+The depositing wallet `0x2B0aEf51883f8cFD8bd618Ab959B332a093CEeB2` is the only one that can withdraw the position through `FeeLastPosition`.
+
+## How a bid is chosen
+
+Same last-look rule as [How fees are set](/docs/guides/fees), applied on Base:
+
+1. Quote every configured rival for the same input. For the AXIS pool the neat app reads live Uniswap v3 tiers (0.02%, 0.05%, 0.30%) and a deep Uniswap v4 AXIS/USDC book.
+2. Quote this pool at a zero fee. That output is `gross`.
+3. If `gross` is not above the best rival, skip. A fee cannot win a trade the curve itself loses.
+4. Otherwise set `minOut` to the rival output plus a small edge (default 1 bps, and always at least 1 unit).
+5. Charge `feePips = floor((gross - minOut) * 1_000_000 / gross)`, then bump one pip when rounding still leaves the trader above `minOut`.
+6. The controller signs that fee, the input size, `minOut`, a deadline of at most 120 seconds, and a one-time nonce.
+7. Submit through a private relay. The signature is the bid; the public mempool would let someone else take the rival liquidity first.
+
+The hook checks the signature, the deadline, the nonce, and that the trader receives at least `minOut`. One pip above the signed fee fails that check.
+
+## What "win the trade" depends on
+
+The bid is the minimum improvement over every venue the quoter can see, so a router that picks the best output picks this pool whenever the zero-fee curve can win. That is the auction. It does not, by itself, capture all Base volume. Trades are lost when the curve is worse even at zero fee, when a router never asks, or when a venue is missing from `packages/fee-last/quoter/venues.json`. Deep liquidity next to the market price is what makes `gross` win.
+
+## Contracts and tools
+
+| Path | Role |
+|---|---|
+| `packages/fee-last/src/FeeLastHook.sol` | Exclusive signed-fee hook |
+| `packages/fee-last/src/FeeLastRouter.sol` | Exact-input router bound to the swapper in the signature |
+| `packages/fee-last/src/FeeLastPosition.sol` | Deposit and withdraw for the depositing wallet |
+| `packages/fee-last/src/FeeMath.sol` | Pip fee |
+| `packages/fee-last/quoter/cli.mjs` | Reads Base rivals and prints the winning fee |
+| `frontend/lib/base-axis.ts` | App quotes for AXIS ↔ USDC (reads only, through Anon-RPC) |
+
+## Try it locally
+
+```sh
+cd packages/fee-last
+forge test
+node --test quoter/test/fee.test.mjs
+```
+
+To rank the signed quote against live Uniswap v3 WETH/USDC tiers on a Base fork:
+
+```sh
+# PowerShell
+$env:BASE_RPC_URL = "https://mainnet.base.org"
+forge test --match-contract ForkRankTest -vv
+```
+
+`forge test` skips the fork file when `BASE_RPC_URL` is unset. That run is a fork measurement; it is not a mainnet broadcast.
+
+Quote Base rivals from the CLI:
+
+```sh
+node quoter/cli.mjs --amount 0.01 --token-in WETH --token-out USDC --gross <raw zero-fee output>
+```
+
+Signing and private submission use `cast` plus `PRIVATE_RPC_URL`. The submitter refuses the public mempool. Re-quote when the block changes before you sign.
+
+<Callout type="info" title="Older Sepolia hook">
+`packages/v4-hook` holds an earlier Sepolia `CompetitiveFeeHook` that reads `VenueReader` and overrides the LP fee in `beforeSwap`. The live Uniswap surface for the hackathon is **FeeLast on Base**, not that Sepolia pool.
+</Callout>

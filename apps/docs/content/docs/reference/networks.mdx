@@ -1,9 +1,9 @@
 ---
 title: Networks and addresses
-description: Where the pool is deployed, and the endpoints the SDK uses. A snapshot from Nov 6 2026.
+description: Where the pools are deployed, and the endpoints the SDK and app use. Snapshot Nov 7 2026.
 ---
 
-These are demo deployments. Addresses and endpoints can change, so confirm against the repo before relying on them.
+Addresses and endpoints can change, so confirm against the repo before relying on them. The EIP-8141 and Sepolia pools are demos. The Base Uniswap pool is live mainnet.
 
 ## EIP-8141 devnet
 
@@ -42,3 +42,20 @@ The pool's competitor curve goes stale after one hour. After that the fee falls 
 For private reads of Sepolia from a browser, use `nox` or `nym` with a public Sepolia RPC that sends CORS headers, such as `https://ethereum-sepolia-rpc.publicnode.com`.
 
 Full address lists: `deployments/sepolia.json` in the repo.
+
+## Base Uniswap fee-last pool
+
+Live Uniswap v4 AXIS/USDC pool. Hook fee is signed per trade; the pool config fee is `0`. Details and bid math: [Uniswap v4 on Base](/docs/guides/uniswap).
+
+| | |
+|---|---|
+| Chain ID | `8453` |
+| PoolManager | `0x498581fF718922c3f8e6A244956aF099B2652b2b` |
+| Hook | `0x8efBdAed7Da3dB6250d4cD66b47aF20596C9aAC4` |
+| Router | `0xE1275AbA5f2215B03CC389B6E594AC8b078Aef07` |
+| Position (withdraw) | `0x93F95e100dcd0BeaB52457EF11A5C8A14F044dE4` |
+| Pool id | `0x2202177fdd95fe55e32170a1a94261f111b5c3cd3318f7805deca8d792ac01c9` |
+| Pair | AXIS `0x5bE75e3b0aFf5D1A042A5363Ae36AcB1d6d755ea` / USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Ticks | `-296999` … `-296939` |
+
+The neat app reads this pool through Anon-RPC in `frontend/lib/base-axis.ts`. Full list: `deployments/base.json`.
