@@ -25,16 +25,14 @@
       "venues": [
         {
           "id": "mock-sushi-like",
-          "kind": "mock-xyk",
-          "reserveIn": "1000000000000000000000",
-          "reserveOut": "3000000000000",
+          "kind": "mock-anchored",
+          "reserveIn": "500000000000000000000",
           "feeBps": 30
         },
         {
           "id": "mock-univ3-like",
-          "kind": "mock-xyk",
-          "reserveIn": "800000000000000000000",
-          "reserveOut": "2450000000000",
+          "kind": "mock-anchored",
+          "reserveIn": "2000000000000000000000",
           "feeBps": 5
         },
         {

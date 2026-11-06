@@ -3,7 +3,7 @@ import { readFeed } from "./feed.js";
 import { finalizePair, type PairResult } from "./finalizePair.js";
 import type { FeedReading } from "./sanity.js";
 import type { CurveUpdate, PairConfig, VenueConfig, VenueQuote } from "./types.js";
-import { quoteMockXyk } from "./venues/mockXyk.js";
+import { isMockVenue, quoteMockVenue } from "./venues/mockVenue.js";
 import { quoteUniv2 } from "./venues/univ2.js";
 import { quoteUniv3 } from "./venues/univ3.js";
 
@@ -16,15 +16,13 @@ async function quoteVenue(
   pair: PairConfig,
   venue: VenueConfig,
   amountIn: bigint,
+  feed?: FeedReading,
 ): Promise<VenueQuote> {
+  if (isMockVenue(venue)) {
+    return { venueId: venue.id, amountOut: quoteMockVenue(pair, venue, amountIn, feed) };
+  }
   let amountOut = 0n;
   switch (venue.kind) {
-    case "mock-xyk": {
-      const rin = BigInt(venue.reserveIn ?? "0");
-      const rout = BigInt(venue.reserveOut ?? "0");
-      amountOut = quoteMockXyk(amountIn, rin, rout, venue.feeBps ?? 30);
-      break;
-    }
     case "univ2": {
       if (!client || !venue.router || !venue.path) break;
       amountOut = await quoteUniv2(client, venue.router, venue.path, amountIn);
@@ -76,21 +74,23 @@ export async function quotePairDetailed(
   const venues = activeVenues(pair.venues);
   if (venues.length === 0) throw new Error("no venues after exclude filter");
 
+  // Read the feed first: mock-anchored venues are priced from it.
+  let feed: FeedReading | undefined;
+  if (pair.sanity) {
+    if (!client) throw new Error("sanity check needs an RPC client to read the Chainlink feed");
+    feed = await readFeed(client, pair.sanity.feed);
+  }
+
   const amountsIn = pair.amountsIn.map((a) => BigInt(a));
   const quotesByBucket: VenueQuote[][] = [];
 
   for (const amountIn of amountsIn) {
     const row: VenueQuote[] = [];
     for (const venue of venues) {
-      row.push(await quoteVenue(client, pair, venue, amountIn));
+      row.push(await quoteVenue(client, pair, venue, amountIn, feed));
     }
     quotesByBucket.push(row);
   }
 
-  let feed: FeedReading | undefined;
-  if (pair.sanity) {
-    if (!client) throw new Error("sanity check needs an RPC client to read the Chainlink feed");
-    feed = await readFeed(client, pair.sanity.feed);
-  }
   return { ...finalizePair(pair, amountsIn, quotesByBucket, observedAt, feed), feed };
 }

@@ -2,7 +2,7 @@
 
 export type Address = `0x${string}`;
 
-export type VenueKind = "mock-xyk" | "univ2" | "univ3" | "http";
+export type VenueKind = "mock-xyk" | "mock-anchored" | "univ2" | "univ3" | "http";
 
 export interface VenueConfig {
   /** Short id hashed into CurveUpdate.venueIds (max 32 venues packed as bits/labels). */
@@ -10,7 +10,7 @@ export interface VenueConfig {
   kind: VenueKind;
   /** Skip this venue (e.g. our own Aqua / DevnetCompetitivePool). */
   exclude?: boolean;
-  /** mock-xyk: synthetic reserves */
+  /** mock-xyk: synthetic reserves. mock-anchored: reserveIn is the pool depth in tokenIn. */
   reserveIn?: string;
   reserveOut?: string;
   feeBps?: number;

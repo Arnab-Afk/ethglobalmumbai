@@ -9,7 +9,7 @@ const address = z
 
 const venueSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["mock-xyk", "univ2", "univ3", "http"]),
+  kind: z.enum(["mock-xyk", "mock-anchored", "univ2", "univ3", "http"]),
   exclude: z.boolean().optional(),
   reserveIn: z.string().optional(),
   reserveOut: z.string().optional(),
@@ -40,6 +40,9 @@ const pairSchema = z
   })
   .refine((p) => !p.sanity || (p.decimalsIn !== undefined && p.decimalsOut !== undefined), {
     message: "sanity needs decimalsIn and decimalsOut to compute fair output",
+  })
+  .refine((p) => p.sanity || !p.venues.some((v) => v.kind === "mock-anchored" && !v.exclude), {
+    message: "mock-anchored venues need a sanity block (they are priced from its Chainlink feed)",
   });
 
 export const workflowConfigSchema = z.object({
