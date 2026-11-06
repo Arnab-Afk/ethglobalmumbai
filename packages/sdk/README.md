@@ -17,7 +17,7 @@ npm install @anon-rpc/browser-harness@0.4.0   # private quotes (browser only)
 npm install @forshtat/hegota-support@0.0.1    # frame-tx submit
 ```
 
-Not on npm yet. From this repo: `cd packages/sdk && npm install && npm run build`, then `npm install ../path/to/packages/sdk`.
+To use an unreleased checkout instead: `cd packages/sdk && npm install && npm run build`, then `npm install ../path/to/packages/sdk`.
 
 ## Quote in 5 minutes (Node)
 
