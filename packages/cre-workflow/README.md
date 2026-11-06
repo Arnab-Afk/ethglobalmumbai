@@ -48,6 +48,19 @@ cre workflow simulate ./workflow -T sepolia-settings --broadcast    # real Sepol
 
 `--broadcast` needs `CRE_ETH_PRIVATE_KEY` (a funded Sepolia key, 64 hex chars, no `0x`) in `./.env`, which is gitignored.
 
+### Live on Sepolia
+
+`--broadcast` run on 6 Nov 2026: the CRE simulator signed a real Sepolia transaction to the CRE mock forwarder `0x15fC6ae953E024d975e77382eEeC56A9101f9F88`, which called `QuoteOracle.onReport` (the oracle trusts that forwarder).
+
+| | |
+|---|---|
+| Tx | [`0x48f2f577…aaa2`](https://sepolia.etherscan.io/tx/0x48f2f57781b1afcf89b0e8c02caf22e54c53370eb8ba40f25beb2bcf05a3aaa2) (block 12075222, 1,261,942 gas) |
+| Forwarder | `ReportProcessed(result=true)` |
+| Read back | `getBestOut(WETH, USDC, 1 ETH)` = 2217.49 USDC; 5 ETH = 11043.35 (interpolated); 20 ETH = 0 (above the last point, fallback fee) |
+| Log | [`logs/cre-broadcast-sepolia.txt`](logs/cre-broadcast-sepolia.txt) |
+
+The first attempt, [`0xe48ad8ed…35ac`](https://sepolia.etherscan.io/tx/0xe48ad8ed52ce6fda1dc4c79cf73d93dc5076d54de0898397f6177b52de4f35ac), stored nothing: `onReport` needs ~1.15M gas for a first curve and the limit was 500k. The forwarder caught the out-of-gas, so the transaction itself succeeded with `ReportProcessed(result=false)`. The gas limit is now 1.5M, and the workflow logs `receiver=SUCCESS|REVERTED` so this cannot pass silently again.
+
 ### Keep it running (`cre:watch`)
 
 The workflow is not deployed to the Chainlink DON, so it only runs when someone calls `cre workflow simulate`. The Chainlink feed itself is always live; our workflow just reads it on each run. `cre:watch` re-runs the simulation on a timer, standing in for the deployed workflow's cron:
