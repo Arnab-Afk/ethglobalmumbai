@@ -22,6 +22,7 @@ export function HeroSwap() {
   const [quote, setQuote] = useState<LiveQuote | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const wallet = useWallet();
 
   useEffect(() => {
@@ -53,7 +54,14 @@ export function HeroSwap() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [amount]);
+  }, [amount, attempt]);
+
+  // The private connection can need a moment to start: keep trying instead of leaving an error up.
+  useEffect(() => {
+    if (!failed) return;
+    const t = setTimeout(() => setAttempt((a) => a + 1), 6_000);
+    return () => clearTimeout(t);
+  }, [failed, attempt]);
 
   const valid = Number(amount) > 0;
   const shown = valid ? quote : null;
@@ -110,7 +118,7 @@ export function HeroSwap() {
             <TokenChip symbol={BUY.symbol} color="#2775ca" />
           </div>
           <div className="mt-1 text-[13px] font-medium text-[#6B6560] [font-variant-numeric:tabular-nums]">
-            {shown ? `$${fmtAmount(shown.ourOut, BUY.decimals, 2)}` : failed ? "Couldn't reach Sepolia" : "Quoting…"}
+            {shown ? `$${fmtAmount(shown.ourOut, BUY.decimals, 2)}` : failed ? "Couldn't reach Sepolia, retrying…" : "Quoting…"}
           </div>
         </div>
 

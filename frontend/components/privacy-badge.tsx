@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { anonNetwork, getAnon, readsAnonymized } from "@/lib/rpc";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { anonNetwork, getAnon, isDirectReads, readsAnonymized, subscribeDirectReads } from "@/lib/rpc";
 
 const LABEL = { nox: "Nox mixnet", "tor-js": "Tor", nym: "Nym mixnet", passthrough: "passthrough" } as const;
 
 /** Says where the app's reads go, so nobody has to take "private quotes" on trust. */
 export function PrivacyBadge() {
   const [state, setState] = useState<"starting" | "ready" | "failed">("starting");
+  const direct = useSyncExternalStore(subscribeDirectReads, isDirectReads, () => false);
 
   useEffect(() => {
     const anon = getAnon();
@@ -21,6 +22,14 @@ export function PrivacyBadge() {
       live = false;
     };
   }, []);
+
+  if (direct) {
+    return (
+      <span className="text-warn" title="You chose a direct connection after the private one failed. Reload the page to go private again.">
+        Reads: direct RPC (private connection off)
+      </span>
+    );
+  }
 
   if (!anonNetwork || !readsAnonymized) {
     return (
