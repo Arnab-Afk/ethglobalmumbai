@@ -50,21 +50,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string>();
 
-  // Silent reconnect if the site is already authorised, then follow wallet events.
+  // The page never touches the wallet on load: nothing is requested until the user clicks
+  // Connect. Only once connected do we follow account and network switches made in the wallet.
   useEffect(() => {
     const eth = window.ethereum;
-    if (!eth) return;
+    if (!eth || !address) return;
     const onAccounts = (accounts: string[]) => setAddress(accounts[0] ? getAddress(accounts[0]) : undefined);
     const onChain = (id: string) => setChainId(Number(id));
-    eth.request({ method: "eth_accounts" }).then((a) => onAccounts(a as string[]), () => {});
-    eth.request({ method: "eth_chainId" }).then((id) => onChain(id as string), () => {});
     eth.on?.("accountsChanged", onAccounts as (...args: never[]) => void);
     eth.on?.("chainChanged", onChain as (...args: never[]) => void);
     return () => {
       eth.removeListener?.("accountsChanged", onAccounts as (...args: never[]) => void);
       eth.removeListener?.("chainChanged", onChain as (...args: never[]) => void);
     };
-  }, []);
+  }, [address]);
 
   // Errors clear themselves after a few seconds.
   useEffect(() => {
