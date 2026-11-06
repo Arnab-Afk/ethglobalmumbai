@@ -3,81 +3,86 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {MockQuoteOracle} from "oracle/MockQuoteOracle.sol";
+import {VenueReader} from "oracle/VenueReader.sol";
 import {CompetitiveFeeExtruction} from "../src/CompetitiveFeeExtruction.sol";
 import {ProgramCodec} from "../src/ProgramCodec.sol";
-import {
-    AQUA, AQUA_SWAPVM_ROUTER, AquaOrder, AquaEncoding, IAqua, IAquaSwapVMRouter
-} from "../src/swapvm/Aqua.sol";
+import {AquaOrder, AquaEncoding} from "../src/swapvm/Aqua.sol";
+import {AquaForkConfig} from "./AquaForkConfig.sol";
 
-interface IWETH {
-    function deposit() external payable;
-}
+/// @notice Broadcast demo for an Anvil fork (run via scripts/aqua-fork.sh): price against live Uniswap
+///         (VenueReader), ship a CompetitiveFeeExtruction strategy to the live Aqua registry, then swap
+///         through the deployed AquaSwapVMRouter. Every step is a real tx. Config: see AquaForkConfig.
+/// @dev Env: MAKER_KEY, TAKER_KEY. `plan()` prints the balances the runner must fund first.
+contract AquaForkDemo is Script, AquaForkConfig {
+    /// @notice Prints `FUND <token> <holder> <amount>` lines for the runner. No transactions.
+    function plan() external view {
+        Cfg memory c = _loadCfg();
+        (uint256 reserveIn, uint256 reserveOut) = _inventory(c);
+        address maker = vm.addr(vm.envUint("MAKER_KEY"));
+        address taker = vm.addr(vm.envUint("TAKER_KEY"));
+        console2.log(string.concat("FUND ", vm.toString(c.tokenIn), " ", vm.toString(maker), " ", vm.toString(reserveIn)));
+        console2.log(string.concat("FUND ", vm.toString(c.tokenOut), " ", vm.toString(maker), " ", vm.toString(reserveOut)));
+        console2.log(string.concat("FUND ", vm.toString(c.tokenIn), " ", vm.toString(taker), " ", vm.toString(c.amountIn)));
+    }
 
-/// @notice Broadcast demo for an Anvil mainnet fork (run via scripts/aqua-fork.sh):
-///         deploy oracle + CompetitiveFeeExtruction, ship the strategy to the live Aqua registry,
-///         then swap 1 WETH -> USDC through the deployed AquaSwapVMRouter. Every step is a real tx.
-/// @dev Env: MAKER_KEY, TAKER_KEY (Anvil dev keys). The maker must already hold MAKER_USDC.
-contract AquaForkDemo is Script {
-    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
-    uint256 internal constant MAKER_WETH = 100 ether;
-    uint256 internal constant MAKER_USDC = 300_000e6;
-    uint256 internal constant AMOUNT_IN = 1 ether;
-    uint256 internal constant COMPETITOR_OUT_1 = 2_965e6;
+    struct Deployed {
+        VenueReader venue;
+        CompetitiveFeeExtruction extruction;
+        AquaOrder order;
+        bytes32 strategyHash;
+        uint256 reserveIn;
+        uint256 reserveOut;
+    }
 
     function run() external {
-        uint256 makerKey = vm.envUint("MAKER_KEY");
-        uint256 takerKey = vm.envUint("TAKER_KEY");
+        Cfg memory c = _loadCfg();
+        Deployed memory d = _makerSetup(c, vm.envUint("MAKER_KEY"));
+        _takerSwap(c, d, vm.envUint("TAKER_KEY"));
+    }
+
+    /// @dev Maker: live venue reader, fee contract, strategy shipped to Aqua.
+    function _makerSetup(Cfg memory c, uint256 makerKey) internal returns (Deployed memory d) {
         address maker = vm.addr(makerKey);
-        address taker = vm.addr(takerKey);
-        IAquaSwapVMRouter router = IAquaSwapVMRouter(AQUA_SWAPVM_ROUTER);
-
-        // ---- maker: price feed, fee contract, inventory, strategy ----
+        (d.reserveIn, d.reserveOut) = _inventory(c);
         vm.startBroadcast(makerKey);
-        MockQuoteOracle oracle = new MockQuoteOracle(maker);
-        uint256[] memory amounts = new uint256[](3);
-        uint256[] memory outs = new uint256[](3);
-        (amounts[0], amounts[1], amounts[2]) = (1 ether, 10 ether, 50 ether);
-        (outs[0], outs[1], outs[2]) = (COMPETITOR_OUT_1, 29_650e6, 145_000e6);
-        oracle.setCurve(WETH, USDC, amounts, outs, 0);
-
-        CompetitiveFeeExtruction extruction = new CompetitiveFeeExtruction(oracle, 500, 10_000, 3_000, 1, 300);
-        AquaOrder memory order =
-            AquaEncoding.order(maker, ProgramCodec.competitiveExtructionProgram(address(extruction)));
-
-        IWETH(WETH).deposit{value: MAKER_WETH}();
-        IERC20(WETH).approve(AQUA, type(uint256).max);
-        IERC20(USDC).approve(AQUA, type(uint256).max);
-
+        d.venue = _deployVenueReader(c, maker);
+        d.extruction =
+            new CompetitiveFeeExtruction(d.venue, c.feeFloor, c.feeCap, c.fallbackFee, c.undercutBps, c.maxQuoteAge);
+        d.order = AquaEncoding.order(maker, ProgramCodec.competitiveExtructionProgram(address(d.extruction)));
+        IERC20(c.tokenIn).approve(address(c.aqua), type(uint256).max);
+        IERC20(c.tokenOut).approve(address(c.aqua), type(uint256).max);
         address[] memory tokens = new address[](2);
         uint256[] memory amts = new uint256[](2);
-        (tokens[0], tokens[1]) = (WETH, USDC);
-        (amts[0], amts[1]) = (MAKER_WETH, MAKER_USDC);
-        bytes32 strategyHash = IAqua(AQUA).ship(AQUA_SWAPVM_ROUTER, AquaEncoding.strategy(order), tokens, amts);
+        (tokens[0], tokens[1]) = (c.tokenIn, c.tokenOut);
+        (amts[0], amts[1]) = (d.reserveIn, d.reserveOut);
+        d.strategyHash = c.aqua.ship(address(c.router), AquaEncoding.strategy(d.order), tokens, amts);
         vm.stopBroadcast();
+    }
 
-        // ---- taker: quote, then swap with minOut = quote ----
-        (, uint256 quoted,) = router.quote(order, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(0));
-        (uint24 feePips,,) = extruction.previewFeePips(WETH, USDC, AMOUNT_IN, MAKER_WETH, MAKER_USDC);
+    /// @dev Taker: quote against the live venue, then swap with minOut = quote.
+    function _takerSwap(Cfg memory c, Deployed memory d, uint256 takerKey) internal {
+        (uint256 bestOut,) = d.venue.getBestOut(c.tokenIn, c.tokenOut, c.amountIn);
+        (, uint256 quoted,) =
+            c.router.quote(d.order, c.tokenIn, c.tokenOut, c.amountIn, AquaEncoding.exactInTakerData(0));
+        (uint24 feePips,,) =
+            d.extruction.previewFeePips(c.tokenIn, c.tokenOut, c.amountIn, d.reserveIn, d.reserveOut);
 
         vm.startBroadcast(takerKey);
-        IWETH(WETH).deposit{value: AMOUNT_IN}();
-        IERC20(WETH).approve(AQUA_SWAPVM_ROUTER, AMOUNT_IN);
-        (, uint256 amountOut,) = router.swap(order, WETH, USDC, AMOUNT_IN, AquaEncoding.exactInTakerData(quoted));
+        IERC20(c.tokenIn).approve(address(c.router), c.amountIn);
+        (, uint256 amountOut,) =
+            c.router.swap(d.order, c.tokenIn, c.tokenOut, c.amountIn, AquaEncoding.exactInTakerData(quoted));
         vm.stopBroadcast();
 
-        require(amountOut == quoted && amountOut > COMPETITOR_OUT_1, "demo: did not beat the venue");
+        require(amountOut == quoted && amountOut > bestOut, "demo: did not beat the live venue");
 
-        console2.log("maker                   ", maker);
-        console2.log("taker                   ", taker);
-        console2.log("MockQuoteOracle         ", address(oracle));
-        console2.log("CompetitiveFeeExtruction", address(extruction));
+        console2.log("VenueReader (live Uniswap) ", address(d.venue));
+        console2.log("mid-price pool             ", _deepestV3Pool(c));
+        console2.log("CompetitiveFeeExtruction   ", address(d.extruction));
         console2.log("strategy hash");
-        console2.logBytes32(strategyHash);
-        console2.log("competitor out (USDC 6d)", COMPETITOR_OUT_1);
-        console2.log("neat out       (USDC 6d)", amountOut);
-        console2.log("fee (pips, 1e6 = 100%)  ", feePips);
+        console2.logBytes32(d.strategyHash);
+        console2.log("amount in (raw)            ", c.amountIn);
+        console2.log("live venue out (raw)       ", bestOut);
+        console2.log("neat out (raw)             ", amountOut);
+        console2.log("fee (pips, 1e6 = 100%)     ", feePips);
     }
 }
