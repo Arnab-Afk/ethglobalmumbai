@@ -8,7 +8,7 @@ import { WalletButton } from "./wallet/wallet-button";
 const LINKS = [
   { href: "/", label: "Quote", ready: true },
   { href: "/market", label: "Market", ready: true },
-  { href: "/dashboard", label: "Dashboard", ready: false },
+  { href: "/dashboard", label: "Dashboard", ready: true },
 ];
 
 export function Nav() {

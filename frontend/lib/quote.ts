@@ -89,7 +89,7 @@ export function getFeeConfig(): Promise<FeeConfig> {
  * in packages/fee-core (floor the fee amount, then x·y=k). This is not the fee formula:
  * the fee itself always comes from the contract's `previewFeePips`.
  */
-function outAfterFee(amountIn: bigint, reserveIn: bigint, reserveOut: bigint, feePips: bigint): bigint {
+export function outAfterFee(amountIn: bigint, reserveIn: bigint, reserveOut: bigint, feePips: bigint): bigint {
   if (amountIn === 0n) return 0n;
   const afterFee = amountIn - (amountIn * feePips) / PIP_SCALE;
   return (reserveOut * afterFee) / (reserveIn + afterFee);
