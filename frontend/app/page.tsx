@@ -72,7 +72,7 @@ export default function LandingPage() {
       {/* ───────── Hero: pitch on the left, live swap card on the right ───────── */}
       <section id="swap" className="relative scroll-mt-14 overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
         <HeroBars />
-        <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-24 pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16 lg:pt-28 lg:pb-24">
+        <div className="relative mx-auto grid w-full max-w-[1240px] grid-cols-1 items-center gap-14 px-5 pt-24 pb-16 sm:px-10 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:pt-28 lg:pb-24">
           <div>
             <h1 className="text-[58px] leading-[0.98] font-semibold tracking-[-0.055em] sm:text-[84px] xl:text-[100px]">
               Best price.
