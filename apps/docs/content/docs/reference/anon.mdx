@@ -1,0 +1,52 @@
+---
+title: neat3-sdk/anon
+description: createAnonFetch, an anonymized fetch backed by Anon-RPC. Browser only.
+---
+
+```ts
+import { createAnonFetch, ANON_NETWORKS } from "neat3-sdk/anon";
+```
+
+Requires the optional peer `@anon-rpc/browser-harness@0.4.0`.
+
+## createAnonFetch
+
+```ts
+createAnonFetch({ network?, config?, bootstrapRpc? }): AnonFetch
+```
+
+| Option | Default | Notes |
+|---|---|---|
+| `network` | `"tor-js"` | `"nox"`, `"nym"`, `"tor-js"` or `"passthrough"` |
+| `config` | Per network | Network-specific config. For `tor-js`, pass your own `gateways` |
+| `bootstrapRpc` | Per network | RPC used for the one, non-anonymized read of the specifier contract |
+
+Throws outside a browser (`document` is undefined).
+
+<Callout type="warn" title="Choose the network on purpose">
+The default is `"tor-js"`, but its upstream demo gateway was down on Nov 6 2026. `"nox"` was the one that answered reliably. See [private quotes](/docs/guides/private-quotes) for measured timings.
+</Callout>
+
+### AnonFetch
+
+| Field | Type | Meaning |
+|---|---|---|
+| `fetch` | `FetchFn` | Pass as `anonFetch` to `CompetitiveFeeClient` |
+| `ready` | `Promise<void>` | Resolves once the network has bootstrapped. Earlier calls are buffered, not dropped |
+| `anonymous` | `boolean` | `false` for `"passthrough"` |
+| `close()` | `() => void` | Stops the worker |
+
+Create one per network and reuse it. It is long-lived.
+
+## ANON_NETWORKS
+
+The network table, taken from the Anon-RPC `adopters.json5`. Each entry has the on-chain `specifier` address, the `bootstrapRpc` it reads from, and an `anonymous` flag.
+
+| Network | `anonymous` | Bootstrap read |
+|---|---|---|
+| `nox` | yes | Sepolia |
+| `nym` | yes | Mainnet |
+| `tor-js` | yes | Mainnet |
+| `passthrough` | **no** | Mainnet |
+
+Use `ANON_NETWORKS` to validate a user-supplied network name, or to check `anonymous` before telling a user their reads are private.

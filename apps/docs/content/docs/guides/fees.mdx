@@ -1,0 +1,48 @@
+---
+title: How fees are set
+description: The last-look rule, the units, and how to read the numbers a quote returns.
+---
+
+## The rule
+
+A flat-fee pool is wrong most of the time. Set too high, the trade goes to another venue. Set too low, the pool gives away money the trade would have paid anyway.
+
+neat sets the fee last. For each trade:
+
+1. Read the best output a trader could get **elsewhere** for the same pair, direction and size (`bestOut`).
+2. Compute the pool's own output at zero fee (`zeroFeeOut`).
+3. If the pool can win, charge the largest fee that keeps its output just above `bestOut`.
+4. If it can't win, charge the floor fee. The pool doesn't pretend.
+5. If there is no fresh competitor quote, charge a fallback fee.
+
+Rounding always favors the trader, so "you get at least the best venue" holds exactly.
+
+## Units: pips
+
+Fees are in **pips**. One pip is 1e-6, so `1_000_000` is 100% and `3000` is 0.30%. To show a percentage, divide by `1e4`:
+
+```ts
+const percent = q.feePips / 1e4; // 3000 → 0.3
+```
+
+## Reading a quote
+
+| Field | Meaning |
+|---|---|
+| `amountOut` | What you receive from the pool, after its fee |
+| `feePips` | The pool's fee for this trade |
+| `bestOut` | The best competing venue's output for this size. `0n` means no fresh competitor quote |
+| `zeroFeeOut` | The pool's output with no fee. `zeroFeeOut - amountOut` is what LPs keep |
+| `beatsBestVenue` | `bestOut > 0n && amountOut >= bestOut` |
+
+### A worked example
+
+Pool reserves 1,000 ETH and 3,000,000 USDC. You sell 10 ETH.
+
+- At zero fee the pool pays about 29,702.97 USDC.
+- The best competitor pays 29,610 USDC.
+- The pool charges about 3060 pips (0.306%) and pays about 29,613 USDC. You beat the competitor by about 3 USDC, and LPs keep the rest of the gap, roughly 90 USDC (29,702.97 minus 29,613).
+
+<Callout type="warn" title="bestOut of zero">
+When `bestOut` is `0n`, the pool didn't have a fresh competitor quote and used its fallback fee. `beatsBestVenue` is `false` in that case. This is the pool failing safe, not an error.
+</Callout>

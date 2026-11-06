@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/*
+ * The neat docs follow frontend/DESIGN.md: light and editorial. White and warm-grey surfaces,
+ * ink text, one lavender accent, 1px rules instead of boxes. Tokens below are DESIGN.md section 2.
+ * Light only: DESIGN.md defines no dark variant for the marketing surface.
+ */
+:root {
+  --ink: #151619;
+  --body: #6b6560;
+  --muted: #8a847e;
+  --rule: #e7e4df;
+  --warm: #f7f5f2;
+  --lavender: #ab9ff2;
+  --lavender-soft: #eeebfd;
+  --purple-ink: #5b46c7;
+  --win: #1f8a5b;
+}
+
+@theme {
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-fd-background: #ffffff;
+  --color-fd-foreground: var(--ink);
+  --color-fd-muted: var(--warm);
+  --color-fd-muted-foreground: var(--body);
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: var(--ink);
+  --color-fd-card: var(--warm);
+  --color-fd-card-foreground: var(--ink);
+  --color-fd-border: var(--rule);
+  --color-fd-primary: var(--purple-ink);
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: var(--warm);
+  --color-fd-secondary-foreground: var(--ink);
+  --color-fd-accent: var(--lavender-soft);
+  --color-fd-accent-foreground: var(--ink);
+  --color-fd-ring: var(--lavender);
+  --color-fd-info: var(--purple-ink);
+}
+
+/* Fumadocs centres the docs grid at 97rem and paints the sidebar across the empty left gutter, so on wide
+   screens the sidebar items float ~200px from the edge. A full-width grid puts the sidebar flush left. */
+:root {
+  --fd-layout-width: 100%;
+}
+
+html {
+  color-scheme: light;
+  scrollbar-gutter: stable;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+body {
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 450;
+}
+
+/* Page title: DESIGN.md section heading scale. */
+.docs-title {
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  max-width: 22ch;
+}
+@media (min-width: 640px) {
+  .docs-title {
+    font-size: 52px;
+  }
+}
+
+/* Mono eyebrow above the title. */
+.docs-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Prose: body 16/1.6 grey, headings ink at medium weight, numbers tabular. */
+.prose {
+  font-variant-numeric: tabular-nums;
+}
+.prose :where(p, li) {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--body);
+}
+.prose :where(h2, h3, h4) {
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.prose :where(h2) {
+  font-size: 28px;
+  line-height: 1.2;
+}
+.prose :where(h3) {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.prose :where(strong) {
+  color: var(--ink);
+  font-weight: 600;
+}
+.prose :where(a:not([data-card])) {
+  color: var(--purple-ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+  text-underline-offset: 4px;
+}
+.prose :where(a:not([data-card])):hover {
+  text-decoration-color: currentColor;
+}
+
+/* Tables: rules, mono heads, no zebra. */
+.prose :where(table) {
+  border-collapse: collapse;
+}
+.prose :where(th) {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+.prose :where(th, td) {
+  border-color: var(--rule);
+}
+
+/* Colour from the landing page: lavender selection, tinted inline code, lavender card hover, purple info. */
+::selection {
+  background: var(--lavender);
+  color: #1c1c1c;
+}
+.prose :where(:not(pre) > code) {
+  border: 1px solid #d9d3fa;
+  background: var(--lavender-soft);
+  border-color: #d9d3fa;
+  color: #3e2fa0; /* deep purple, DESIGN.md section 2 */
+}
+.prose a[data-card]:hover {
+  background: var(--lavender-soft);
+  border-color: var(--lavender);
+}

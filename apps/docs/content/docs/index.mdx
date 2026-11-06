@@ -1,0 +1,50 @@
+---
+title: Introduction
+description: neat3-sdk quotes and swaps against neat, a pool that sets its fee last, on every trade.
+---
+
+neat is an AMM that picks its swap fee **per trade**. Before each swap it checks what the best competing venue would pay for that exact trade, then charges the largest fee that still leaves the trader slightly ahead. Traders get at least the best price elsewhere. Liquidity providers keep the surplus a flat fee would have given away.
+
+`neat3-sdk` is the TypeScript client for that pool. You don't need to read Solidity to use it.
+
+```
+quote()       →  { amountOut, feePips, bestOut, beatsBestVenue }
+encodeSwap()  →  [approve, swap(minOut = quoted, deadline = now + 10 min)]
+submit()      →  one atomic EIP-8141 frame transaction
+```
+
+## What you get
+
+<Cards>
+  <Card title="Quote" href="/docs/quickstart">
+    Read the pool's output and fee for an exact trade, plus the best competing venue's output.
+  </Card>
+  <Card title="Private reads" href="/docs/guides/private-quotes">
+    Route quotes through Anon-RPC so the RPC never learns who asked, for which pair, or how much.
+  </Card>
+  <Card title="Safe swaps" href="/docs/guides/swapping">
+    Every swap carries a minimum output and a deadline, and approve plus swap are one atomic batch.
+  </Card>
+</Cards>
+
+## Install
+
+```sh
+npm install neat3-sdk viem
+```
+
+Two peer dependencies are optional, one per feature:
+
+| Package | Needed for |
+|---|---|
+| `@anon-rpc/browser-harness@0.4.0` | Private quotes (browser only) |
+| `@forshtat/hegota-support@0.0.1` | Submitting EIP-8141 frame transactions |
+
+Requires Node 20.12 or newer.
+
+## Where it works today
+
+- The SDK targets the `DevnetCompetitivePool` contract. It is deployed on the self-hosted EIP-8141 devnet (chain 1337) and, as a demo pool, on Sepolia. See [Networks](/docs/reference/networks).
+- Swaps are exact-input only.
+- The Aqua / SwapVM pool prices through the SwapVM router and isn't wrapped by this SDK yet.
+- This is hackathon software. The devnet and demo tokens have no value, and gas limits for frame transactions are estimates until more live runs land.

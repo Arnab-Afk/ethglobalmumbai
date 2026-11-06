@@ -1,0 +1,44 @@
+---
+title: Networks and addresses
+description: Where the pool is deployed, and the endpoints the SDK uses. A snapshot from Nov 6 2026.
+---
+
+These are demo deployments. Addresses and endpoints can change, so confirm against the repo before relying on them.
+
+## EIP-8141 devnet
+
+The self-hosted devnet is the SDK's default target.
+
+| | |
+|---|---|
+| Chain ID | `1337` |
+| RPC | `https://eip8141-rpc.arnabbhowmik.in/rpc` |
+| Explorer | `https://eip8141.arnabbhowmik.in/` |
+| Frame transactions | `eth_sendFrameTransaction` |
+| Normal transactions | `eth_sendRawTransaction`, same URL |
+| Pool (`DevnetCompetitivePool`) | `0x9960927e3ecce8d5124db1bfad68121cdec20aa0` |
+| dWETH | `0xf1877c0dc40bf2f1e46017c05908635e7cb68af2` |
+
+`DEVNET` in `neat3-sdk` holds the chain ID, RPC and explorer URLs. The current pool and token addresses live in `packages/private-quoting/web/public/deployment.json`.
+
+<Callout type="warn" title="The devnet faucet can run dry">
+Funding comes from the devnet faucet (`skandha_explorer_faucet`, or the Faucet button in the explorer). It was empty on Nov 6. Don't use the devnet's shared genesis key.
+</Callout>
+
+## Sepolia demo pool
+
+Sepolia has the same `DevnetCompetitivePool` contract, seeded with mintable demo tokens. The calls the SDK encodes match this contract, but the SDK hasn't been exercised against it yet. The neat app talks to it directly.
+
+| | |
+|---|---|
+| Chain ID | `11155111` |
+| Pool | `0xE1Fde020143A73d0B0a9E8ba91E3ecD01dCb14EF` |
+| Demo WETH | `0xDb30012EBB4190C6aB2657283766531DA76a5475` |
+| Demo USDC | `0xFD0b2B0B9d44308F396f6aeb6E3eD36893a67b42` |
+| Oracle | `0xEfe745de339040E6182dcCb745f3A7ED7150C5DD` |
+
+The pool's competitor curve goes stale after one hour. After that the fee falls back to 0.30% and `bestOut` reads as `0n`.
+
+For private reads of Sepolia from a browser, use `nox` or `nym` with a public Sepolia RPC that sends CORS headers, such as `https://ethereum-sepolia-rpc.publicnode.com`.
+
+Full address lists: `deployments/sepolia.json` in the repo.
