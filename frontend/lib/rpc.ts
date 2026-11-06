@@ -1,5 +1,5 @@
 import { fallback, http } from "viem";
-import { ANON_NETWORKS, createAnonFetch, type AnonFetch, type AnonNetwork } from "@hairline/sdk/anon";
+import { ANON_NETWORKS, createAnonFetch, type AnonFetch, type AnonNetwork } from "neat3-sdk/anon";
 
 /**
  * Every app read (quotes, balances, market history) goes through this one fetch, and by default that is

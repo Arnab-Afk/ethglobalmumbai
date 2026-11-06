@@ -14,13 +14,13 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // The SDK is a file: dependency whose build lives outside frontend/. Turbopack's root is the
   // repo, so the package name does not resolve from frontend/node_modules.
-  transpilePackages: ["@hairline/sdk"],
+  transpilePackages: ["neat3-sdk"],
   turbopack: {
     root: repoRoot,
     resolveAlias: {
-      "@hairline/sdk/anon": path.join(sdkDist, "anon.js"),
-      "@hairline/sdk/frame": path.join(sdkDist, "frame.js"),
-      "@hairline/sdk": path.join(sdkDist, "index.js"),
+      "neat3-sdk/anon": path.join(sdkDist, "anon.js"),
+      "neat3-sdk/frame": path.join(sdkDist, "frame.js"),
+      "neat3-sdk": path.join(sdkDist, "index.js"),
     },
     rules: {
       "*.css": {
