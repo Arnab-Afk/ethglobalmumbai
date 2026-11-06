@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { WalletButton } from "./wallet/wallet-button";
 
 const LINKS = [
-  { href: "/", label: "Quote", ready: true },
+  { href: "/swap", label: "Quote", ready: true },
   { href: "/market", label: "Market", ready: true },
   { href: "/dashboard", label: "Dashboard", ready: true },
   { href: "/about", label: "About", ready: true },
@@ -16,12 +16,7 @@ export function Nav() {
 
   return (
     <header className="grid h-14 grid-cols-[1fr_auto_1fr] items-center px-5">
-      <Link href="/" className="flex items-center gap-2 justify-self-start" aria-label="Hairline home">
-        <Mark />
-        <span className="text-[19px] font-semibold tracking-[-0.03em]">
-          Hair<span className="font-normal text-fg-2">line</span>
-        </span>
-      </Link>
+      <span />
 
       <nav className="flex h-9 items-center panel rounded-full p-1 text-sm">
         {LINKS.map((l) =>
@@ -48,12 +43,3 @@ export function Nav() {
   );
 }
 
-/** Two offset bars: the competitor's price, and ours just above it. */
-function Mark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-      <rect x="2" y="10" width="8" height="10" rx="2" fill="var(--fg-2)" fillOpacity=".55" />
-      <rect x="12" y="2" width="8" height="18" rx="2" fill="var(--accent)" />
-    </svg>
-  );
-}
