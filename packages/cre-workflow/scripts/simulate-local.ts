@@ -46,7 +46,16 @@ async function main() {
   const observedAt = BigInt(Math.floor(Date.now() / 1000));
   const updates = [];
   for (const pair of config.pairs) {
-    const { update, buckets, feed, stopReason } = await quotePairDetailed(pair, observedAt, client);
+    let result: Awaited<ReturnType<typeof quotePairDetailed>>;
+    try {
+      result = await quotePairDetailed(pair, observedAt, client);
+    } catch (err) {
+      // Same rule as the CRE handler: one failing pair is skipped, the rest still publish.
+      console.log(`\n--- curve ---\npair ${pair.tokenIn} → ${pair.tokenOut}`);
+      console.log(`  ERROR skipped: ${err instanceof Error ? err.message : String(err)}`);
+      continue;
+    }
+    const { update, buckets, feed, stopReason } = result;
     console.log("\n--- curve ---");
     console.log("pair", pair.tokenIn, "→", pair.tokenOut);
     console.log("observedAt", observedAt.toString());

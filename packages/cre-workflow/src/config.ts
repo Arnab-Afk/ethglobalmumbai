@@ -23,6 +23,7 @@ const venueSchema = z.object({
 
 const sanitySchema = z.object({
   feed: address,
+  invert: z.boolean().optional(),
   maxAboveBps: z.number().int().min(0).max(10_000),
   maxBelowBps: z.number().int().min(0).max(10_000),
   maxFeedAgeSec: z.number().int().positive(),

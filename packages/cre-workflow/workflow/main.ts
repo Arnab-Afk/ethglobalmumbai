@@ -6,8 +6,9 @@
  *
  * Aggregation is ours (docs/06). Fynd is inspiration only — no Fynd imports/code.
  *
- * Per pair, on each cron tick:
- *   1. If the pair has a `sanity` block, read its Chainlink feed with the EVM capability.
+ * Per pair, on each cron tick (a pair that throws is skipped; the others still publish):
+ *   1. If the pair has a `sanity` block, read its Chainlink feed with the EVM capability
+ *      (once per run per feed: WETH→USDC and USDC→WETH share ETH/USD).
  *   2. Quote the mock venues (`mock-xyk`, and `mock-anchored`, which is priced from the feed).
  *   3. finalizePair: drop quotes far above the Chainlink fair price, cut untrusted buckets
  *      (same code as the Node simulator).
@@ -70,11 +71,15 @@ function readFeedCre(runtime: Runtime<WorkflowConfig>, evm: EVMClient, feed: Add
   return { answer: round[1], decimals, updatedAt: round[3] };
 }
 
+/** Feed readings for this run, keyed by feed address: pairs sharing a feed read it once. */
+type FeedCache = Map<string, FeedReading>;
+
 function quotePair(
   runtime: Runtime<WorkflowConfig>,
   evm: EVMClient,
   pair: PairConfig,
   observedAt: bigint,
+  feeds: FeedCache,
 ): CurveUpdate | null {
   runtime.log(`cre-workflow: pair ${pair.tokenIn} → ${pair.tokenOut}`);
 
@@ -91,7 +96,9 @@ function quotePair(
 
   let feed: FeedReading | undefined;
   if (pair.sanity) {
-    feed = readFeedCre(runtime, evm, pair.sanity.feed);
+    const key = pair.sanity.feed.toLowerCase();
+    feed = feeds.get(key) ?? readFeedCre(runtime, evm, pair.sanity.feed);
+    feeds.set(key, feed);
     runtime.log(`cre-workflow:   ${formatFeedLine(pair.sanity.feed, feed, observedAt)}`);
   }
 
@@ -130,9 +137,18 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
 
   // runtime.now() is the DON's agreed time; Date.now() can differ between nodes.
   const observedAt = BigInt(Math.floor(runtime.now().getTime() / 1000));
-  const updates = config.pairs
-    .map((pair) => quotePair(runtime, evm, pair, observedAt))
-    .filter((u): u is CurveUpdate => u !== null);
+  const feeds: FeedCache = new Map();
+  const updates: CurveUpdate[] = [];
+  for (const pair of config.pairs) {
+    // One pair failing (an RPC read error, a bad config) skips that pair only.
+    try {
+      const update = quotePair(runtime, evm, pair, observedAt, feeds);
+      if (update) updates.push(update);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      runtime.log(`cre-workflow:   ERROR pair ${pair.tokenIn} → ${pair.tokenOut} skipped: ${msg}`);
+    }
+  }
 
   if (updates.length === 0) {
     // Leave QuoteOracle untouched; on-chain staleness then sends swaps to the fallback fee.
@@ -148,8 +164,9 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
     .writeReport(runtime, {
       receiver: config.quoteOracle,
       report,
-      // QuoteOracle.onReport needs ~1.15M gas for a first 3-point curve (fresh storage slots).
-      gasConfig: { gasLimit: config.gasLimit ?? "1500000" },
+      // QuoteOracle.onReport: ~1.15M gas for a pair's first 3-point curve (fresh storage
+      // slots), ~0.22M to overwrite one. Two pairs, one of them new, need ~1.4M.
+      gasConfig: { gasLimit: config.gasLimit ?? "3000000" },
     })
     .result();
 
