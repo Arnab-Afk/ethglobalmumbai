@@ -12,8 +12,8 @@ Status snapshot. Update when something lands.
 | C4 | Saish | Real Uniswap v3/v4 venues in the CRE handler, on a mainnet fork | `cre-workflow` | Spike done (CRE reads mainnet and fork quoters); build pending |
 | C5 | Saish | Live DON deploy (optional): needs a `QuoteOracle` trusting the production forwarder + workflow-ID check | `cre-workflow` + `oracle` | Blocked on C3 / Arnab |
 | E1–E4 | Soham | Anon-RPC web + frame CLI + DevnetCompetitivePool | `private-quoting` | **Mostly done** (live faucet blocked) |
-| **S1** | **Soham** | **Anon-RPC transport for `@hairline/sdk` (`private` quote mode)** | **`packages/sdk`** | **Done** (`@hairline/sdk/anon`; browser-only, fails closed) |
-| **S2** | **Soham** | **Wire `CompetitiveFeeClient.setFrameSubmitter` → EIP-8141 frame tx** | **`packages/sdk` + `private-quoting`** | **Done** (`@hairline/sdk/frame`; unit-tested, live run blocked on empty faucet) |
+| **S1** | **Soham** | **Anon-RPC transport for `neat3-sdk` (`private` quote mode)** | **`packages/sdk`** | **Done** (`neat3-sdk/anon`; browser-only, fails closed) |
+| **S2** | **Soham** | **Wire `CompetitiveFeeClient.setFrameSubmitter` → EIP-8141 frame tx** | **`packages/sdk` + `private-quoting`** | **Done** (`neat3-sdk/frame`; unit-tested, live run blocked on empty faucet) |
 | **S3** | **Soham** | **Integrator README / 5-minute quote example for judges** | **`packages/sdk`** | **Done** (`packages/sdk/README.md`) |
 | **S4** | **Soham** | **Demo app imports SDK: reads via Anon-RPC by default** | **`packages/sdk` → `frontend/`** | **Done** (`frontend/lib/rpc.ts`, Nox default; footer badge) |
 | D1–D5 | Ishika | Mock pools, dashboard, deploy-all, video, submissions | `apps/demo` | Pending |
@@ -22,11 +22,11 @@ Status snapshot. Update when something lands.
 
 **Goal:** other teams / judges / integrators call our pool like Fynd’s client API, without copying Fynd — quote competitive fee + (optionally) private read + frame submit.
 
-`packages/sdk`: `CompetitiveFeeClient` (core, Node + browser), `@hairline/sdk/anon` (S1), `@hairline/sdk/frame` (S2), README (S3). The scaffold was never pushed, so Soham built it from scratch.
+`packages/sdk`: `CompetitiveFeeClient` (core, Node + browser), `neat3-sdk/anon` (S1), `neat3-sdk/frame` (S2), README (S3). The scaffold was never pushed, so Soham built it from scratch.
 
 ```ts
-import { CompetitiveFeeClient } from "@hairline/sdk";
+import { CompetitiveFeeClient } from "neat3-sdk";
 const q = await client.quote({ tokenIn, amountIn });
 ```
 
-S1–S3 are in this package. S4: the Hairline app (`frontend/`) reads Sepolia through `@hairline/sdk/anon`. It targets `frontend/`, not `apps/demo`, because `frontend/` is the app we demo; it quotes Sepolia `previewFeePips`, so it uses the SDK transport rather than `CompetitiveFeeClient` (which wraps the devnet pool).
+S1–S3 are in this package. S4: the Hairline app (`frontend/`) reads Sepolia through `neat3-sdk/anon`. It targets `frontend/`, not `apps/demo`, because `frontend/` is the app we demo; it quotes Sepolia `previewFeePips`, so it uses the SDK transport rather than `CompetitiveFeeClient` (which wraps the devnet pool).

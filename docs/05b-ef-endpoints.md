@@ -9,7 +9,7 @@
 - GitHub: https://github.com/ethereum/anon-rpc
 - npm: `@anon-rpc/browser-harness`, `@anon-rpc/browser-extension-harness`
 
-Network check from Chrome, Nov 6, reading Sepolia through `@hairline/sdk/anon`:
+Network check from Chrome, Nov 6, reading Sepolia through `neat3-sdk/anon`:
 
 | Network | Result | Notes |
 |---|---|---|

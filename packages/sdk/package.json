@@ -1,5 +1,5 @@
 {
-  "name": "@hairline/sdk",
+  "name": "neat3-sdk",
   "version": "0.1.0",
   "description": "Client for the last-look competitive-fee AMM: quote (optionally via Anon-RPC), encode and submit swaps as EIP-8141 frame transactions.",
   "type": "module",

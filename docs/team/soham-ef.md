@@ -48,10 +48,10 @@ FRAME_EXPLORER=https://eip8141.arnabbhowmik.in/
 
 ## Your new assignment — client SDK (`packages/sdk`)
 
-Arnab scaffolded `@hairline/sdk` so others can integrate without reading Solidity:
+Arnab scaffolded `neat3-sdk` so others can integrate without reading Solidity:
 
 ```ts
-import { CompetitiveFeeClient } from "@hairline/sdk";
+import { CompetitiveFeeClient } from "neat3-sdk";
 const q = await client.quote({ tokenIn, amountIn });
 ```
 

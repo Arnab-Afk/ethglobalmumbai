@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@anon-rpc/browser-harness": "0.4.0",
-    "@hairline/sdk": "file:../packages/sdk",
+    "neat3-sdk": "file:../packages/sdk",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",

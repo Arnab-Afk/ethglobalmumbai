@@ -45,7 +45,7 @@ This is a stretch for a pure AMM demo. Keep the AMM core unchanged and add priva
 
 ## Package
 
-- `packages/sdk`: `@hairline/sdk`. `CompetitiveFeeClient` (quote and swap encoding), `anon.ts` (Anon-RPC fetch), `frame.ts` (frame submitter).
+- `packages/sdk`: `neat3-sdk`. `CompetitiveFeeClient` (quote and swap encoding), `anon.ts` (Anon-RPC fetch), `frame.ts` (frame submitter).
 - `packages/private-quoting`: devnet pool contracts, CLIs (`deploy`, `swap`, `curve`, `deploy-sepolia`), `web/` (devnet quote page), `scripts/` (`quote-sdk.ts`, `preflight-sepolia-swap.ts`).
 - `frontend/`: the Sepolia swap app; reads go through `lib/rpc.ts`.
 

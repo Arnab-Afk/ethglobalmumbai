@@ -7,7 +7,7 @@ npm install
 npm run dev        # builds ../packages/sdk first, then serves http://localhost:3000
 ```
 
-**Private reads.** Sepolia reads (quotes, fee config, balances, the swap dry-run, receipts, market history) go through Anon-RPC via `@hairline/sdk/anon` (`lib/rpc.ts`), and the footer shows which network is active. Reads fail closed: they never fall back to a plain fetch on their own.
+**Private reads.** Sepolia reads (quotes, fee config, balances, the swap dry-run, receipts, market history) go through Anon-RPC via `neat3-sdk/anon` (`lib/rpc.ts`), and the footer shows which network is active. Reads fail closed: they never fall back to a plain fetch on their own.
 
 - **Network failover.** `NEXT_PUBLIC_ANON_RPC` is an ordered, comma-separated list, default `nox,nym,tor-js`. A network that errors or times out is skipped for 45 s and the next one is tried; "Try again" resets that. Measured from Chrome on Sepolia reads (Nov 6): nox about 5 s, nym about 45 s on a cold start, tor-js times out because its demo gateway is down, so it is last.
 - **RPC failover.** Behind the mixnet, `SEPOLIA_RPCS` lists four public endpoints (publicnode, Tenderly, nodies, ethpandaops), tried in order. Each answered a batched `eth_call` with browser CORS headers. They are ordinary RPC providers, not Anon-RPC services: the mixnet hides who is asking.
