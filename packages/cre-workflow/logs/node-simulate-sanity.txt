@@ -1,0 +1,12 @@
+# npm run simulate:local   (Node + viem, live Sepolia reads, config.demo.json, dry run)
+--- curve ---
+pair 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14 → 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+observedAt 1793950197
+Chainlink feed 0x694A…5306 price=2219.7104 age=21m
+  in 0.1 → mock-sushi-like=221.261 mock-univ3-like=221.8489 univ3-sepolia=2606.6671(REJECTED +1074.32% vs fair) | best mock-univ3-like 221.8489
+  in 1 → mock-sushi-like=2208.6472 mock-univ3-like=2217.4924 univ3-sepolia=25738.7989(REJECTED +1059.55% vs fair) | best mock-univ3-like 2217.4924
+  in 10 → mock-sushi-like=21697.8581 mock-univ3-like=22075.6829 univ3-sepolia=230876.2816(REJECTED +940.11% vs fair) | best mock-univ3-like 22075.6829
+  in 50 → mock-sushi-like=100620.6848 mock-univ3-like=108225.7402 univ3-sepolia=744012.3504(REJECTED +570.36% vs fair) | best mock-univ3-like 108225.7402
+  → publishing 4 of 4 buckets, venueIds 0x4bd11e811f675be95e42607eb7638adc18b8486dfe53e2ba03b17be1ff3cb06d
+
+report bytes: 608

@@ -3,7 +3,9 @@
 Off-chain **price aggregator** that builds a size-aware competing-venue curve and writes it to `QuoteOracle`.
 
 ```
-venues (mock / Uni v2 / Uni v3) → max per size bucket → abi.encode(CurveUpdate[]) → QuoteOracle
+Chainlink ETH/USD ─┐
+venues (mock / Uni v2 / Uni v3) → drop quotes far above Chainlink fair → max per size bucket
+                   → cut untrusted buckets → abi.encode(CurveUpdate[]) → QuoteOracle
 ```
 
 Inspired by the *idea* behind PropellerHeads Fynd (quote against live market liquidity). **No Fynd code is used** — this package is written fresh against our frozen report ABI (`docs/03`, `docs/06`).
@@ -13,9 +15,13 @@ Inspired by the *idea* behind PropellerHeads Fynd (quote against live market liq
 | Path | Role |
 |---|---|
 | `src/` | Pure curve builder + venue quoters + report encoding |
+| `src/sanity.ts`, `src/finalizePair.ts` | Chainlink fair-price check; one function shared by the Node and CRE paths |
+| `src/venues/` | `mock-xyk` (fixed reserves), `mock-anchored` (priced from the Chainlink feed), `univ2`, `univ3` |
 | `scripts/simulate-local.ts` | Node path: quote venues via RPC/mocks, print report, optional `applyReport` |
 | `workflow/` | CRE TS entry (`@chainlink/cre-sdk`) for `cre workflow simulate` |
-| `config.demo.json` | Sepolia demo pair + mock venues (excludes our own pool via `exclude: true`) |
+| `config.demo.json` | Node demo: Sepolia pair, anchored mocks, real Sepolia Uniswap v3, our own pool excluded |
+| `workflow/config.json` | CRE config: same pair and sanity check, mock venues only |
+| `logs/` | Trimmed output of both simulators (evidence for the submission) |
 
 ## Run (no CRE CLI required)
 
@@ -42,7 +48,39 @@ cre workflow simulate ./workflow -T sepolia-settings --broadcast    # real Sepol
 
 `--broadcast` needs `CRE_ETH_PRIVATE_KEY` (a funded Sepolia key, 64 hex chars, no `0x`) in `./.env`, which is gitignored.
 
-The WASM handler currently aggregates **mock-xyk** venues only (deterministic across DON nodes). Live Uni reads are in the Node simulator until EVM-read wiring lands in the CRE handler.
+The CRE handler reads the Chainlink feed through the EVM capability and quotes the mock venues (`mock-xyk`, `mock-anchored`). Uniswap v2/v3 venues are only read by the Node simulator for now; the handler logs them as "not read in CRE yet". Sample output: [`logs/cre-simulate-sanity.txt`](logs/cre-simulate-sanity.txt).
+
+## Chainlink sanity check
+
+The curve takes the **highest** quote per size, so one venue with a wrong high price wins every bucket and pins our fee at the floor. Sepolia shows this for real: its Uniswap v3 WETH/USDC pool quotes ~25,800 USDC per ETH while Chainlink ETH/USD reads ~2,219.
+
+With a `sanity` block on a pair, both paths:
+
+1. read the Chainlink feed (`latestRoundData`); if it is older than `maxFeedAgeSec`, publish nothing for the pair,
+2. compute fair output per size (`amountIn × price`, adjusted for decimals),
+3. reject any quote more than `maxAboveBps` above fair (shown as `REJECTED +x% vs fair`),
+4. stop the curve at the first size whose best accepted quote is missing, more than `maxBelowBps` below fair, or lower than the previous size (`QuoteOracle` returns 0 above the last point, so those sizes use the pool's fallback fee),
+5. skip `writeReport` entirely when no pair is trustworthy.
+
+```json
+"sanity": {
+  "feed": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+  "maxAboveBps": 200,
+  "maxBelowBps": 2000,
+  "maxFeedAgeSec": 4200
+}
+```
+
+`sanity` needs `decimalsIn` and `decimalsOut` on the pair. Low quotes are not filtered per venue: the max rule already ignores them while one honest venue exists.
+
+### Anchored mock venues
+
+`mock-anchored` venues are demo competitors rebuilt on every run from the same feed: an x·y=k pool with `reserveIn` of tokenIn against its fair value in tokenOut, quoted with `feeBps`. They follow the real ETH price and always pass the check, so the demo shows realistic numbers while the bad Uniswap quote is rejected ([`logs/node-simulate-sanity.txt`](logs/node-simulate-sanity.txt)):
+
+```
+Chainlink feed 0x694A…5306 price=2219.7104 age=21m
+  in 1 → mock-sushi-like=2208.6472 mock-univ3-like=2217.4924 univ3-sepolia=25738.7989(REJECTED +1059.55% vs fair) | best mock-univ3-like 2217.4924
+```
 
 ## Self-undercut guard
 
