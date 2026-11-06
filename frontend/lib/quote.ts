@@ -1,6 +1,7 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
 import { SEPOLIA } from "./deployments";
+import { bestMainnetOut, isMainnetPair, mainnetDecimals } from "./mainnet";
 import type { PoolSide } from "./pools";
 import { rpcFetch, rpcTimeoutMs } from "./rpc";
 import type { Token } from "./tokens";
@@ -22,6 +23,46 @@ const extructionAbi = parseAbi([
 ]);
 
 const erc20Abi = parseAbi(["function balanceOf(address owner) view returns (uint256)"]);
+
+const givenQuoteAbi = parseAbi([
+  "function preview(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, uint256 bestOut, uint64 updatedAt) view returns (uint24 feePips, uint256 ourOut)",
+]);
+
+/**
+ * Inventory pinned once per pair from the first mainnet price, 0.40% richer than
+ * that quote, so the fee sits inside the band and moves when mainnet moves.
+ * Repinning every block would freeze the fee.
+ */
+const pinnedBooks = new Map<string, Promise<Record<string, bigint>>>();
+
+/** Deep enough that a normal trade is a small fraction of the book, so the pin stays near 0.40%. */
+function bookDepth(symbol: string): bigint {
+  return symbol === "USDC" || symbol === "USDT" || symbol === "DAI" || symbol === "EURC" ? 1_000_000n : 1_000n;
+}
+
+async function inventory(symbolIn: string, symbolOut: string): Promise<PoolSide> {
+  // One book per direction. A constant-product pin that beats selling WETH cannot also
+  // beat selling USDC, so the reverse side gets its own 0.40% cushion.
+  const key = `${symbolIn}/${symbolOut}`;
+  let pending = pinnedBooks.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const one = 10n ** BigInt(mainnetDecimals(symbolIn));
+      const best = await bestMainnetOut(symbolIn, symbolOut, one);
+      if (best === 0n) throw new Error(`mainnet ${symbolIn}/${symbolOut} quote returned 0`);
+      const q0 = (best * 10_040n) / 10_000n;
+      const reserveIn = bookDepth(symbolIn) * one;
+      const reserveOut = (q0 * (reserveIn + one)) / one;
+      return { [symbolIn]: reserveIn, [symbolOut]: reserveOut };
+    })().catch((e) => {
+      pinnedBooks.delete(key);
+      throw e;
+    });
+    pinnedBooks.set(key, pending);
+  }
+  const book = await pending;
+  return { reserveIn: book[symbolIn], reserveOut: book[symbolOut] };
+}
 
 /** ERC-20 balance on Sepolia (batched with any other reads in the same tick). */
 export function getTokenBalance(token: Token, owner: `0x${string}`): Promise<bigint> {
@@ -59,6 +100,10 @@ export interface LiveQuote {
   status: QuoteStatus;
   /** Wall-clock ms the reads took. */
   latencyMs: number;
+  /** Where bestOut was read from. */
+  venue: string;
+  /** Inventory this quote was priced against, when the screen pins it. */
+  reserves?: PoolSide;
 }
 
 let configPromise: Promise<FeeConfig> | undefined;
@@ -66,7 +111,7 @@ let configPromise: Promise<FeeConfig> | undefined;
 /** Fee bounds are immutables on the contract, so read them once. */
 export function getFeeConfig(): Promise<FeeConfig> {
   configPromise ??= (async () => {
-    const address = SEPOLIA.contracts.CompetitiveFeeExtruction;
+    const address = SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader;
     const [feeFloor, feeCap, fallbackFee, undercutBps, maxQuoteAge] = await Promise.all(
       (["feeFloor", "feeCap", "fallbackFee", "undercutBps", "maxQuoteAge"] as const).map((functionName) =>
         client.readContract({ address, abi: extructionAbi, functionName }),
@@ -97,15 +142,52 @@ export function outAfterFee(amountIn: bigint, reserveIn: bigint, reserveOut: big
   return (reserveOut * afterFee) / (reserveIn + afterFee);
 }
 
-/** Quote one exact-in trade: fee + competitor output from Sepolia, our output from the pool curve. */
+/** Quote one exact-in trade. Liquid pairs use live mainnet v3; the rest use Sepolia VenueReader. */
 export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bigint, pool: PoolSide): Promise<LiveQuote> {
+  if (isMainnetPair(tokenIn.symbol, tokenOut.symbol)) return quoteMainnet(tokenIn, tokenOut, amountIn);
+  return quoteSepolia(tokenIn, tokenOut, amountIn, pool);
+}
+
+async function quoteMainnet(tokenIn: Token, tokenOut: Token, amountIn: bigint): Promise<LiveQuote> {
+  const t0 = performance.now();
+  const [bestOut, book, block] = await Promise.all([
+    bestMainnetOut(tokenIn.symbol, tokenOut.symbol, amountIn),
+    inventory(tokenIn.symbol, tokenOut.symbol),
+    client.getBlock({ blockTag: "latest" }),
+  ]);
+  const { reserveIn, reserveOut } = book;
+  const updatedAt = block.timestamp;
+  const [feePips, ourOut] = await client.readContract({
+    address: SEPOLIA.contracts.GivenQuotePreview,
+    abi: givenQuoteAbi,
+    functionName: "preview",
+    args: [amountIn, reserveIn, reserveOut, bestOut, updatedAt],
+  });
+  const blockTime = Number(updatedAt);
+  const status: QuoteStatus = bestOut === 0n ? "none" : "live";
+  return {
+    amountIn,
+    ourOut,
+    zeroFeeOut: outAfterFee(amountIn, reserveIn, reserveOut, 0n),
+    bestOut,
+    feePips: Number(feePips),
+    updatedAt: blockTime,
+    blockTime,
+    status,
+    latencyMs: performance.now() - t0,
+    venue: "Uniswap v3 mainnet",
+    reserves: book,
+  };
+}
+
+async function quoteSepolia(tokenIn: Token, tokenOut: Token, amountIn: bigint, pool: PoolSide): Promise<LiveQuote> {
   const t0 = performance.now();
   const { reserveIn, reserveOut } = pool;
 
   const [cfg, preview, block] = await Promise.all([
     getFeeConfig(),
     client.readContract({
-      address: SEPOLIA.contracts.CompetitiveFeeExtruction,
+      address: SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader,
       abi: extructionAbi,
       functionName: "previewFeePips",
       args: [tokenIn.address, tokenOut.address, amountIn, reserveIn, reserveOut],
@@ -129,6 +211,7 @@ export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bi
     blockTime,
     status,
     latencyMs: performance.now() - t0,
+    venue: "Uniswap v3",
   };
 }
 

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { fmtAge, fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
+import { isMainnetPair, mainnetClient } from "@/lib/mainnet";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
 import { PriceCard } from "./price-card";
@@ -15,9 +16,9 @@ import { TokenPicker } from "./token-picker";
 import { TokenButton } from "./token-pill";
 import { useBalances } from "../wallet/use-balances";
 
-const REFRESH_MS = 12_000; // one Sepolia block
+const REFRESH_MS = 12_000; // ring length; the quote itself re-runs on each new block
 const DEBOUNCE_MS = 350;
-const DEFAULT_AMOUNT = ""; // start empty, like any swap form
+const DEFAULT_AMOUNT = "0.1";
 
 type State =
   | { kind: "idle" }
@@ -96,16 +97,30 @@ export function QuoteCard() {
     return () => clearTimeout(t);
   }, [runQuote, sell, buy, amount]);
 
-  // Re-quote once per block. Also after an error: an Anon-RPC network can drop out for a while
-  // (e.g. Nox "No exit offers TLS tunnels"), and the quote should recover on its own when it returns.
+  // Liquid pairs follow mainnet blocks, which is where those pools actually trade.
   useEffect(() => {
+    if (!isMainnetPair(sell.symbol, buy.symbol)) return;
+    const unwatch = mainnetClient.watchBlockNumber({
+      pollingInterval: 4_000,
+      onBlockNumber() {
+        setRefreshKey((k) => k + 1);
+        runQuote();
+      },
+    });
+    return unwatch;
+  }, [runQuote, sell.symbol, buy.symbol]);
+
+  // Other pairs re-quote on a timer, including after an error: an Anon-RPC network can drop
+  // out for a while (e.g. Nox "No exit offers TLS tunnels") and should recover on its own.
+  useEffect(() => {
+    if (isMainnetPair(sell.symbol, buy.symbol)) return;
     if (state.kind !== "ok" && state.kind !== "error") return;
     const t = setTimeout(() => {
       setRefreshKey((k) => k + 1);
       runQuote();
     }, REFRESH_MS);
     return () => clearTimeout(t);
-  }, [state, runQuote]);
+  }, [state, runQuote, sell.symbol, buy.symbol]);
 
   const choose = (side: "sell" | "buy", t: Token) => {
     const other = side === "sell" ? buy : sell;
@@ -150,15 +165,16 @@ export function QuoteCard() {
 
   const amountIn = parseAmount(amount, sell.decimals);
   const quoted = quote && pool && amountIn !== null ? quote : undefined;
+  const shownPool = quoted?.reserves ?? pool;
 
-  if (reviewing && quoted && pool) {
+  if (reviewing && quoted && shownPool) {
     return (
       <SwapReview
         quote={quoted}
         sell={sell}
         buy={buy}
         amount={amount}
-        pool={pool}
+        pool={shownPool}
         config={config}
         slippageBps={slippageBps}
         onBack={() => setReviewing(false)}
@@ -290,9 +306,9 @@ export function QuoteCard() {
         </button>
       )}
 
-      {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>}
+      {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t price this trade: {state.message}</p>}
 
-      {quote && pool && (
+      {quote && shownPool && (
         <div className="mt-2 flex flex-col gap-2">
           <PriceCard
             quote={quote}
@@ -302,7 +318,7 @@ export function QuoteCard() {
             refreshKey={refreshKey}
             refreshMs={REFRESH_MS}
           />
-          <QuoteDetails quote={quote} tokenIn={sell} tokenOut={buy} pool={pool} config={config} slippageBps={slippageBps} />
+          <QuoteDetails quote={quote} tokenIn={sell} tokenOut={buy} pool={shownPool} config={config} slippageBps={slippageBps} />
         </div>
       )}
 

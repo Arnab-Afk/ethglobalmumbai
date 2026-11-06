@@ -88,8 +88,8 @@ export function MarketView() {
         </div>
       </div>
       <p className="mt-1 text-base text-fg-2">
-        What competing venues pay for {tokenIn.symbol} → {tokenOut.symbol}, published on-chain by the Chainlink CRE
-        workflow.
+        What Uniswap v3 on Ethereum mainnet pays for {tokenIn.symbol} → {tokenOut.symbol}. The Chainlink CRE
+        workflow&apos;s own curve is in the table below.
       </p>
 
       {error && <p className="mt-4 text-sm text-lose">Couldn&apos;t reach Sepolia: {error}</p>}
@@ -121,18 +121,18 @@ export function MarketView() {
                 {one.vsFair.toFixed(2)}% vs Chainlink
               </span>
             ) : (
-              "From QuoteOracle.getBestOut"
+              "From the mainnet v3 quoter"
             )
           }
         />
         <Stat
-          label="Last CRE update"
+          label="v3 quote age"
           value={age !== null ? `${fmtAge(age)} ago` : data ? "Never" : "—"}
           sub={
             age !== null ? (
               <span className="flex items-center gap-1.5">
                 <span className={`size-1.5 rounded-full ${fresh ? "bg-win" : "bg-warn"}`} />
-                {fresh ? "Fresh: inside the 120s window" : `Stale: older than ${MAX_QUOTE_AGE}s, fee falls back`}
+                {fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s, fee falls back`}
               </span>
             ) : (
               "Waiting for the first report"
@@ -170,10 +170,12 @@ export function MarketView() {
           )}
         </div>
         <p className="mt-3 border-t border-line pt-3 text-sm text-fg-2">
-          <span className="mr-1.5 inline-block size-1.5 rounded-full bg-warn align-middle" />
-          Not wired up yet: the deployed fee contract ({shortAddr(SEPOLIA.contracts.CompetitiveFeeExtruction)}) reads{" "}
-          <code className="text-fg">MockQuoteOracle</code>, not this <code className="text-fg">QuoteOracle</code>, so
-          quotes don&apos;t use these prices until it&apos;s pointed here.
+          <span className="mr-1.5 inline-block size-1.5 rounded-full bg-win align-middle" />
+          The swap screen runs this mainnet output through{" "}
+          <a className="text-fg hover:underline" href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.GivenQuotePreview}`} target="_blank" rel="noreferrer">
+            GivenQuotePreview
+          </a>{" "}
+          on Sepolia, which calls fee-core. The CRE table below is the workflow&apos;s own curve.
         </p>
       </section>
 

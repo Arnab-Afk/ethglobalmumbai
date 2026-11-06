@@ -1,5 +1,6 @@
 import { keccak256, parseAbi, parseAbiItem, toBytes, type Hex } from "viem";
 import { SEPOLIA } from "./deployments";
+import { bestMainnetOut, isMainnetPair } from "./mainnet";
 import { client } from "./quote";
 import type { Token } from "./tokens";
 
@@ -72,6 +73,10 @@ function sizeGrid(from: number, round: number[]): number[] {
   ].sort((a, b) => a - b);
 }
 
+// Mainnet quotes are a quoter call per fee tier, so the chart stays on a short grid.
+const MAINNET_BASE_SIZES = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10];
+const MAINNET_USD_SIZES = [100, 250, 500, 1_000, 2_000, 5_000, 10_000, 20_000];
+
 // Sizes beyond the curve come back as 0 and are dropped.
 // Selling WETH: 0.05 to 100 WETH. Selling a dollar token: 100 to 200,000 (about the same notional).
 const BASE_SIZES = sizeGrid(0.05, [0.1, 0.5, 1, 2, 5, 10, 20, 50]);
@@ -115,27 +120,38 @@ export async function getMarket(tokenIn: Token, tokenOut: Token): Promise<Market
   const t0 = performance.now();
   // Chainlink ETH/USD prices WETH; a dollar token on the input side means the reverse direction.
   const sellingBase = !tokenIn.usd;
-  const SIZES = sellingBase ? BASE_SIZES : USD_SIZES;
-  const oracle = SEPOLIA.contracts.QuoteOracle;
   const unitIn = 10 ** tokenIn.decimals;
   const unitOut = 10 ** tokenOut.decimals;
+  const onMainnet = isMainnetPair(tokenIn.symbol, tokenOut.symbol);
+  const SIZES = onMainnet
+    ? sellingBase
+      ? MAINNET_BASE_SIZES
+      : MAINNET_USD_SIZES
+    : sellingBase
+      ? BASE_SIZES
+      : USD_SIZES;
 
   const [outs, round, feedDecimals, block, logs] = await Promise.all([
     Promise.all(
-      SIZES.map((size) =>
-        client.readContract({
-          address: oracle,
+      SIZES.map(async (size) => {
+        const amountIn = BigInt(Math.round(size * 1e6)) * BigInt(unitIn / 1e6);
+        if (onMainnet) {
+          const bestOut = await bestMainnetOut(tokenIn.symbol, tokenOut.symbol, amountIn);
+          return [bestOut, 0n] as const;
+        }
+        return client.readContract({
+          address: SEPOLIA.contracts.VenueReader,
           abi: oracleAbi,
           functionName: "getBestOut",
-          args: [tokenIn.address, tokenOut.address, BigInt(Math.round(size * 1e6)) * BigInt(unitIn / 1e6)],
-        }),
-      ),
+          args: [tokenIn.address, tokenOut.address, amountIn],
+        });
+      }),
     ),
     client.readContract({ address: CHAINLINK_ETH_USD, abi: feedAbi, functionName: "latestRoundData" }),
     client.readContract({ address: CHAINLINK_ETH_USD, abi: feedAbi, functionName: "decimals" }),
     client.getBlock({ blockTag: "latest" }),
     client.getLogs({
-      address: oracle,
+      address: SEPOLIA.contracts.QuoteOracle,
       event: curveUpdated,
       args: { tokenIn: tokenIn.address, tokenOut: tokenOut.address },
       fromBlock: QUOTE_ORACLE_DEPLOY_BLOCK,
@@ -148,7 +164,7 @@ export async function getMarket(tokenIn: Token, tokenOut: Token): Promise<Market
   let observedAt = 0;
   outs.forEach(([bestOut, updatedAt], i) => {
     if (bestOut === 0n) return;
-    observedAt = Number(updatedAt);
+    observedAt = onMainnet ? Number(block.timestamp) : Number(updatedAt);
     const size = SIZES[i];
     const out = Number(bestOut) / unitOut;
     const fairOut = sellingBase ? size * feedPrice : size / feedPrice;

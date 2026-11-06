@@ -45,7 +45,7 @@ export function PriceCard({
             Priced in <span className="text-win">{Math.round(quote.latencyMs)}ms</span>
           </div>
           <div className="mt-0.5 text-sm text-fg-2">
-            {hasBest ? "1 venue" : "No venue"} · fee {pipsToPercent(quote.feePips)}
+            {hasBest ? quote.venue : "No venue"} · fee {pipsToPercent(quote.feePips)}
             {fallback ? " · fallback" : " · set last"}
           </div>
         </div>
@@ -99,7 +99,7 @@ export function PriceCard({
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-2">
         <Legend swatch="bg-accent" label="You receive" />
         <Legend swatch="bg-accent/30" label="LP keeps" />
-        {hasBest && <Legend swatch="bg-fg w-0.5 rounded-full" label={`Best venue ${fmtSmart(quote.bestOut, tokenOut.decimals)}`} />}
+        {hasBest && <Legend swatch="bg-fg w-0.5 rounded-full" label={`${quote.venue} ${fmtSmart(quote.bestOut, tokenOut.decimals)}`} />}
       </div>
 
       {fallback && (
