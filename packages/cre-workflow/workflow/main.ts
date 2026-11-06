@@ -1,65 +1,119 @@
 /**
- * CRE workflow entry — simulate with CRE CLI (needs bun + `cre`):
+ * CRE workflow entry. Run from packages/cre-workflow (see README):
  *
- *   cre workflow simulate ./packages/cre-workflow/workflow
- *   cre workflow simulate ./packages/cre-workflow/workflow --broadcast
+ *   cre workflow simulate ./workflow -T sepolia-settings
+ *   cre workflow simulate ./workflow -T sepolia-settings --broadcast
  *
  * Aggregation is ours (docs/06). Fynd is inspiration only — no Fynd imports/code.
  *
- * This WASM handler quotes **mock-xyk** venues only (deterministic, no Node RPC).
- * For live Uni v2/v3 reads use `npm run simulate:local` (Node + viem), then
- * `npm run apply:report` to push via QuoteOracle.applyReport while CRE deploy is pending.
+ * Per pair, on each cron tick:
+ *   1. If the pair has a `sanity` block, read its Chainlink feed with the EVM capability.
+ *   2. Quote the mock venues (`mock-xyk`, and `mock-anchored`, which is priced from the feed).
+ *   3. finalizePair: drop quotes far above the Chainlink fair price, cut untrusted buckets
+ *      (same code as the Node simulator).
+ *   4. Encode what is left as CurveUpdate[] and write it to QuoteOracle.
+ *
+ * Uniswap v2/v3 venues are only read by the Node simulator (`npm run simulate:local`)
+ * until their EVM reads land in this handler.
  */
 import {
   bytesToHex,
   cre,
+  encodeCallMsg,
   getNetwork,
   prepareReportRequest,
   Runner,
   type Runtime,
 } from "@chainlink/cre-sdk";
-import { buildCurveUpdate } from "../src/buildCurve.js";
-import { formatBucketLines, summarizeBuckets } from "../src/describeCurve.js";
+import { type Address, decodeFunctionResult, encodeFunctionData, type Hex, zeroAddress } from "viem";
+import { formatBucketLines, formatFeedLine } from "../src/describeCurve.js";
 import { parseWorkflowConfig } from "../src/config.js";
 import { encodeCurveReport } from "../src/encodeReport.js";
-import type { CurveUpdate, PairConfig, WorkflowConfig } from "../src/types.js";
-import { quoteMockXyk } from "../src/venues/mockXyk.js";
+import { AGGREGATOR_V3_ABI } from "../src/feed.js";
+import { finalizePair } from "../src/finalizePair.js";
+import type { FeedReading } from "../src/sanity.js";
+import type { CurveUpdate, PairConfig, VenueQuote, WorkflowConfig } from "../src/types.js";
+import { isMockVenue, quoteMockVenue } from "../src/venues/mockVenue.js";
 
 /** EVM TxStatus values from the CRE SDK (FATAL = 0, REVERTED = 1, SUCCESS = 2). */
 const TX_STATUS: Record<number, string> = { 0: "FATAL", 1: "REVERTED", 2: "SUCCESS" };
 
-function quotePairMockOnly(
+type EVMClient = InstanceType<typeof cre.capabilities.EVMClient>;
+
+/** eth_call through the CRE EVM capability (latest block). */
+function callView(runtime: Runtime<WorkflowConfig>, evm: EVMClient, to: Address, data: Hex): Hex {
+  const reply = evm
+    .callContract(runtime, { call: encodeCallMsg({ from: zeroAddress, to, data }) })
+    .result();
+  return bytesToHex(reply.data);
+}
+
+/** Chainlink AggregatorV3 latestRoundData + decimals, read via CRE. */
+function readFeedCre(runtime: Runtime<WorkflowConfig>, evm: EVMClient, feed: Address): FeedReading {
+  const decimals = decodeFunctionResult({
+    abi: AGGREGATOR_V3_ABI,
+    functionName: "decimals",
+    data: callView(runtime, evm, feed, encodeFunctionData({ abi: AGGREGATOR_V3_ABI, functionName: "decimals" })),
+  });
+  const round = decodeFunctionResult({
+    abi: AGGREGATOR_V3_ABI,
+    functionName: "latestRoundData",
+    data: callView(
+      runtime,
+      evm,
+      feed,
+      encodeFunctionData({ abi: AGGREGATOR_V3_ABI, functionName: "latestRoundData" }),
+    ),
+  });
+  return { answer: round[1], decimals, updatedAt: round[3] };
+}
+
+function quotePair(
   runtime: Runtime<WorkflowConfig>,
+  evm: EVMClient,
   pair: PairConfig,
   observedAt: bigint,
-): CurveUpdate {
-  const venues = pair.venues.filter((v) => !v.exclude && v.kind === "mock-xyk");
-  if (venues.length === 0) {
-    throw new Error(`pair ${pair.tokenIn}->${pair.tokenOut}: no mock-xyk venues`);
+): CurveUpdate | null {
+  runtime.log(`cre-workflow: pair ${pair.tokenIn} → ${pair.tokenOut}`);
+
+  const active = pair.venues.filter((v) => !v.exclude);
+  const skipped = active.filter((v) => !isMockVenue(v)).map((v) => v.id);
+  if (skipped.length > 0) {
+    runtime.log(`cre-workflow:   not read in CRE yet (Node simulator only): ${skipped.join(", ")}`);
   }
+  const venues = active.filter(isMockVenue);
+  if (venues.length === 0) {
+    runtime.log("cre-workflow:   no venues this handler can quote; skipping pair");
+    return null;
+  }
+
+  let feed: FeedReading | undefined;
+  if (pair.sanity) {
+    feed = readFeedCre(runtime, evm, pair.sanity.feed);
+    runtime.log(`cre-workflow:   ${formatFeedLine(pair.sanity.feed, feed, observedAt)}`);
+  }
+
   const amountsIn = pair.amountsIn.map((a) => BigInt(a));
-  const quotesByBucket = amountsIn.map((amountIn) =>
+  const quotesByBucket: VenueQuote[][] = amountsIn.map((amountIn) =>
     venues.map((venue) => ({
       venueId: venue.id,
-      amountOut: quoteMockXyk(
-        amountIn,
-        BigInt(venue.reserveIn ?? "0"),
-        BigInt(venue.reserveOut ?? "0"),
-        venue.feeBps ?? 30,
-      ),
+      amountOut: quoteMockVenue(pair, venue, amountIn, feed),
     })),
   );
-  runtime.log(`cre-workflow: pair ${pair.tokenIn} → ${pair.tokenOut}`);
-  for (const line of formatBucketLines(summarizeBuckets(amountsIn, quotesByBucket), pair)) {
+
+  const result = finalizePair(pair, amountsIn, quotesByBucket, observedAt, feed);
+  for (const line of formatBucketLines(result.buckets, pair)) {
     runtime.log(`cre-workflow:   ${line}`);
   }
-  return buildCurveUpdate({
-    tokenIn: pair.tokenIn,
-    tokenOut: pair.tokenOut,
-    observedAt,
-    amountsIn,
-    quotesByBucket,
-  });
+  if (result.stopReason) runtime.log(`cre-workflow:   curve cut: ${result.stopReason}`);
+  if (!result.update) {
+    runtime.log("cre-workflow:   → nothing trustworthy to publish for this pair");
+    return null;
+  }
+  runtime.log(
+    `cre-workflow:   → publishing ${result.update.amountsIn.length} of ${amountsIn.length} buckets`,
+  );
+  return result.update;
 }
 
 const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
@@ -70,14 +124,24 @@ const onCronTrigger = (runtime: Runtime<WorkflowConfig>): string => {
     isTestnet: true,
   });
   if (!network) throw new Error(`unknown network ${config.chainSelectorName}`);
+  const evm = new cre.capabilities.EVMClient(network.chainSelector.selector);
 
-  const observedAt = BigInt(Math.floor(Date.now() / 1000));
-  const updates = config.pairs.map((pair) => quotePairMockOnly(runtime, pair, observedAt));
+  // runtime.now() is the DON's agreed time; Date.now() can differ between nodes.
+  const observedAt = BigInt(Math.floor(runtime.now().getTime() / 1000));
+  const updates = config.pairs
+    .map((pair) => quotePair(runtime, evm, pair, observedAt))
+    .filter((u): u is CurveUpdate => u !== null);
+
+  if (updates.length === 0) {
+    // Leave QuoteOracle untouched; on-chain staleness then sends swaps to the fallback fee.
+    runtime.log("cre-workflow: no trustworthy curve; skipping writeReport");
+    return "skipped";
+  }
+
   const payload = encodeCurveReport(updates);
   runtime.log(`cre-workflow: encoded ${updates.length} curve(s), payload=${payload.slice(0, 18)}…`);
 
   const report = runtime.report(prepareReportRequest(payload)).result();
-  const evm = new cre.capabilities.EVMClient(network.chainSelector.selector);
   const reply = evm
     .writeReport(runtime, {
       receiver: config.quoteOracle,
