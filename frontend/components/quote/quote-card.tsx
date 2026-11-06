@@ -7,10 +7,11 @@ import { fmtAmount, fmtSmart } from "@/lib/format";
 import { getPool } from "@/lib/pools";
 import { getFeeConfig, getLiveQuote, type FeeConfig, type LiveQuote } from "@/lib/quote";
 import { DEFAULT_BUY, DEFAULT_SELL, tokenBySymbol, type Token } from "@/lib/tokens";
-import { PriceCard } from "./price-card";
 import { QuoteDetails } from "./quote-details";
-import { SlippageRow } from "./slippage-row";
+import { RefreshRing } from "./refresh-ring";
+import { DEFAULT_SLIPPAGE_BPS, SwapSettings } from "./slippage-row";
 import { SwapReview } from "./swap-review";
+import { TokenButton } from "./token-pill";
 import { TokenPicker } from "./token-picker";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
@@ -48,7 +49,7 @@ export function QuoteCard() {
     return a && /^\d*\.?\d*$/.test(a) ? a : DEFAULT_AMOUNT;
   });
   const [picking, setPicking] = useState<"sell" | "buy" | null>(null);
-  const [slippageBps, setSlippageBps] = useState(5); // 0.05%
+  const [slippageBps, setSlippageBps] = useState(DEFAULT_SLIPPAGE_BPS);
   const [state, setState] = useState<State>({ kind: "idle" });
   const [config, setConfig] = useState<FeeConfig | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -130,7 +131,6 @@ export function QuoteCard() {
   const quote = pool && state.kind !== "idle" ? (state.kind === "ok" ? state.quote : state.prev) : undefined;
   const loading = state.kind === "loading";
   const hasBest = !!quote && quote.bestOut > 0n;
-  const edgePct = hasBest ? (Number(quote.ourOut - quote.bestOut) / Number(quote.bestOut)) * 100 : 0;
 
   // Dollar values only where one side is a $1 stablecoin.
   const sellUsd = !quote
@@ -153,84 +153,82 @@ export function QuoteCard() {
   const amountIn = parseAmount(amount, sell.decimals);
   const quoted = quote && pool && amountIn !== null ? quote : undefined;
 
-  if (reviewing && quoted && pool) {
-    return (
-      <SwapReview
-        quote={quoted}
-        sell={sell}
-        buy={buy}
-        amount={amount}
-        pool={pool}
-        config={config}
-        slippageBps={slippageBps}
-        onBack={() => setReviewing(false)}
-      />
-    );
-  }
-
-  type Cta = { label: string; onClick?: () => void };
-  const cta: Cta = !pool
-    ? { label: `No pool for ${sell.symbol} → ${buy.symbol} yet` }
+  type Action = { label: string; onClick?: () => void; tone: "primary" | "soft" | "warn" | "off" };
+  const action: Action = !pool
+    ? { label: `No ${sell.symbol} → ${buy.symbol} pool yet`, tone: "off" }
     : amountIn === null
-      ? { label: "Enter amount" }
-      : !quoted
-        ? { label: loading ? "Finding price…" : "Enter amount" }
-        : { label: "Swap", onClick: () => setReviewing(true) };
+      ? { label: "Enter an amount", tone: "off" }
+      : !address
+        ? { label: connecting ? "Connecting…" : "Connect wallet", onClick: connecting ? undefined : connect, tone: "soft" }
+        : !onSepolia
+          ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
+          : !quoted
+            ? { label: loading ? "Checking the best venue…" : "Enter an amount", tone: "off" }
+            : { label: "Review quote", onClick: () => setReviewing(true), tone: "primary" };
 
-  const action = !address
-    ? { label: connecting ? "Connecting…" : "Connect wallet", onClick: connect, disabled: connecting }
-    : !onSepolia
-      ? { label: "Switch to Sepolia", onClick: switchToSepolia, disabled: false }
-      : { label: cta.label, onClick: cta.onClick, disabled: !cta.onClick };
+  const actionTone = {
+    primary: "bg-white text-black hover:bg-white/90",
+    soft: "bg-white text-black hover:bg-white/90",
+    warn: "bg-[#3a2a14] text-warn hover:bg-[#4a3518]",
+    off: "cursor-not-allowed bg-white/[0.06] text-white/35",
+  }[action.tone];
 
   return (
-    <div className="flex w-full max-w-[460px] flex-col items-center">
-      <div className="w-full overflow-hidden rounded-[28px] bg-[#1c1c1e]">
-        <div className="px-6 pt-5 pb-5">
-          <div className="text-[15px] text-white/55">Pay on Sepolia</div>
-          <div className="mt-4 flex items-end justify-between gap-3">
-            <div className="flex min-w-0 items-baseline gap-3">
-              <input
-                inputMode="decimal"
-                aria-label="Amount to sell"
-                placeholder="0"
-                value={amount}
-                onChange={(e) => {
-                  const v = e.target.value.replace(",", ".");
-                  if (/^\d*\.?\d*$/.test(v)) setAmount(v);
-                }}
-                className="tnum max-w-[46%] bg-transparent text-[42px] font-medium tracking-[-0.04em] text-white outline-none placeholder:text-white"
-                style={{ width: `${Math.max((amount || "0").length, 1) + 0.5}ch` }}
-                suppressHydrationWarning
-              />
-              <button
-                type="button"
-                onClick={() => setPicking("sell")}
-                className="text-[42px] font-medium tracking-[-0.03em] text-[#4c82fb]"
-              >
-                {sell.symbol}
-              </button>
-            </div>
-            <span className="tnum pb-1.5 text-[18px] font-medium text-[#4c82fb]">{sellUsd ? `$${sellUsd}` : ""}</span>
-          </div>
-          {sellBal !== undefined && (
-            <button
-              type="button"
-              onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
-              className="tnum mt-2 text-[13px] text-white/40 hover:text-white/70"
-              title="Use full balance"
-            >
-              Balance {fmtSmart(sellBal, sell.decimals)}
-            </button>
-          )}
+    <div className="w-full max-w-[460px]">
+      <div className="mb-3 flex h-9 items-center justify-between px-1">
+        <span className="text-[15px] font-semibold text-white">Swap</span>
+        <div className="flex items-center gap-1">
+          {quote && pool && <RefreshRing key={refreshKey} durationMs={REFRESH_MS} spinning={loading} />}
+          <SwapSettings bps={slippageBps} onChange={setSlippageBps} />
         </div>
+      </div>
 
-        <div className="relative h-px bg-white/10">
+      <div className="rounded-[28px] bg-[#161618] p-1 shadow-[0_30px_80px_rgb(0_0_0/0.45)] ring-1 ring-white/10">
+        <section className="rounded-[22px] px-4 pt-4 pb-5">
+          <label htmlFor="sell-amount" className="text-[14px] font-medium text-white/45">
+            You pay
+          </label>
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              id="sell-amount"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => {
+                const v = e.target.value.replace(",", ".");
+                if (/^\d*\.?\d*$/.test(v)) setAmount(v);
+              }}
+              className={`tnum min-w-0 flex-1 bg-transparent font-medium tracking-[-0.04em] text-white outline-none placeholder:text-white/25 ${amountSize(amount)}`}
+              suppressHydrationWarning
+            />
+            <TokenButton token={sell} onClick={() => setPicking("sell")} />
+          </div>
+          <div className="tnum mt-3 flex h-5 items-center justify-between gap-3 text-[13px] text-white/40">
+            <span className="text-[#7aa2ff]">{sellUsd ? `$${sellUsd}` : ""}</span>
+            {sellBal !== undefined && (
+              <span className="flex items-center gap-2">
+                {fmtSmart(sellBal, sell.decimals)} {sell.symbol}
+                {sellBal > 0n && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(formatUnits(sellBal, sell.decimals))}
+                    className="rounded-full bg-white/10 px-2 py-0.5 text-[12px] font-semibold text-white/70 transition-colors hover:text-white"
+                  >
+                    Max
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
+        </section>
+
+        <div className="relative z-10 -my-3.5 flex justify-center">
           <button
             type="button"
             onClick={flip}
             aria-label="Switch tokens"
-            className="absolute top-1/2 left-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#2a2a2e] text-white/80"
+            className="grid size-9 place-items-center rounded-xl border-4 border-[#161618] bg-[#2a2a2e] text-white/80 transition-colors hover:bg-[#34343a] hover:text-white"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
               <path d="M8 3v10M8 13l-3.2-3.2M8 13l3.2-3.2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -238,69 +236,67 @@ export function QuoteCard() {
           </button>
         </div>
 
-        <div className="px-6 pt-5 pb-6">
-          <div className="text-[15px] text-white/55">Receive</div>
-          <div className={`mt-4 flex items-end justify-between gap-3 ${loading ? "opacity-50" : ""}`}>
-            <div className="flex min-w-0 items-baseline gap-3">
-              <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 6) : "0"} />
-              <button
-                type="button"
-                onClick={() => setPicking("buy")}
-                className="text-[42px] font-medium tracking-[-0.03em] text-[#4c82fb]"
-              >
-                {buy.symbol}
-              </button>
-            </div>
-            <span className="tnum pb-1.5 text-right text-[18px] font-medium text-[#4c82fb]">
-              {buyUsd ? `$${buyUsd}` : ""}
-              {hasBest && (
-                <span className={`mt-0.5 block text-[12px] font-normal ${edgePct >= 0 ? "text-win" : "text-lose"}`}>
-                  {edgePct >= 0 ? "+" : ""}
-                  {edgePct.toFixed(2)}% vs venue
-                </span>
-              )}
-            </span>
+        <section className="rounded-[22px] bg-white/[0.035] px-4 pt-5 pb-4">
+          <div className="text-[14px] font-medium text-white/45">You receive</div>
+          <div className="mt-3 flex items-center gap-3">
+            <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 8) : "0"} dim={!quote || loading} />
+            <TokenButton token={buy} onClick={() => setPicking("buy")} />
           </div>
-          {buyBal !== undefined && (
-            <div className="tnum mt-2 text-[13px] text-white/40">
-              Balance {fmtSmart(buyBal, buy.decimals)}
-            </div>
-          )}
-        </div>
+          <div className="tnum mt-3 flex h-5 items-center justify-between gap-3 text-[13px] text-white/40">
+            <span className="text-[#7aa2ff]">{buyUsd ? `$${buyUsd}` : ""}</span>
+            {buyBal !== undefined && (
+              <span>
+                {fmtSmart(buyBal, buy.decimals)} {buy.symbol}
+              </span>
+            )}
+          </div>
+        </section>
       </div>
 
-      <div className="mt-3 w-full">
-        <SlippageRow bps={slippageBps} onChange={setSlippageBps} />
-      </div>
+      {state.kind === "error" && (
+        <p className="mt-3 rounded-2xl bg-lose/10 px-4 py-3 text-[13px] text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>
+      )}
+
+      {quote && pool && (
+        <QuoteDetails
+          quote={quote}
+          tokenIn={sell}
+          tokenOut={buy}
+          pool={pool}
+          config={config}
+          slippageBps={slippageBps}
+          loading={loading}
+        />
+      )}
 
       <button
         type="button"
         onClick={action.onClick}
-        disabled={action.disabled}
-        className="mt-5 flex h-[52px] min-w-[240px] items-center justify-center rounded-full bg-white px-8 text-[16px] font-medium text-black disabled:cursor-not-allowed disabled:bg-white/70"
+        disabled={!action.onClick}
+        className={`mt-3 h-[52px] w-full rounded-2xl text-[16px] font-semibold transition-colors ${actionTone}`}
       >
         {action.label}
       </button>
 
-      {state.kind === "error" && <p className="px-1 text-sm text-lose">Couldn&apos;t reach Sepolia: {state.message}</p>}
-
-      {quote && pool && (
-        <div className="mt-2 flex flex-col gap-2">
-          <PriceCard
-            quote={quote}
-            tokenOut={buy}
-            config={config}
-            loading={loading}
-            refreshKey={refreshKey}
-            refreshMs={REFRESH_MS}
-          />
-          <QuoteDetails quote={quote} tokenIn={sell} tokenOut={buy} pool={pool} config={config} slippageBps={slippageBps} />
-        </div>
+      {reviewing && quoted && pool && (
+        <SwapReview
+          quote={quoted}
+          sell={sell}
+          buy={buy}
+          amount={amount}
+          sellUsd={sellUsd}
+          buyUsd={buyUsd}
+          pool={pool}
+          config={config}
+          slippageBps={slippageBps}
+          onClose={() => setReviewing(false)}
+        />
       )}
 
       {picking && (
         <TokenPicker
           other={picking === "sell" ? buy : sell}
+          current={picking === "sell" ? sell : buy}
           onSelect={(t) => choose(picking, t)}
           onClose={() => setPicking(null)}
         />
@@ -309,12 +305,17 @@ export function QuoteCard() {
   );
 }
 
+/** Amount text steps down for long numbers instead of truncating digits. */
+function amountSize(text: string) {
+  return text.length <= 7 ? "text-[42px]" : text.length <= 11 ? "text-[32px]" : "text-[24px]";
+}
 
-/** Receive amount that steps its size down for long numbers instead of truncating digits. */
-function ReceiveAmount({ text }: { text: string }) {
-  const size = text.length <= 7 ? "text-[42px]" : text.length <= 9 ? "text-[36px]" : "text-[30px]";
+function ReceiveAmount({ text, dim }: { text: string; dim: boolean }) {
   return (
-    <span className={`tnum min-w-0 truncate font-medium tracking-[-0.04em] text-white ${size}`} title={text}>
+    <span
+      className={`tnum min-w-0 flex-1 truncate font-medium tracking-[-0.04em] transition-colors ${amountSize(text)} ${dim ? "text-white/25" : "text-white"}`}
+      title={text}
+    >
       {text}
     </span>
   );
