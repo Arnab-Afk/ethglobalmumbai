@@ -5,6 +5,7 @@ import { SEPOLIA } from "@/lib/deployments";
 import { fmtAge, shortAddr } from "@/lib/format";
 import { CHAINLINK_ETH_USD, getMarket, type MarketSnapshot } from "@/lib/market";
 import { DEFAULT_BUY, DEFAULT_SELL, type Token } from "@/lib/tokens";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CurveChart } from "./curve-chart";
 
 const REFRESH_MS = 12_000;
@@ -112,55 +113,66 @@ export function MarketView() {
 
       <section className="mt-8 rounded-[28px] bg-white px-5 py-6 shadow-[0_24px_60px_rgb(40_28_96/0.07)] ring-1 ring-black/[0.04] sm:px-7 sm:py-7">
         <div className="grid items-end gap-8 sm:grid-cols-[minmax(0,1.45fr)_1fr_1fr]">
-          <Figure
-            large
-            tone="blue"
-            label={`Best venue · ${sizeLabel} ${tokenIn.symbol}`}
-            value={one ? `${fmtTok(one.out, tokenOut)}` : data ? "No curve" : "—"}
-            unit={one ? tokenOut.symbol : undefined}
-            note={
-              one && data ? (
-                <span className={one.vsFair >= 0 ? "text-[#1F8A5B]" : "text-[#6B6560]"}>
-                  {one.vsFair >= 0 ? "+" : ""}
-                  {one.vsFair.toFixed(2)}% vs Chainlink
-                </span>
-              ) : (
-                "Mainnet v3 quoter"
-              )
-            }
-          />
-          <Figure
-            tone="purple"
-            label="Chainlink ETH/USD"
-            value={data ? `$${fmtUsd(data.feed.price)}` : "—"}
-            note={
-              data ? (
-                <>
-                  {fmtAge(data.blockTime - data.feed.updatedAt)} ago ·{" "}
-                  <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${CHAINLINK_ETH_USD}`} target="_blank" rel="noreferrer">
-                    {shortAddr(CHAINLINK_ETH_USD)}
-                  </a>
-                </>
-              ) : (
-                "Loading"
-              )
-            }
-          />
-          <Figure
-            tone={fresh ? "green" : undefined}
-            label="Quote age"
-            value={age !== null ? fmtAge(age) : data ? "Never" : "—"}
-            unit={age !== null ? "ago" : undefined}
-            note={age !== null ? (fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s. Fee falls back.`) : "Waiting for a report"}
-          />
+          {data ? (
+            <>
+              <Figure
+                large
+                tone="blue"
+                label={`Best venue · ${sizeLabel} ${tokenIn.symbol}`}
+                value={one ? `${fmtTok(one.out, tokenOut)}` : "No curve"}
+                unit={one ? tokenOut.symbol : undefined}
+                note={
+                  one ? (
+                    <span className={one.vsFair >= 0 ? "text-[#1F8A5B]" : "text-[#6B6560]"}>
+                      {one.vsFair >= 0 ? "+" : ""}
+                      {one.vsFair.toFixed(2)}% vs Chainlink
+                    </span>
+                  ) : (
+                    "Mainnet v3 quoter"
+                  )
+                }
+              />
+              <Figure
+                tone="purple"
+                label="Chainlink ETH/USD"
+                value={`$${fmtUsd(data.feed.price)}`}
+                note={
+                  <>
+                    {fmtAge(data.blockTime - data.feed.updatedAt)} ago ·{" "}
+                    <a className="text-[#5B46C7] hover:underline" href={`${SEPOLIA.explorer}/address/${CHAINLINK_ETH_USD}`} target="_blank" rel="noreferrer">
+                      {shortAddr(CHAINLINK_ETH_USD)}
+                    </a>
+                  </>
+                }
+              />
+              <Figure
+                tone={fresh ? "green" : undefined}
+                label="Quote age"
+                value={age !== null ? fmtAge(age) : "Never"}
+                unit={age !== null ? "ago" : undefined}
+                note={age !== null ? (fresh ? "Read from the pools this block" : `Older than ${MAX_QUOTE_AGE}s. Fee falls back.`) : "Waiting for a report"}
+              />
+            </>
+          ) : (
+            <>
+              <FigureSkeleton large />
+              <FigureSkeleton />
+              <FigureSkeleton />
+            </>
+          )}
         </div>
 
         <div className="mt-7 overflow-hidden rounded-[20px] bg-[#F4F1FE]">
           {data && data.samples.length > 1 ? (
             <CurveChart samples={data.samples} reference={data.feed.price} tokenIn={tokenIn} tokenOut={tokenOut} />
-          ) : (
+          ) : data ? (
             <div className="grid h-[240px] place-items-center text-[14px] text-[#8A847E]">
-              {data ? "No competitor curve on-chain for this pair yet." : "Loading curve"}
+              No competitor curve on-chain for this pair yet.
+            </div>
+          ) : (
+            <div className="flex h-[240px] flex-col justify-end gap-3 px-6 pb-8" aria-busy aria-label="Loading curve">
+              <Skeleton className="h-24 w-full rounded-xl" style={{ background: "rgb(171 159 242 / 0.35)" }} />
+              <Skeleton className="h-2 w-full rounded" style={{ background: "rgb(171 159 242 / 0.25)" }} />
             </div>
           )}
         </div>
@@ -280,6 +292,16 @@ function Figure({
         {unit && <span className="ml-1.5 text-[15px] font-normal tracking-normal text-[#6B6560]">{unit}</span>}
       </div>
       <div className="mt-2 text-[13px] text-[#6B6560]">{note}</div>
+    </div>
+  );
+}
+
+function FigureSkeleton({ large }: { large?: boolean }) {
+  return (
+    <div aria-hidden>
+      <Skeleton className="h-3 w-28 rounded" tone="cream" />
+      <Skeleton className={`mt-3 rounded-lg ${large ? "h-11 w-40" : "h-8 w-24"}`} tone="cream" />
+      <Skeleton className="mt-3 h-3 w-32 rounded" tone="cream" />
     </div>
   );
 }

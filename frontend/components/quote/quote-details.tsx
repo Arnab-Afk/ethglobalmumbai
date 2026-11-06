@@ -95,14 +95,14 @@ export function QuoteDetails({
       v: onBase
         ? "This block"
         : quote.status === "none"
-          ? "—"
+          ? "-"
           : `${fmtAge(quote.blockTime - quote.updatedAt)}${config ? ` of ${config.maxQuoteAge}s` : ""}`,
       hint: onBase
         ? "Rivals and this pool were read at the same Base block."
         : "How old the competitor price curve is. Past the limit, the pool falls back to a fixed fee.",
     },
   ];
-  if (config && !onBase) rows.push({ k: "Fee range", v: `${pipsToPercent(config.feeFloor)} – ${pipsToPercent(config.feeCap)}` });
+  if (config && !onBase) rows.push({ k: "Fee range", v: `${pipsToPercent(config.feeFloor)} - ${pipsToPercent(config.feeCap)}` });
   rows.push({
     k: "Pool",
     v: onBase

@@ -15,6 +15,7 @@ import { DEFAULT_SLIPPAGE_BPS, SwapSettings } from "./slippage-row";
 import { SwapReview } from "./swap-review";
 import { TokenButton } from "./token-pill";
 import { TokenPicker } from "./token-picker";
+import { Skeleton } from "../ui/skeleton";
 import { useBalances } from "../wallet/use-balances";
 import { useWallet } from "../wallet/wallet-provider";
 
@@ -92,7 +93,7 @@ export function QuoteCard() {
   const inFlight = useRef(false);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
-  const { address, onSepolia, connecting, openConnectModal, switchToSepolia } = useWallet();
+  const { address, onSepolia, connecting, switching, openConnectModal, switchToSepolia } = useWallet();
   const balances = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
@@ -293,7 +294,11 @@ export function QuoteCard() {
           : !address
             ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : openConnectModal, tone: "soft" }
             : !onSepolia
-              ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
+              ? {
+                  label: switching ? "Switching…" : "Switch to Sepolia",
+                  onClick: switching ? undefined : () => void switchToSepolia(),
+                  tone: "warn",
+                }
               : !quoted
                 ? { label: "Checking the best venue…", tone: "off" }
                 : { label: "Swap", onClick: () => setReviewKey(key), tone: "primary" };
@@ -380,11 +385,17 @@ export function QuoteCard() {
         <section>
           <div className="text-[14px] font-medium text-[#8A8680]">You receive</div>
           <div className="mt-2 flex items-center gap-3">
-            <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 8) : "0"} dim={!quote || loading} />
+            {loading && !quote ? (
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Skeleton className="h-10 w-[9.5rem] rounded-lg" tone="cream" />
+              </div>
+            ) : (
+              <ReceiveAmount text={quote ? fmtSmart(quote.ourOut, buy.decimals, 8) : "0"} dim={!quote || loading} />
+            )}
             <TokenButton token={buy} tone="light" onClick={() => setPicking("buy")} />
           </div>
           <div className="tnum mt-2 flex h-5 items-center justify-between gap-3 text-[13px] text-[#9A9690]">
-            <span>{buyUsd ? `$${usd2(buyUsd)}` : ""}</span>
+            <span>{loading && !quote ? <Skeleton className="h-3 w-16 rounded" tone="cream" /> : buyUsd ? `$${usd2(buyUsd)}` : ""}</span>
             {buyBal !== undefined && (
               <span>
                 {fmtSmart(buyBal, buy.decimals)} {buy.symbol}
