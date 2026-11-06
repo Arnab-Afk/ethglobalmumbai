@@ -51,7 +51,8 @@ const SURFACES = [
 ];
 
 const CONTRACTS = [
-  { name: "CompetitiveFeeExtruction", note: "SwapVM fee opcode", address: SEPOLIA.contracts.CompetitiveFeeExtruction },
+  { name: "VenueReader", note: "Live Uniswap v3 quotes", address: SEPOLIA.contracts.VenueReader },
+  { name: "CompetitiveFeeExtruction", note: "Fee opcode on the live v3 reader", address: SEPOLIA.contracts.CompetitiveFeeExtructionVenueReader },
   { name: "QuoteOracle", note: "CRE consumer, live curves", address: SEPOLIA.contracts.QuoteOracle },
   { name: "MockQuoteOracle", note: "Demo price control", address: SEPOLIA.contracts.MockQuoteOracle },
 ];

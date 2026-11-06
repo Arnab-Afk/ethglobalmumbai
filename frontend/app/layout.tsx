@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="pb-5 pt-4 text-center text-xs text-muted">
           ETHGlobal Mumbai · Inspired by PropellerHeads&apos; Fynd · Contracts on{" "}
           <a
-            href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}`}
+            href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.VenueReader}`}
             target="_blank"
             rel="noreferrer"
             className="text-accent hover:underline"
