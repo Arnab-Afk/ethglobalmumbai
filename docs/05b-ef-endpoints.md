@@ -13,9 +13,11 @@ Network check from Chrome, Nov 6, reading Sepolia through `@hairline/sdk/anon`:
 
 | Network | Result | Notes |
 |---|---|---|
-| `nox` | Works: quote in 0.6–1.7 s | Drops out for a minute at a time with `NoTunnelExitError: No exit offers TLS tunnels`; the app retries every block. Specifier lives on Sepolia, so the one bootstrap read goes to Sepolia. |
-| `tor-js` | Down | The demo gateway from `adopters.json5` failed to build circuits ("all gateways failed"). Upstream says it may disappear; pass your own via `config.gateways`. |
-| `nym` | No answer in 2 min | Bundle is ~18 MB; bootstrap contacts `validator.nymtech.net`. |
+| `nox` | Works: 5 s for a Sepolia `eth_call` (retest, headless Chrome, Nov 6 evening); 0.6–1.7 s warm earlier | Drops out for a minute at a time with `NoTunnelExitError: No exit offers TLS tunnels`; the app fails over to the next network and retries. Specifier lives on Sepolia, so the one bootstrap read goes to Sepolia. First load can take about 30 s. |
+| `tor-js` | Down: timed out after 140 s (retest) | The demo gateway from `adopters.json5` failed to build circuits ("all gateways failed"). Upstream says it may disappear; pass your own via `config.gateways`. Last in the failover order. |
+| `nym` | Works against Sepolia publicnode: 46 s cold (retest); earlier run saw no answer in 2 min | Bundle is ~18 MB; bootstrap contacts `validator.nymtech.net`. Against our devnet gateway URL it returned "JSON is not a valid request object" (not seen against publicnode). Second in the failover order. |
+
+The frontend fails over `nox` → `nym` → `tor-js` (`frontend/lib/rpc.ts`, `NEXT_PUBLIC_ANON_RPC`); each network that fails is skipped for 45 s.
 | `passthrough` | Not anonymous | Sandbox and hash pinning only. |
 - Prize: https://ethglobal.com/events/mumbai/prizes/ethereum-foundation
 
