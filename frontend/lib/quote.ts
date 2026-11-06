@@ -1,6 +1,8 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia } from "viem/chains";
-import { DEMO_POOL, SEPOLIA, type Token } from "./deployments";
+import { SEPOLIA } from "./deployments";
+import type { PoolSide } from "./pools";
+import type { Token } from "./tokens";
 
 // Batch so one quote (fee preview + block) is a single HTTP request: the public RPC rate-limits.
 const client = createPublicClient({
@@ -87,9 +89,9 @@ function outAfterFee(amountIn: bigint, reserveIn: bigint, reserveOut: bigint, fe
 }
 
 /** Quote one exact-in trade: fee + competitor output from Sepolia, our output from the pool curve. */
-export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bigint): Promise<LiveQuote> {
+export async function getLiveQuote(tokenIn: Token, tokenOut: Token, amountIn: bigint, pool: PoolSide): Promise<LiveQuote> {
   const t0 = performance.now();
-  const { reserveIn, reserveOut } = DEMO_POOL;
+  const { reserveIn, reserveOut } = pool;
 
   const [cfg, preview, block] = await Promise.all([
     getFeeConfig(),
