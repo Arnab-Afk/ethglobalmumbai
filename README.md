@@ -24,6 +24,7 @@ Node ≥ 20.12 and [Foundry](https://book.getfoundry.sh/) for the contracts. Eve
 | Fee math and contracts | `cd packages/fee-core && forge test` (same in `oracle`, `swapvm-opcode`, `v4-hook`) |
 | Base fee-last hook, router, and AXIS pool | `cd packages/fee-last && forge test` |
 | Integrator SDK | `cd packages/sdk && npm install && npm test`; usage in [packages/sdk/README.md](packages/sdk/README.md) |
+| SDK docs site | `cd apps/docs && npm install && npm run dev -- -p 3001` → http://localhost:3001 (the app uses 3000); see [apps/docs/README.md](apps/docs/README.md) |
 | EIP-8141 frame swap (devnet, chain 1337) | `cd packages/private-quoting && npm install && npm run quote:sdk -- 10`; full flow in [its README](packages/private-quoting/README.md) |
 | CRE workflow (local simulate) | `cd packages/cre-workflow && npm install && npm run simulate:local` |
 | CRE workflow (CRE CLI) | `cd packages/cre-workflow && cre workflow simulate ./workflow -T sepolia-settings` (add `--broadcast` to write to Sepolia; `BROADCAST=1 npm run cre:watch` to repeat) |
