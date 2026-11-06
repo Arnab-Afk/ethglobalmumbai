@@ -1,14 +1,13 @@
 import { source } from '@/lib/source';
 import {
   DocsBody,
-  DocsDescription,
   DocsPage,
-  DocsTitle,
   MarkdownCopyButton,
   ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
+import { DocsBanner } from '@/components/docs-banner';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getPageImageUrl, getPageMarkdownUrl, gitConfig } from '@/lib/shared';
@@ -24,11 +23,9 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const eyebrow = page.slugs.length > 1 ? page.slugs[0][0].toUpperCase() + page.slugs[0].slice(1) : 'Docs';
 
   return (
-    // The mono eyebrow replaces the breadcrumb, as on the landing page's sections.
+    // The banner's mono eyebrow replaces the breadcrumb, as on the landing page's sections.
     <DocsPage toc={page.data.toc} full={page.data.full} breadcrumb={{ enabled: false }}>
-      <div className="docs-eyebrow">{eyebrow}</div>
-      <DocsTitle className="docs-title">{page.data.title}</DocsTitle>
-      <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
+      <DocsBanner eyebrow={eyebrow} title={page.data.title} description={page.data.description} />
       <div className="flex flex-row gap-2 items-center border-b pb-6">
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover

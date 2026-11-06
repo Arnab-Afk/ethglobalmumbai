@@ -145,3 +145,19 @@ body {
 .prose :where(th, td) {
   border-color: var(--rule);
 }
+
+/* Colour from the landing page: lavender selection, tinted inline code, lavender card hover, purple info. */
+::selection {
+  background: var(--lavender);
+  color: #1c1c1c;
+}
+.prose :where(:not(pre) > code) {
+  border: 1px solid #d9d3fa;
+  background: var(--lavender-soft);
+  border-color: #d9d3fa;
+  color: #3e2fa0; /* deep purple, DESIGN.md section 2 */
+}
+.prose a[data-card]:hover {
+  background: var(--lavender-soft);
+  border-color: var(--lavender);
+}
