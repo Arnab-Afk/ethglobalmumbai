@@ -2,7 +2,7 @@
 
 export type Address = `0x${string}`;
 
-export type VenueKind = "mock-xyk" | "univ2" | "univ3" | "http";
+export type VenueKind = "mock-xyk" | "mock-anchored" | "univ2" | "univ3" | "http";
 
 export interface VenueConfig {
   /** Short id hashed into CurveUpdate.venueIds (max 32 venues packed as bits/labels). */
@@ -10,7 +10,7 @@ export interface VenueConfig {
   kind: VenueKind;
   /** Skip this venue (e.g. our own Aqua / DevnetCompetitivePool). */
   exclude?: boolean;
-  /** mock-xyk: synthetic reserves */
+  /** mock-xyk: synthetic reserves. mock-anchored: reserveIn is the pool depth in tokenIn. */
   reserveIn?: string;
   reserveOut?: string;
   feeBps?: number;
@@ -30,9 +30,22 @@ export interface PairConfig {
   /** Exact-in size buckets (atomic units as decimal strings). */
   amountsIn: string[];
   venues: VenueConfig[];
-  /** Optional token decimals, used only to print readable logs. */
+  /** Token decimals: readable logs, and required by `sanity` to compute fair output. */
   decimalsIn?: number;
   decimalsOut?: number;
+  /** Optional Chainlink fair-price check (see src/sanity.ts). */
+  sanity?: SanityConfig;
+}
+
+export interface SanityConfig {
+  /** Chainlink AggregatorV3 feed pricing 1 tokenIn in tokenOut (e.g. ETH/USD for WETH→USDC). */
+  feed: Address;
+  /** Reject quotes more than this far above fair (bps). */
+  maxAboveBps: number;
+  /** End the curve when the best quote is this far below fair (bps). */
+  maxBelowBps: number;
+  /** Skip the pair when the feed round is older than this (seconds). */
+  maxFeedAgeSec: number;
 }
 
 export interface WorkflowConfig {
@@ -57,4 +70,6 @@ export interface CurveUpdate {
 export interface VenueQuote {
   venueId: string;
   amountOut: bigint;
+  /** Set when a sanity check threw this quote out; rejected quotes never win a bucket. */
+  rejected?: string;
 }

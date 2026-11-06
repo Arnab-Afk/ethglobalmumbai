@@ -9,7 +9,7 @@ const address = z
 
 const venueSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["mock-xyk", "univ2", "univ3", "http"]),
+  kind: z.enum(["mock-xyk", "mock-anchored", "univ2", "univ3", "http"]),
   exclude: z.boolean().optional(),
   reserveIn: z.string().optional(),
   reserveOut: z.string().optional(),
@@ -21,14 +21,29 @@ const venueSchema = z.object({
   url: z.string().url().optional(),
 });
 
-const pairSchema = z.object({
-  tokenIn: address,
-  tokenOut: address,
-  amountsIn: z.array(z.string()).min(1).max(16),
-  venues: z.array(venueSchema).min(1),
-  decimalsIn: z.number().int().min(0).max(36).optional(),
-  decimalsOut: z.number().int().min(0).max(36).optional(),
+const sanitySchema = z.object({
+  feed: address,
+  maxAboveBps: z.number().int().min(0).max(10_000),
+  maxBelowBps: z.number().int().min(0).max(10_000),
+  maxFeedAgeSec: z.number().int().positive(),
 });
+
+const pairSchema = z
+  .object({
+    tokenIn: address,
+    tokenOut: address,
+    amountsIn: z.array(z.string()).min(1).max(16),
+    venues: z.array(venueSchema).min(1),
+    decimalsIn: z.number().int().min(0).max(36).optional(),
+    decimalsOut: z.number().int().min(0).max(36).optional(),
+    sanity: sanitySchema.optional(),
+  })
+  .refine((p) => !p.sanity || (p.decimalsIn !== undefined && p.decimalsOut !== undefined), {
+    message: "sanity needs decimalsIn and decimalsOut to compute fair output",
+  })
+  .refine((p) => p.sanity || !p.venues.some((v) => v.kind === "mock-anchored" && !v.exclude), {
+    message: "mock-anchored venues need a sanity block (they are priced from its Chainlink feed)",
+  });
 
 export const workflowConfigSchema = z.object({
   schedule: z.string(),

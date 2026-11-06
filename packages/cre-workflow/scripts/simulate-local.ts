@@ -19,7 +19,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { parseWorkflowConfig } from "../src/config.js";
 import { encodeCurveReport } from "../src/encodeReport.js";
-import { formatBucketLines } from "../src/describeCurve.js";
+import { formatBucketLines, formatFeedLine } from "../src/describeCurve.js";
 import { quotePairDetailed } from "../src/quotePair.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -46,15 +46,25 @@ async function main() {
   const observedAt = BigInt(Math.floor(Date.now() / 1000));
   const updates = [];
   for (const pair of config.pairs) {
-    const { update, buckets } = await quotePairDetailed(pair, observedAt, client);
+    const { update, buckets, feed, stopReason } = await quotePairDetailed(pair, observedAt, client);
     console.log("\n--- curve ---");
-    console.log("pair", update.tokenIn, "→", update.tokenOut);
-    console.log("observedAt", update.observedAt.toString());
-    console.log("venueIds", update.venueIds);
+    console.log("pair", pair.tokenIn, "→", pair.tokenOut);
+    console.log("observedAt", observedAt.toString());
+    if (pair.sanity && feed) console.log(formatFeedLine(pair.sanity.feed, feed, observedAt));
     for (const line of formatBucketLines(buckets, pair)) console.log(`  ${line}`);
+    if (stopReason) console.log(`  curve cut: ${stopReason}`);
+    if (!update) {
+      console.log("  → nothing trustworthy to publish for this pair");
+      continue;
+    }
+    console.log(`  → publishing ${update.amountsIn.length} of ${buckets.length} buckets, venueIds ${update.venueIds}`);
     updates.push(update);
   }
 
+  if (updates.length === 0) {
+    console.log("\nNo pair produced a trustworthy curve; nothing to write.");
+    return;
+  }
   const report = encodeCurveReport(updates);
   console.log("\nreport", report);
   console.log(`report bytes: ${(report.length - 2) / 2}`);

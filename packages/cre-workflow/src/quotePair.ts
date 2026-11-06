@@ -1,8 +1,9 @@
 import type { PublicClient } from "viem";
-import { buildCurveUpdate } from "./buildCurve.js";
-import { type BucketSummary, summarizeBuckets } from "./describeCurve.js";
+import { readFeed } from "./feed.js";
+import { finalizePair, type PairResult } from "./finalizePair.js";
+import type { FeedReading } from "./sanity.js";
 import type { CurveUpdate, PairConfig, VenueConfig, VenueQuote } from "./types.js";
-import { quoteMockXyk } from "./venues/mockXyk.js";
+import { isMockVenue, quoteMockVenue } from "./venues/mockVenue.js";
 import { quoteUniv2 } from "./venues/univ2.js";
 import { quoteUniv3 } from "./venues/univ3.js";
 
@@ -15,15 +16,13 @@ async function quoteVenue(
   pair: PairConfig,
   venue: VenueConfig,
   amountIn: bigint,
+  feed?: FeedReading,
 ): Promise<VenueQuote> {
+  if (isMockVenue(venue)) {
+    return { venueId: venue.id, amountOut: quoteMockVenue(pair, venue, amountIn, feed) };
+  }
   let amountOut = 0n;
   switch (venue.kind) {
-    case "mock-xyk": {
-      const rin = BigInt(venue.reserveIn ?? "0");
-      const rout = BigInt(venue.reserveOut ?? "0");
-      amountOut = quoteMockXyk(amountIn, rin, rout, venue.feeBps ?? 30);
-      break;
-    }
     case "univ2": {
       if (!client || !venue.router || !venue.path) break;
       amountOut = await quoteUniv2(client, venue.router, venue.path, amountIn);
@@ -55,17 +54,32 @@ export async function quotePairCurve(
   observedAt: bigint,
   client?: PublicClient,
 ): Promise<CurveUpdate> {
-  return (await quotePairDetailed(pair, observedAt, client)).update;
+  const result = await quotePairDetailed(pair, observedAt, client);
+  if (!result.update) {
+    throw new Error(`pair ${pair.tokenIn}->${pair.tokenOut}: nothing to publish (${result.stopReason})`);
+  }
+  return result.update;
 }
 
-/** Same as quotePairCurve, plus every venue's quote and the winner per bucket (for logs). */
+/**
+ * Same as quotePairCurve, plus every venue's quote and the winner per bucket (for logs).
+ * When the pair has a `sanity` config, reads the Chainlink feed and applies the check;
+ * `update` is then null if no bucket is trustworthy.
+ */
 export async function quotePairDetailed(
   pair: PairConfig,
   observedAt: bigint,
   client?: PublicClient,
-): Promise<{ update: CurveUpdate; buckets: BucketSummary[] }> {
+): Promise<PairResult & { feed?: FeedReading }> {
   const venues = activeVenues(pair.venues);
   if (venues.length === 0) throw new Error("no venues after exclude filter");
+
+  // Read the feed first: mock-anchored venues are priced from it.
+  let feed: FeedReading | undefined;
+  if (pair.sanity) {
+    if (!client) throw new Error("sanity check needs an RPC client to read the Chainlink feed");
+    feed = await readFeed(client, pair.sanity.feed);
+  }
 
   const amountsIn = pair.amountsIn.map((a) => BigInt(a));
   const quotesByBucket: VenueQuote[][] = [];
@@ -73,17 +87,10 @@ export async function quotePairDetailed(
   for (const amountIn of amountsIn) {
     const row: VenueQuote[] = [];
     for (const venue of venues) {
-      row.push(await quoteVenue(client, pair, venue, amountIn));
+      row.push(await quoteVenue(client, pair, venue, amountIn, feed));
     }
     quotesByBucket.push(row);
   }
 
-  const update = buildCurveUpdate({
-    tokenIn: pair.tokenIn,
-    tokenOut: pair.tokenOut,
-    observedAt,
-    amountsIn,
-    quotesByBucket,
-  });
-  return { update, buckets: summarizeBuckets(amountsIn, quotesByBucket) };
+  return { ...finalizePair(pair, amountsIn, quotesByBucket, observedAt, feed), feed };
 }

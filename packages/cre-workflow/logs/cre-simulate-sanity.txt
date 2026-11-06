@@ -1,0 +1,11 @@
+# cre workflow simulate ./workflow -T sepolia-settings   (CRE CLI v1.39.0, cre-sdk 1.23.0, dry run, no --broadcast)
+✓ Workflow compiled
+2026-11-06T12:59:55Z [USER LOG] cre-workflow: pair 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14 → 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+2026-11-06T12:59:55Z [USER LOG] cre-workflow:   Chainlink feed 0x694A…5306 price=2219.7104 age=21m
+2026-11-06T12:59:55Z [USER LOG] cre-workflow:   in 0.1 → mock-a=221.261 mock-b=221.8489 | best mock-b 221.8489
+2026-11-06T12:59:55Z [USER LOG] cre-workflow:   in 1 → mock-a=2208.6472 mock-b=2217.4924 | best mock-b 2217.4924
+2026-11-06T12:59:55Z [USER LOG] cre-workflow:   in 10 → mock-a=21697.8581 mock-b=22075.6829 | best mock-b 22075.6829
+2026-11-06T12:59:55Z [USER LOG] cre-workflow:   → publishing 3 of 3 buckets
+2026-11-06T12:59:55Z [USER LOG] cre-workflow: encoded 1 curve(s), payload=0x0000000000000000…
+2026-11-06T12:59:56Z [USER LOG] cre-workflow: writeReport status=SUCCESS txHash=none
+✓ Workflow Simulation Result:
