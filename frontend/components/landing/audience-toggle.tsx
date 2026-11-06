@@ -39,7 +39,7 @@ export function AudienceToggle() {
             ["Price to beat", "Best Uniswap or Sushi pool"],
             ["Sepolia fill", "WETH to USDC, on the demo pool"],
           ]}
-          cta={{ label: "Launch App", href: "/swap", newTab: true }}
+          cta={{ label: "Get prices", href: "/swap" }}
         />
         <Side
           label="Liquidity providers"

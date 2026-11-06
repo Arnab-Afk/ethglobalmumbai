@@ -85,12 +85,14 @@ export function QuoteCard() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [refreshKey, setRefreshKey] = useState(0);
   const [config, setConfig] = useState<FeeConfig | null>(null);
-  const [reviewing, setReviewing] = useState(false);
+  // The trade the review sheet was opened for. The sheet only shows while the trade still matches,
+  // so editing the amount or pair closes it without an effect.
+  const [reviewKey, setReviewKey] = useState<string | null>(null);
   const reqId = useRef(0);
   const inFlight = useRef(false);
 
   const pool = useMemo(() => getPool(sell, buy), [sell, buy]);
-  const { address, onSepolia, connecting, connect, switchToSepolia } = useWallet();
+  const { address, onSepolia, connecting, openConnectModal, switchToSepolia } = useWallet();
   const balances = useBalances([sell, buy]);
   const sellBal = balances[sell.address];
   const buyBal = balances[buy.address];
@@ -114,7 +116,7 @@ export function QuoteCard() {
       const prev =
         s.kind === "ok" && (sameTrade || pairOf(s.key) === pairOf(key))
           ? s.quote
-          : s.kind !== "idle" && pairOf(s.key) === pairOf(key)
+            : s.kind !== "idle" && s.kind !== "ok" && pairOf(s.key) === pairOf(key)
             ? s.prev
             : undefined;
       return { kind: "loading", key, prev, refresh: sameTrade && prev !== undefined };
@@ -226,19 +228,17 @@ export function QuoteCard() {
       setSell(tokenBySymbol("USDC") ?? sell);
       setBuy(tokenBySymbol("AXIS") ?? buy);
       setState({ kind: "idle" });
-      setReviewing(false);
+      setReviewKey(null);
       return;
     }
     setSell(buy);
     setBuy(sell);
     setState({ kind: "idle" });
-    setReviewing(false);
+    setReviewKey(null);
   };
 
   const key = tradeKey(sell, buy, amount);
-  useEffect(() => {
-    setReviewing(false);
-  }, [key]);
+  const reviewing = reviewKey === key;
   const refreshing = state.kind === "loading" && state.refresh && state.key === key ? state.prev : undefined;
   const fresh = (state.kind === "ok" && state.key === key ? state.quote : undefined) ?? refreshing;
   // Same pair, different size: keep the last number on screen, dimmed, until the new quote lands.
@@ -291,12 +291,12 @@ export function QuoteCard() {
                 ? { label: "Rival pays more · no bid", tone: "off" }
                 : { label: `Maximum bid ${pipsToPercent(quoted.feePips, 4)}`, tone: "off" }
           : !address
-            ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : connect, tone: "soft" }
+            ? { label: connecting ? "Connecting…" : "Connect wallet to swap", onClick: connecting ? undefined : openConnectModal, tone: "soft" }
             : !onSepolia
               ? { label: "Switch to Sepolia", onClick: switchToSepolia, tone: "warn" }
               : !quoted
                 ? { label: "Checking the best venue…", tone: "off" }
-                : { label: "Swap", onClick: () => setReviewing(true), tone: "primary" };
+                : { label: "Swap", onClick: () => setReviewKey(key), tone: "primary" };
 
   const actionTone = {
     primary: "bg-[#2F6BFF] text-white hover:bg-[#245BE0]",
@@ -430,7 +430,7 @@ export function QuoteCard() {
           pool={shownPool}
           config={config}
           slippageBps={slippageBps}
-          onClose={() => setReviewing(false)}
+          onClose={() => setReviewKey(null)}
         />
       )}
 

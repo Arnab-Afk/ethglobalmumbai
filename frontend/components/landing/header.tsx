@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { CONTAINER } from "./section";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SEPOLIA } from "@/lib/deployments";
 import { shortAddr } from "@/lib/format";
 import { useWallet } from "../wallet/wallet-provider";
 
@@ -90,39 +91,103 @@ export function LandingHeader() {
 
 /** Connect wallet → address chip, or "Switch to Sepolia". Only touches the wallet on click. */
 function WalletPill({ solid }: { solid: boolean }) {
-  const { address, onSepolia, connecting, error, connect, switchToSepolia } = useWallet();
+  const { address, onSepolia, connecting, error, connectModalOpen, openConnectModal, switchToSepolia, disconnect } =
+    useWallet();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const tone = solid ? "bg-[#151619] text-white hover:bg-black" : "bg-white text-[#151619] hover:bg-white/90";
 
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const copy = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+    } catch {
+      /* clipboard blocked */
+    }
+    setOpen(false);
+  };
+
   return (
-    <div className="relative">
+    <div ref={ref} className="relative">
       {!address ? (
         <button
           type="button"
-          onClick={connect}
+          onClick={openConnectModal}
           disabled={connecting}
           className={`h-8 rounded-full px-4 text-[14px] font-bold transition-colors disabled:opacity-70 ${tone}`}
         >
           {connecting ? "Connecting…" : "Connect wallet"}
         </button>
-      ) : !onSepolia ? (
-        <button type="button" onClick={switchToSepolia} className={`h-8 rounded-full px-4 text-[14px] font-bold ${tone}`}>
-          Switch to Sepolia
-        </button>
       ) : (
-        <Link href="/swap" className={`flex h-8 items-center gap-2 rounded-full pl-1 pr-3 text-[14px] font-bold ${tone}`}>
-          <span
-            aria-hidden
-            className="size-7 rounded-full"
-            style={{
-              background: `conic-gradient(from 200deg, hsl(${parseInt(address.slice(2, 6), 16) % 360} 70% 55%), hsl(${
-                parseInt(address.slice(-4), 16) % 360
-              } 70% 45%), hsl(${parseInt(address.slice(2, 6), 16) % 360} 70% 55%))`,
-            }}
-          />
-          {shortAddr(address)}
-        </Link>
+        <div className="flex items-center gap-2">
+          {!onSepolia && (
+            <button type="button" onClick={switchToSepolia} className={`h-8 rounded-full px-4 text-[14px] font-bold ${tone}`}>
+              Switch to Sepolia
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className={`flex h-8 items-center gap-2 rounded-full pl-1 pr-3 text-[14px] font-bold ${tone}`}
+          >
+            <span
+              aria-hidden
+              className="size-7 rounded-full"
+              style={{
+                background: `conic-gradient(from 200deg, hsl(${parseInt(address.slice(2, 6), 16) % 360} 70% 55%), hsl(${
+                  parseInt(address.slice(-4), 16) % 360
+                } 70% 45%), hsl(${parseInt(address.slice(2, 6), 16) % 360} 70% 55%))`,
+              }}
+            />
+            {shortAddr(address)}
+          </button>
+        </div>
       )}
-      {error && (
+      {open && address && (
+        <div className="absolute top-12 right-0 z-50 w-56 rounded-2xl border border-[#E7E4DF] bg-white p-1.5 text-[14px] font-semibold text-[#151619] shadow-[0_16px_40px_rgb(0_0_0/0.12)]">
+          <button type="button" onClick={() => void copy()} className="block w-full rounded-xl px-3 py-2.5 text-left hover:bg-[#F3F2EE]">
+            Copy address
+          </button>
+          <a
+            href={`${SEPOLIA.explorer}/address/${address}`}
+            target="_blank"
+            rel="noreferrer"
+            className="block rounded-xl px-3 py-2.5 hover:bg-[#F3F2EE]"
+          >
+            View on Etherscan ↗
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              disconnect();
+              openConnectModal();
+            }}
+            className="block w-full rounded-xl px-3 py-2.5 text-left hover:bg-[#F3F2EE]"
+          >
+            Switch wallet
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              disconnect();
+              setOpen(false);
+            }}
+            className="block w-full rounded-xl px-3 py-2.5 text-left hover:bg-[#F3F2EE]"
+          >
+            Disconnect
+          </button>
+        </div>
+      )}
+      {error && !connectModalOpen && (
         <p className="absolute top-12 right-0 w-64 rounded-xl bg-[#151619] px-3.5 py-2.5 text-[13px] font-medium text-white shadow-xl">
           {error}
         </p>
@@ -131,21 +196,3 @@ function WalletPill({ solid }: { solid: boolean }) {
   );
 }
 
-/** "Launch App →" button. Dark on light backgrounds, white on dark ones. */
-export function LaunchButton({ dark, className = "" }: { dark?: boolean; className?: string }) {
-  return (
-    <a
-      href="/swap"
-      target="_blank"
-      rel="noreferrer"
-      className={`group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[16px] font-bold transition-colors ${
-        dark ? "bg-[#151619] text-white hover:bg-black" : "bg-white text-[#151619] hover:bg-zinc-200"
-      } ${className}`}
-    >
-      Launch App
-      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden className="ml-10 transition-transform group-hover:translate-x-0.5">
-        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </a>
-  );
-}
