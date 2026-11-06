@@ -80,8 +80,8 @@ export default function LandingPage() {
               Served neat.
             </h1>
             <p className="mt-8 max-w-[440px] text-[18px] leading-[1.5] font-medium text-[#1C1C1C]/80">
-              neat reads what the best venue would pay you, then pours its fee right up to that line and stops.
-              You still get more than anywhere else. LPs keep the rest, and not a drop goes to waste.
+              neat checks what the best venue would pay you, then charges a fee only up to that line. You still
+              get more. LPs keep the rest.
             </p>
             <div className="mt-8">
               <LaunchButton dark />
@@ -120,15 +120,15 @@ export default function LandingPage() {
         <div className="hidden lg:block">
           <div className="sticky top-14 flex h-[calc(100vh-56px)] max-h-[880px] flex-col gap-16 rounded-b-[240px] bg-[#F7F5F2] px-16 pt-24">
             <Eyebrow>Markets</Eyebrow>
-            <h2 className="-mt-12 text-[72px] leading-none font-medium tracking-[-0.035em]">Poured to the line…</h2>
-            <h2 className="text-[72px] leading-none font-medium tracking-[-0.035em]">…not a drop over.</h2>
+            <h2 className="-mt-12 text-[72px] leading-none font-medium tracking-[-0.035em]">A fee that&apos;s never too high…</h2>
+            <h2 className="text-[72px] leading-none font-medium tracking-[-0.035em]">…and never too low.</h2>
           </div>
         </div>
 
         <div className="px-5 py-24 sm:px-10 lg:py-32 lg:pr-16 lg:pl-20">
           <div className="lg:hidden">
             <Eyebrow>Markets</Eyebrow>
-            <h2 className={`mt-4 ${H2}`}>Poured to the line, not a drop over.</h2>
+            <h2 className={`mt-4 ${H2}`}>A fee that&apos;s never too high, and never too low.</h2>
           </div>
 
           <div className="mt-12 max-w-[640px] lg:mt-0">

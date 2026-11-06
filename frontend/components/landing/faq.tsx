@@ -5,7 +5,7 @@ const QUESTIONS = [
   },
   {
     q: "Why the name, and the glass?",
-    a: "A whisky served neat comes as it is: no ice, no mixer. Your price is the same: the best venue's price, not watered down. The glass is a 30 ml peg with a measure line. The fee is poured right up to the line where you still beat the best venue, and not a drop past it.",
+    a: "Neat means served as it is, nothing added. The glass has a pour line: the fee fills up to the point where you still beat the best venue, then stops.",
   },
   {
     q: "How is the fee decided?",

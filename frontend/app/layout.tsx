@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "neat - best price, served neat",
   description:
-    "neat reads what the best venue would pay you, then pours its fee right up to that line and stops. You still get more than anywhere else; LPs keep the rest.",
+    "neat checks what the best venue would pay you, then charges a fee only up to that line. You still get more. LPs keep the rest.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
