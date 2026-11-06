@@ -26,7 +26,7 @@ import { CompetitiveFeeClient, DEVNET } from "@lastlook/sdk";
 import { parseEther, formatUnits } from "viem";
 
 const client = new CompetitiveFeeClient({
-  rpcUrl: DEVNET.rpcUrl,          // public EIP-8141 devnet, chain 1337
+  rpcUrl: DEVNET.rpcUrl,          // self-hosted EIP-8141 devnet, chain 1337
   pool: "0x…",                    // DevnetCompetitivePool (see packages/private-quoting/web/public/deployment.json)
   quoteMode: "public",            // Node: Anon-RPC needs a browser
 });

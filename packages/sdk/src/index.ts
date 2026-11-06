@@ -2,9 +2,9 @@ export { CompetitiveFeeClient } from "./client.js";
 export type { Call, ClientConfig, FetchFn, FrameSubmitter, Quote, QuoteMode } from "./client.js";
 export { erc20Abi, poolAbi } from "./abi.js";
 
-/** Public EIP-8141 alt-mempool devnet (chain 1337). The gateway serves reads, frame txs and the faucet. */
+/** Self-hosted EIP-8141 devnet (chain 1337). Frame txs go out as eth_sendFrameTransaction. */
 export const DEVNET = {
   chainId: 1337,
-  rpcUrl: "https://altmempoolgateway.forshtat.com/rpc",
-  explorerUrl: "https://explorer.altmempool.wtf/",
+  rpcUrl: "https://eip8141-rpc.arnabbhowmik.in/rpc",
+  explorerUrl: "https://eip8141.arnabbhowmik.in/",
 } as const;

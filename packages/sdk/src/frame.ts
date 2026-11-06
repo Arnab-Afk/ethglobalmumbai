@@ -1,4 +1,4 @@
-// S2: EIP-8141 frame submitter for the public alt-mempool devnet (profile ethrex-eip8141-tracer, chain 1337).
+// S2: EIP-8141 frame submitter for the self-hosted devnet (profile ethrex-eip8141-tracer, chain 1337).
 // Same pattern as packages/private-quoting/src/devnet.ts and forshtat/mempool-workshop.
 // shortcut: duplicates private-quoting's buildBatchTx; switch private-quoting to import this once the SDK is published.
 import type { Hex } from "viem";
@@ -9,7 +9,7 @@ import { frame, newTx, secp256k1Placeholder, signTx, type Frame } from "@forshta
 import { rpc, toWire } from "@forshtat/hegota-support/rpc";
 import type { Call, FrameSubmitter } from "./client.js";
 
-const DEFAULT_RPC = "https://altmempoolgateway.forshtat.com/rpc";
+const DEFAULT_RPC = "https://eip8141-rpc.arnabbhowmik.in/rpc";
 
 export interface FrameSubmitterOptions {
   /** Devnet-only key. It signs the tx and pays the gas (self-relay). */
