@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Devnet path diff — neat</title>
+  <style>
+    :root {
+      --bg: #f7f5f2;
+      --fg: #151619;
+      --muted: #8a847e;
+      --body: #6b6560;
+      --card: #fff;
+      --line: #e7e4df;
+      --lavender: #ab9ff2;
+      --purple: #5b46c7;
+      --ok: #1f8a5b;
+      --warn: #b45309;
+      --ink: #151619;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 "Segoe UI", system-ui, sans-serif; }
+    a { color: var(--purple); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header {
+      background: var(--lavender); color: #1c1c1c;
+      padding: 28px 20px 32px;
+    }
+    header .wrap, main { max-width: 920px; margin: 0 auto; }
+    .eyebrow { font: 11px/1 Consolas, ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6560; margin: 0 0 10px; }
+    h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 650; letter-spacing: -0.04em; margin: 0 0 10px; line-height: 1.05; }
+    header p { margin: 0; max-width: 52ch; color: #1c1c1ccc; font-size: 16px; }
+    nav { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
+    nav a { color: #1c1c1c; font-weight: 600; }
+    main { padding: 28px 16px 64px; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 20px; margin-bottom: 16px;
+    }
+    .controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+    @media (max-width: 720px) { .controls { grid-template-columns: 1fr; } }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: Consolas, ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+    select, input, button {
+      font: inherit; width: 100%; padding: 11px 12px; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+    }
+    button {
+      background: var(--ink); color: #fff; border: 0; cursor: pointer; font-weight: 650;
+      padding: 12px 18px; white-space: nowrap;
+    }
+    button:disabled { opacity: 0.5; cursor: wait; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .col h2 { margin: 0 0 4px; font-size: 18px; letter-spacing: -0.02em; }
+    .col .tag { font: 12px/1.3 Consolas, ui-monospace, monospace; color: var(--muted); margin-bottom: 14px; }
+    .col.private { background: #efecfd; border-color: #d9d3f7; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
+    dt { color: var(--muted); font-size: 14px; } dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 550; }
+    #verdict {
+      border-radius: 16px; padding: 18px 20px; border: 1px solid var(--line);
+      background: var(--card); font-size: 16px; font-weight: 600;
+    }
+    #verdict.match { background: #eaf7f0; border-color: #b7e0c8; color: var(--ok); }
+    #verdict.mismatch { background: #fff7ed; border-color: #fed7aa; color: var(--warn); }
+    #verdict.idle { color: var(--body); font-weight: 500; }
+    #status { color: var(--muted); font-size: 14px; margin-top: 10px; min-height: 1.4em; }
+    .meta { font-size: 13px; color: var(--body); margin-top: 18px; line-height: 1.55; }
+    .meta code { font-family: Consolas, ui-monospace, monospace; font-size: 12px; background: #efece8; padding: 1px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <p class="eyebrow">EIP-8141 · chain 1337</p>
+      <h1>Same quote.<br />Two paths.</h1>
+      <p>Direct RPC vs Anon-RPC against the live DevnetCompetitivePool. Numbers should match; only the path to the node changes.</p>
+      <nav>
+        <a href="./">← Quote page</a>
+        <a href="https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59" target="_blank" rel="noreferrer">Frame proof tx</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="controls">
+        <div>
+          <label for="worker">Anon-RPC network</label>
+          <select id="worker"></select>
+        </div>
+        <div>
+          <label for="amount">Sell dWETH</label>
+          <input id="amount" type="number" min="0" step="any" value="10" />
+        </div>
+        <button id="run" type="button">Diff both paths</button>
+      </div>
+      <div id="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card col" id="direct-card">
+        <h2>Direct RPC</h2>
+        <p class="tag">Plain eth_call · RPC sees the request</p>
+        <dl>
+          <dt>You receive</dt><dd id="d-out">–</dd>
+          <dt>Best venue</dt><dd id="d-best">–</dd>
+          <dt>Fee</dt><dd id="d-fee">–</dd>
+          <dt>LPs keep</dt><dd id="d-lp">–</dd>
+          <dt>Latency</dt><dd id="d-ms">–</dd>
+        </dl>
+      </div>
+      <div class="card col private" id="anon-card">
+        <h2>Anon-RPC</h2>
+        <p class="tag" id="anon-tag">Mixnet · RPC does not see who asked</p>
+        <dl>
+          <dt>You receive</dt><dd id="a-out">–</dd>
+          <dt>Best venue</dt><dd id="a-best">–</dd>
+          <dt>Fee</dt><dd id="a-fee">–</dd>
+          <dt>LPs keep</dt><dd id="a-lp">–</dd>
+          <dt>Latency</dt><dd id="a-ms">–</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div id="verdict" class="idle">Run a diff to compare the two paths at the same size.</div>
+
+    <p class="meta">
+      Pool <code id="pool-addr">…</code> on the self-hosted EIP-8141 gateway.
+      The alt mempool is public; protection on fills is <code>minOut</code> inside an atomic frame batch, not secrecy of the pending tx.
+      Swap path: <a href="./">quote page</a> · CLI <code>npm run swap -- --mode frame</code>.
+    </p>
+  </main>
+
+  <script type="module" src="./diff.ts"></script>
+</body>
+</html>
