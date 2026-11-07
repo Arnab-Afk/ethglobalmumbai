@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "sdk": "npm --prefix ../packages/sdk install --no-audit --no-fund && npm --prefix ../packages/sdk run build",
+    "sdk": "npm --prefix ../packages/sdk install --include=dev --no-audit --no-fund && npm --prefix ../packages/sdk run build",
     "predev": "npm run sdk",
     "dev": "next dev",
     "prebuild": "npm run sdk",
