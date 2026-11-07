@@ -1,0 +1,20 @@
+# From packages/fee-last:
+#   fly launch --dockerfile bot/Dockerfile --no-deploy
+#   fly deploy --dockerfile bot/Dockerfile
+app = "neat-fee-last-bot"
+primary_region = "sin"
+
+[build]
+  dockerfile = "bot/Dockerfile"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

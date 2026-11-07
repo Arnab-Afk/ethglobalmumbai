@@ -1,0 +1,14 @@
+{
+  "name": "fee-last-bid-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "24/7 in-memory FeeLast bid context on Base (observe only; no broadcast).",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}
