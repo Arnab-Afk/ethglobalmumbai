@@ -13,6 +13,7 @@ const SECTION_LINKS = [
 ];
 
 const APP_LINKS = [
+  { href: "/pitch", label: "Pitch", note: "Scrollable deck" },
   { href: "/swap", label: "Quote preview", note: "Demo pricing for LPs" },
   { href: "/market", label: "Market", note: "CRE competitor curve" },
   { href: "/dashboard", label: "Dashboard", note: "LP revenue replay" },

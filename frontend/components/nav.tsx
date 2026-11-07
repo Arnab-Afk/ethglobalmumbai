@@ -6,6 +6,7 @@ import { useWallet } from "./wallet/wallet-provider";
 import { WalletButton } from "./wallet/wallet-button";
 
 const LINKS = [
+  { href: "/pitch", label: "Pitch" },
   { href: "/swap", label: "Swap" },
   { href: "/market", label: "Market" },
   { href: "/dashboard", label: "Dashboard" },
