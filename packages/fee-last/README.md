@@ -100,6 +100,37 @@ forge test --match-contract ForkRankTest -vv
 
 ```
 node quoter/cli.mjs --amount 0.01 --token-in WETH --token-out USDC --gross <raw zero-fee output>
+node quoter/max-bid.mjs --amount 0.3
 ```
+
+### Future-price bid from live Base flow (off-chain)
+
+Same-direction Uniswap flow → reprice the FeeLast bid against the post-flow rival.
+
+**One-shot:**
+
+```
+node quoter/mempool-preview.mjs --amount 0.3 --source preconf
+node quoter/mempool-preview.mjs --amount 0.3 --inject 2
+```
+
+**Realtime in-memory context** (local CLI):
+
+```
+node quoter/mempool-watch.mjs --amount 0.3 --window-ms 30000 --poll-ms 1500
+```
+
+**24/7 bot** (HTTP + rolling context, observe only — no broadcast):
+
+```
+cd bot && npm start
+# GET /health  /bid  /snapshot
+```
+
+Deploy: see [bot/README.md](bot/README.md) (Docker / Railway / Fly / VPS). Dockerfile context is `packages/fee-last`.
+
+Denim note: Flashblocks retired Nov 5 2026; preconf `pending` is the latest ~200 ms block (real trades), not a classic mempool peek.
+
+Does not sign or broadcast. Wire fees into `sign.mjs` only when you explicitly want an on-chain bid.
 
 Signing and private submission use `cast` plus `PRIVATE_RPC_URL`. The submitter refuses the public mempool. Re-quote when the block changes before you sign. The deadline window is 120 seconds.
