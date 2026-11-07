@@ -31,15 +31,28 @@ const GUIDES = [
   {
     track: 'Guides',
     card: 'Uniswap v4 on Base',
-    sub: 'Fee-last hook and live AXIS/USDC pool on Uniswap v4.',
+    sub: 'Fee-last hook, AXIS/USDC pool, and 24/7 bid bot.',
     rows: [
       ['Chain', 'Base 8453'],
       ['Hook', 'FeeLast'],
       ['Pool', 'AXIS / USDC'],
-      ['Fee', 'Signed / 0'],
+      ['Bot', 'neatbot'],
     ],
     link: { label: 'Read the Uniswap guide', href: '/docs/guides/uniswap' },
-    desc: 'How the Base hook bids after rivals, where the contracts live, and how to quote or fork-rank locally.',
+    desc: 'How the Base hook bids after rivals, where the contracts live, neatbot endpoints, and how to quote or fork-rank locally.',
+  },
+  {
+    track: 'Guides',
+    card: 'Lab (not mainnet)',
+    sub: 'Sepolia, EIP-8141, CRE, and Aqua fork surfaces.',
+    rows: [
+      ['Sepolia', 'Demo fills'],
+      ['EIP-8141', 'Frame + Anon'],
+      ['CRE', 'QuoteOracle'],
+      ['Aqua', 'Fork only'],
+    ],
+    link: { label: 'Open the Lab guide', href: '/docs/guides/lab' },
+    desc: 'Everything that is not Base FeeLast on mainnet, with addresses and app links.',
   },
   {
     track: 'Guides',
@@ -73,7 +86,7 @@ const REFERENCE = [
   { name: 'CompetitiveFeeClient', body: 'quote, encodeSwap, submit and setFrameSubmitter, with the Quote type field by field.', href: '/docs/reference/client' },
   { name: 'neat3-sdk/anon', body: 'createAnonFetch and the Anon-RPC network table. Browser only.', href: '/docs/reference/anon' },
   { name: 'neat3-sdk/frame', body: 'createFrameSubmitter and buildFrames for EIP-8141 frame transactions.', href: '/docs/reference/frame' },
-  { name: 'Networks and addresses', body: 'Devnet, Sepolia demo, and the live Base Uniswap fee-last pool.', href: '/docs/reference/networks' },
+  { name: 'Networks and addresses', body: 'Base mainnet FeeLast + neatbot, Sepolia demos, and the EIP-8141 devnet.', href: '/docs/reference/networks' },
 ];
 
 const QUESTIONS = [
@@ -87,7 +100,7 @@ const QUESTIONS = [
   },
   {
     q: 'Where can I use it today?',
-    a: 'The EIP-8141 devnet (chain 1337) is the default SDK target. The Sepolia demo pool is the same contract, but the SDK has not been run against it yet. The Uniswap fee-last hook is live on Base (AXIS/USDC); the neat app quotes it directly. Aqua / SwapVM is not wrapped by the SDK yet.',
+    a: 'FeeLast (AXIS/USDC) and neatbot are live on Base mainnet. The SDK default target is still the EIP-8141 devnet (chain 1337); Sepolia has the same demo pool contract. Non-mainnet surfaces are listed in the Lab guide. Aqua / SwapVM is fork-only and not wrapped by the SDK yet.',
   },
   {
     q: 'Does submit() hide my swap?',
@@ -338,12 +351,14 @@ export default function DocsLanding() {
           links={[
             { label: 'Introduction', href: '/docs' },
             { label: 'Quickstart', href: '/docs/quickstart' },
-            { label: 'How fees are set', href: '/docs/guides/fees' },
+            { label: 'Uniswap on Base', href: '/docs/guides/uniswap' },
+            { label: 'Lab (not mainnet)', href: '/docs/guides/lab' },
           ]}
         />
         <FooterCol
           title="Reference"
           links={[
+            { label: 'Networks', href: '/docs/reference/networks' },
             { label: 'Client', href: '/docs/reference/client' },
             { label: 'Anon-RPC', href: '/docs/reference/anon' },
             { label: 'Frame transactions', href: '/docs/reference/frame' },
@@ -352,6 +367,7 @@ export default function DocsLanding() {
         <FooterCol
           title="Links"
           links={[
+            { label: 'neatbot', href: 'https://neatbot.arnabbhowmik.in/', external: true },
             { label: 'npm', href: npmUrl, external: true },
             { label: 'Repository', href: REPO, external: true },
           ]}

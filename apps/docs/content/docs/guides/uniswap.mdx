@@ -26,6 +26,31 @@ Snapshot from Nov 7 2026. Confirm against [`deployments/base.json`](https://gith
 
 The depositing wallet `0x2B0aEf51883f8cFD8bd618Ab959B332a093CEeB2` is the only one that can withdraw the position through `FeeLastPosition`.
 
+## Bid-context bot (24/7)
+
+Observe-only HTTP service on Base. Keeps FeeLast + same-direction Uniswap flow in memory. Does **not** sign or broadcast swaps.
+
+| | |
+|---|---|
+| URL | [`https://neatbot.arnabbhowmik.in`](https://neatbot.arnabbhowmik.in/) |
+| `/` | Service + endpoints |
+| `/health` | Uptime, block, pool count |
+| `/bid` | Live fee pips vs rivals (context only) |
+| `/snapshot` | Full in-memory context |
+
+Code: `packages/fee-last/bot`. Hosted as Docker on `swdc` (`--restart unless-stopped`).
+
+## Hook permissions that matter
+
+| Permission | Role |
+|---|---|
+| `beforeInitialize` | Pool config fee must be `0` |
+| `beforeSwap` | Router-only; verify controller signature, deadline, nonce, amounts |
+| `afterSwap` + `afterSwapReturnDelta` | Skim output fee; enforce `minOut` / `maxGrossOut` |
+| `beforeAddLiquidity` / `beforeRemoveLiquidity` | Flush pending LP fees before liquidity changes |
+
+LP fees sit until a later timestamp, then `donate` to in-range liquidity. Protocol share leaves immediately. Unsigned swaps revert.
+
 ## How a bid is chosen
 
 Same last-look rule as [How fees are set](/docs/guides/fees), applied on Base:
@@ -53,7 +78,9 @@ The bid is the minimum improvement over every venue the quoter can see, so a rou
 | `packages/fee-last/src/FeeLastPosition.sol` | Deposit and withdraw for the depositing wallet |
 | `packages/fee-last/src/FeeMath.sol` | Pip fee |
 | `packages/fee-last/quoter/cli.mjs` | Reads Base rivals and prints the winning fee |
+| `packages/fee-last/bot` | 24/7 bid-context HTTP (`neatbot`) |
 | `frontend/lib/base-axis.ts` | App quotes for AXIS ↔ USDC (reads only, through Anon-RPC) |
+| `frontend/app/lab` | App page for non-mainnet surfaces |
 
 ## Try it locally
 
@@ -82,5 +109,5 @@ node quoter/cli.mjs --amount 0.01 --token-in WETH --token-out USDC --gross <raw 
 Signing and private submission use `cast` plus `PRIVATE_RPC_URL`. The submitter refuses the public mempool. Re-quote when the block changes before you sign.
 
 <Callout type="info" title="Older Sepolia hook">
-`packages/v4-hook` holds an earlier Sepolia `CompetitiveFeeHook` that reads `VenueReader` and overrides the LP fee in `beforeSwap`. The live Uniswap surface for the hackathon is **FeeLast on Base**, not that Sepolia pool.
+`packages/v4-hook` holds an earlier Sepolia `CompetitiveFeeHook` that reads `VenueReader` and overrides the LP fee in `beforeSwap`. The live Uniswap surface for the hackathon is **FeeLast on Base**, not that Sepolia pool. Full non-mainnet catalog: [Lab](/docs/guides/lab).
 </Callout>

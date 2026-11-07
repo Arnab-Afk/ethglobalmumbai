@@ -20,7 +20,10 @@ submit()      →  one atomic EIP-8141 frame transaction
     Read the pool's output and fee for an exact trade, plus the best competing venue's output.
   </Card>
   <Card title="Uniswap v4 on Base" href="/docs/guides/uniswap">
-    Fee-last hook, router, and live AXIS/USDC pool. Same rule, on Uniswap v4.
+    Fee-last hook, router, live AXIS/USDC pool, and the 24/7 bid bot.
+  </Card>
+  <Card title="Lab (not mainnet)" href="/docs/guides/lab">
+    Sepolia, EIP-8141, CRE, and Aqua fork — everything that is not Base FeeLast.
   </Card>
   <Card title="Private reads" href="/docs/guides/private-quotes">
     Route quotes through Anon-RPC so the RPC never learns who asked, for which pair, or how much.
@@ -47,8 +50,8 @@ Requires Node 20.12 or newer.
 
 ## Where it works today
 
-- The SDK targets the `DevnetCompetitivePool` contract. It is deployed on the self-hosted EIP-8141 devnet (chain 1337) and, as a demo pool, on Sepolia. See [Networks](/docs/reference/networks).
-- The Uniswap surface is a **fee-last v4 hook on Base** with a live AXIS/USDC pool. See [Uniswap v4 on Base](/docs/guides/uniswap). It is not wrapped by `neat3-sdk` yet; the neat app quotes it directly.
+- **Mainnet:** FeeLast on Base (AXIS/USDC) plus the [bid bot](https://neatbot.arnabbhowmik.in/). See [Uniswap v4 on Base](/docs/guides/uniswap). Not wrapped by `neat3-sdk` yet; the neat app quotes it directly.
+- **Not mainnet:** Sepolia demo fills, CRE curves, EIP-8141 frames, Aqua fork — cataloged in [Lab](/docs/guides/lab) and at `/lab` in the app.
+- The SDK targets the `DevnetCompetitivePool` contract on the EIP-8141 devnet (chain 1337) and, as a demo pool, on Sepolia. See [Networks](/docs/reference/networks).
 - Swaps are exact-input only.
-- The Aqua / SwapVM pool prices through the SwapVM router and isn't wrapped by this SDK yet.
-- This is hackathon software. The Base AXIS pool is real mainnet liquidity in a narrow range. The EIP-8141 devnet and Sepolia demo tokens have no value, and gas limits for frame transactions are estimates until more live runs land.
+- This is hackathon software. The Base AXIS pool is real mainnet liquidity in a narrow range. Devnet and Sepolia demo tokens have no value, and gas limits for frame transactions are estimates until more live runs land.

@@ -1,0 +1,82 @@
+---
+title: Lab (not mainnet)
+description: Sepolia, EIP-8141, CRE, and Aqua fork surfaces — everything that is not Base FeeLast on mainnet.
+---
+
+**Base FeeLast is live on mainnet.** Everything on this page is testnet, self-hosted devnet, or a local fork. The neat app groups the same list at `/lab`.
+
+| Surface | Network | Status |
+|---|---|---|
+| FeeLast hook + AXIS/USDC + bid bot | Base `8453` | **Mainnet** — see [Uniswap v4 on Base](/docs/guides/uniswap) |
+| Demo WETH → USDC fill | Sepolia | Testnet wallet fills |
+| CompetitiveFeeHook (v4) | Sepolia | Initialized; not FeeLast |
+| QuoteOracle + CRE curve | Sepolia | Curve on-chain; no settle path yet |
+| LP revenue dashboard | Sepolia `eth_call` | Synthetic replay |
+| Frame swap + Anon-RPC | EIP-8141 `1337` | Devnet proof |
+| 1inch Aqua SwapVM opcode | Anvil fork | Fork only |
+
+## Sepolia demo fill
+
+Wallet swaps settle on `SepoliaSwapPool` with mintable Demo WETH / Demo USDC. The fee is priced from live mainnet venues via `GivenQuotePreview`.
+
+| | |
+|---|---|
+| Pool | `0xE1Fde020143A73d0B0a9E8ba91E3ecD01dCb14EF` |
+| Demo WETH | `0xDb30012EBB4190C6aB2657283766531DA76a5475` |
+| Demo USDC | `0xFD0b2B0B9d44308F396f6aeb6E3eD36893a67b42` |
+| GivenQuotePreview | `0xbF488B884e7E84a6F87109FC985BbC821EF6393f` |
+| App | `/swap?sell=WETH&buy=USDC` |
+
+## Sepolia CompetitiveFeeHook
+
+Earlier Uniswap v4 surface: a **beforeSwap-only** dynamic-fee hook that reads `VenueReader`. It is **not** FeeLast (no signed exclusive fee, no afterSwap output skim).
+
+| | |
+|---|---|
+| Hook | `0x37D80e8d8cdf01f43362B73ca58Dfb20284F0080` |
+| VenueReader | `0x95B96FeE7EBfDfdCaa400B28EFb0D008cCeA7c8F` |
+| TradePreview | `0x318589f99F1b560230340C20e2649751B4be098F` |
+| Code | `packages/v4-hook` |
+
+## QuoteOracle + CRE
+
+Chainlink CRE writes size-aware WETH→USDC curves to Sepolia `QuoteOracle`. The Market page reads them. No swap path settles against this oracle yet.
+
+| | |
+|---|---|
+| QuoteOracle | `0xe39D6dE0689581C2e681379C206AA3492Dfd73C0` |
+| MockQuoteOracle | `0x6F036c93B907099c0623b7312ED2AaFebB39A539` |
+| App | `/market` |
+
+## Dashboard replay
+
+Synthetic neat vs flat-fee revenue through `CompetitiveFeeExtruction` + `MockQuoteOracle`. Proof of fee math, not live volume.
+
+| | |
+|---|---|
+| CompetitiveFeeExtruction | `0x23ED7de99DF648f8164c9Ef3bD0657059f6E2187` |
+| App | `/dashboard` |
+
+## EIP-8141 frame + Anon-RPC
+
+Self-hosted ethrex node (chain 1337). Atomic frame batches on the alt mempool; browser quotes through Anon-RPC. Not Ethereum mainnet.
+
+| | |
+|---|---|
+| RPC | `https://eip8141-rpc.arnabbhowmik.in/rpc` |
+| Explorer | `https://eip8141.arnabbhowmik.in/` |
+| Admitted frame tx | [`0xf0e1…bd59`](https://eip8141.arnabbhowmik.in/tx/0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59) |
+| Guides | [Private quotes](/docs/guides/private-quotes), [Frame transactions](/docs/reference/frame) |
+
+## Aqua SwapVM (fork)
+
+CompetitiveFee Extruction inside SwapVM on a mainnet/Base Anvil fork. Sepolia has Aqua registry vanity addresses but no settle path for this app.
+
+```sh
+cd packages/swapvm-opcode
+npm run aqua:fork
+```
+
+## Addresses
+
+Full lists: [`deployments/sepolia.json`](https://github.com/Arnab-Afk/ethglobalmumbai/blob/main/deployments/sepolia.json), [`deployments/base.json`](https://github.com/Arnab-Afk/ethglobalmumbai/blob/main/deployments/base.json), and [Networks](/docs/reference/networks).
