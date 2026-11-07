@@ -25,7 +25,7 @@ const QUESTIONS = [
   },
   {
     q: "Is it live on mainnet?",
-    a: "Yes for quotes: competitor prices and fee math use live mainnet venues (or Base for AXIS). Only Demo WETH → Demo USDC fills on Sepolia today. Private quote reads use Anon-RPC; EIP-8141 frame submission was proven on a separate devnet tx, not from this UI.",
+    a: "FeeLast (hook, router, AXIS/USDC) and the bid bot are live on Base. Competitor prices for other pairs also read mainnet venues. Demo fills, CRE curves, EIP-8141 frames, and the Aqua fork live on the Lab page — not on mainnet.",
   },
 ];
 

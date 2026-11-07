@@ -8,23 +8,34 @@ import { SEPOLIA } from "@/lib/deployments";
 /** Nav and footer for the swap app. Wallet state lives on the root layout so it survives route changes. */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const light = pathname === "/swap" || pathname === "/market" || pathname === "/dashboard";
+  const light = pathname === "/swap" || pathname === "/market" || pathname === "/dashboard" || pathname === "/lab";
   return (
     <div className={light ? "flex min-h-full flex-1 flex-col bg-[#F3F2EE] text-[#151619]" : "contents"}>
       <Nav />
       <main className="flex flex-1 flex-col">{children}</main>
       <footer className={`pb-5 pt-4 text-center text-xs ${light ? "text-[#8A8680]" : "text-muted"}`}>
-        Contracts on{" "}
-        <a
-          href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}`}
-          target="_blank"
-          rel="noreferrer"
-          className={light ? "text-[#2F6BFF] hover:underline" : "text-accent hover:underline"}
-        >
-          Sepolia
-        </a>
-        {" · "}
-        priced against mainnet venues
+        {pathname === "/lab" ? (
+          <>
+            Lab · testnet / devnet / fork{" · "}
+            <a href="/swap?sell=USDC&buy=AXIS&amount=0.3" className={light ? "text-[#2F6BFF] hover:underline" : "text-accent hover:underline"}>
+              Base FeeLast is mainnet
+            </a>
+          </>
+        ) : (
+          <>
+            Contracts on{" "}
+            <a
+              href={`${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}`}
+              target="_blank"
+              rel="noreferrer"
+              className={light ? "text-[#2F6BFF] hover:underline" : "text-accent hover:underline"}
+            >
+              Sepolia
+            </a>
+            {" · "}
+            priced against mainnet venues
+          </>
+        )}
         <div className="mt-1">
           <PrivacyBadge />
         </div>

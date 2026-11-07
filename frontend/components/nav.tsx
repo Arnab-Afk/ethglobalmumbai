@@ -9,12 +9,15 @@ const LINKS = [
   { href: "/swap", label: "Swap" },
   { href: "/market", label: "Market" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/lab", label: "Lab" },
 ];
+
+const LIGHT = new Set(["/swap", "/market", "/dashboard", "/lab"]);
 
 /** App header: wordmark left, links centered, network + wallet on the right. */
 export function Nav() {
   const pathname = usePathname();
-  const light = pathname === "/swap" || pathname === "/market" || pathname === "/dashboard";
+  const light = LIGHT.has(pathname);
   const { address, onSepolia } = useWallet();
   const networkOk = !address || onSepolia;
 
