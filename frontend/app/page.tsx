@@ -5,69 +5,25 @@ import { Faq } from "@/components/landing/faq";
 import { FeeDiagram } from "@/components/landing/fee-diagram";
 import { LandingHeader } from "@/components/landing/header";
 import { HeroSwap } from "@/components/landing/hero-swap";
+import { Integrations } from "@/components/landing/integrations";
 import { QuoteTicker } from "@/components/landing/quote-ticker";
-import { CONTAINER, Eyebrow, H2, RULE, SECTION_Y, SectionHead } from "@/components/landing/section";
+import { CONTAINER, Eyebrow, H2, RULE, SECTION_Y } from "@/components/landing/section";
 import { SEPOLIA } from "@/lib/deployments";
-import { shortAddr } from "@/lib/format";
 
 const LAVENDER = "#AB9FF2"; // Phantom-style lavender: hero and band surfaces, dark ink on top (7.3:1)
-const INK = "#5B46C7"; // purple accent text on white (6.7:1)
 const BAR = "#CDC6F9"; // lavender lifted toward white: the hero staircase bars
-const FRAME_TX = "0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59";
 const REPO = "https://github.com/Arnab-Afk/ethglobalmumbai";
 
 const BUILT_FOR = [
-  { name: "1inch Aqua", logo: "/sponsors/1inch.svg" },
-  { name: "Chainlink CRE", logo: "/sponsors/chainlink.svg" },
+  { name: "Uniswap", logo: "/sponsors/uniswap.svg" },
   { name: "Ethereum Foundation", logo: "/sponsors/ethereum.svg" },
+  { name: "1inch", logo: "/sponsors/inch.png" },
 ] as const;
 
 const PRINCIPLES = [
   { t: "Never too high", d: "A fee above the market sends the trade to a cheaper venue, and LPs earn nothing." },
   { t: "Never too low", d: "A fee below what the market allows hands the difference to someone else." },
   { t: "Never on a stale price", d: "If the competitor quote is old or missing, neat falls back to a fixed fee." },
-];
-
-const SURFACES = [
-  {
-    card: "CompetitiveFee",
-    cardSub: "One fee library. The swap screen and the SwapVM opcode both call it.",
-    rows: [
-      ["Fee floor", "0.05%"],
-      ["Fee cap", "1.00%"],
-      ["Max quote age", "120 s"],
-      ["Undercut", "1 bp"],
-    ],
-    link: { label: "View contract", href: `${SEPOLIA.explorer}/address/${SEPOLIA.contracts.CompetitiveFeeExtruction}#code` },
-    track: "1inch · Aqua",
-    desc: "A SwapVM instruction any Aqua strategy can drop in. This app prices each trade with the same library, against live mainnet venue output.",
-  },
-  {
-    card: "QuoteOracle",
-    cardSub: "Size-aware curves written by a Chainlink CRE workflow.",
-    rows: [
-      ["Pair", "WETH → USDC"],
-      ["Reference", "Chainlink ETH/USD"],
-      ["Contract", shortAddr(SEPOLIA.contracts.QuoteOracle)],
-      ["Status", "Curve on Sepolia"],
-    ],
-    link: { label: "See the market", href: "/market", internal: true },
-    track: "Chainlink · CRE",
-    desc: "The workflow quotes venues off-chain and writes a price curve on-chain. The Market page shows that curve. The dashboard replay uses a separate MockQuoteOracle curve. A missing or stale quote falls back to 0.30%.",
-  },
-  {
-    card: "Anon-RPC + Frame",
-    cardSub: "Quote reads are private. Frame fill proven on EIP-8141 devnet.",
-    rows: [
-      ["Reads", "Anon-RPC (live)"],
-      ["neat paid", "29,512.45"],
-      ["Best venue", "29,500.00"],
-      ["Tx", `${FRAME_TX.slice(0, 6)}…${FRAME_TX.slice(-4)}`],
-    ],
-    link: { label: "View frame tx", href: `https://eip8141.arnabbhowmik.in/tx/${FRAME_TX}` },
-    track: "Ethereum Foundation",
-    desc: "Sepolia quote reads go over Anon-RPC. Wallet fills in this app use a normal SepoliaSwapPool tx. Private frame submission was proven once on the EIP-8141 devnet with minOut set to the quote.",
-  },
 ];
 
 export default function LandingPage() {
@@ -134,9 +90,9 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 max-w-[640px] lg:mt-0">
-            <h3 className="text-[28px] leading-[1.2] font-medium tracking-[-0.02em]">See the whole market before you price</h3>
+            <h3 className="text-[28px] leading-[1.2] font-medium tracking-[-0.02em]">Price the pool against the whole market</h3>
             <p className="mt-3 max-w-[46ch] text-[16px] leading-[1.6] text-[#6B6560]">
-              For every size, neat knows what the best venue pays. Pick a trade and compare it with flat-fee pools.
+              For every size, neat knows what competing venues pay. LPs and integrators compare that to flat-fee pools before listing.
             </p>
             <div className="mt-8">
               <CompareCard />
@@ -154,48 +110,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── Lavender band: three integrations ───────── */}
-      <section className="relative overflow-hidden text-[#1C1C1C]" style={{ background: LAVENDER }}>
-        <BandArcs />
-        <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
-          <SectionHead
-            tone="lavender"
-            eyebrow="Integrations"
-            title="One fee engine, three integrations."
-            note="Uniswap and Sushi set the price to beat. CRE writes the curve on Market. Anon-RPC and Frame keep the quote private."
-          />
-
-          <div className="mt-14 grid gap-10 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-5">
-            {SURFACES.map((s) => (
-              <div key={s.track} className="lg:row-span-2 lg:grid lg:grid-rows-subgrid">
-                <article className="flex flex-col rounded-2xl bg-white p-6 text-[#151619] shadow-[0_1px_2px_rgb(0_0_0/0.04),0_16px_48px_rgb(28_21_48/0.12)]">
-                  <Eyebrow>{s.track}</Eyebrow>
-                  <h3 className="mt-3 text-[20px] font-medium tracking-[-0.01em]">{s.card}</h3>
-                  <p className="mt-2 text-[15px] leading-[1.5] text-[#6B6560]">{s.cardSub}</p>
-                  <dl className={`mt-6 grid grid-cols-2 border-t ${RULE}`}>
-                    {s.rows.map(([k, v], i) => (
-                      <div key={k} className={`${RULE} py-3.5 ${i % 2 === 0 ? "border-r pr-4" : "pl-4"} ${i < 2 ? "border-b" : ""}`}>
-                        <dt className="font-mono text-[11px] tracking-[0.12em] text-[#8A847E] uppercase">{k}</dt>
-                        <dd className="mt-1 text-[15px] font-medium [font-variant-numeric:tabular-nums]">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {"internal" in s.link && s.link.internal ? (
-                    <Link href={s.link.href} className={CARD_LINK} style={{ color: INK }}>
-                      {s.link.label} →
-                    </Link>
-                  ) : (
-                    <a href={s.link.href} target="_blank" rel="noreferrer" className={CARD_LINK} style={{ color: INK }}>
-                      {s.link.label} ↗
-                    </a>
-                  )}
-                </article>
-                <p className="mt-5 max-w-[40ch] text-[16px] leading-[1.6] text-[#1C1C1C]/75 lg:mt-0">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Integrations />
 
       {/* ───────── Audiences ───────── */}
       <section id="dashboard" className="scroll-mt-14 bg-white">
@@ -236,9 +151,9 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-[#151619] text-white">
         <BlockPattern />
         <div className={`relative ${CONTAINER} ${SECTION_Y}`}>
-          <Eyebrow tone="dark">Live on mainnet</Eyebrow>
-          <h2 className="mt-4 max-w-[14ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px]">
-            Every swap, served neat.
+          <Eyebrow tone="dark">For LPs and integrators</Eyebrow>
+          <h2 className="mt-4 max-w-[16ch] text-[44px] leading-[1.02] font-medium tracking-[-0.04em] sm:text-[64px]">
+            Listed where traders already swap.
           </h2>
         </div>
       </section>
@@ -247,16 +162,16 @@ export default function LandingPage() {
       <footer className={`${CONTAINER} grid gap-12 py-20 lg:grid-cols-[1.4fr_1fr_1fr_1fr]`}>
         <div>
           <div className="text-[22px] font-semibold tracking-[-0.03em]">neat</div>
-          <p className="mt-2 max-w-[34ch] text-[15px] leading-[1.5] text-[#6B6560]">
-            An AMM that sets its fee last, against live mainnet venues.
+          <p className="mt-2 max-w-[36ch] text-[15px] leading-[1.5] text-[#6B6560]">
+            Competitive fees for LP liquidity, listed through aggregators and wallets. Traders never have to choose the name.
           </p>
         </div>
         <FooterCol
-          title="Product"
+          title="Demo"
           links={[
-            { label: "Swap", href: "/swap" },
+            { label: "Quote preview", href: "/swap" },
             { label: "Market", href: "/market" },
-            { label: "Dashboard", href: "/dashboard" },
+            { label: "LP dashboard", href: "/dashboard" },
           ]}
         />
         <FooterCol
@@ -274,8 +189,6 @@ export default function LandingPage() {
     </div>
   );
 }
-
-const CARD_LINK = "mt-auto w-fit pt-5 inline-flex items-center gap-2 text-[14px] font-medium underline decoration-current/30 underline-offset-4 hover:decoration-current";
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -346,27 +259,6 @@ function HeroBars() {
           );
         }),
       )}
-    </div>
-  );
-}
-
-/** Large pale arcs sweeping down from the lavender band's top edge, right side. */
-function BandArcs() {
-  return (
-    <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[62%] lg:block" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: 900,
-            height: 900,
-            top: -560,
-            left: `${8 + i * 30}%`,
-            background: "rgb(255 255 255 / 0.2)",
-          }}
-        />
-      ))}
     </div>
   );
 }
