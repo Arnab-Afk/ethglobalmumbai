@@ -20,7 +20,7 @@ const APP_LINKS = [
 ];
 
 /**
- * Landing header: tall + transparent over the hero, then sizes down and goes solid white on scroll.
+ * Landing header: full-bleed + tall over the hero, then floats as a compact white pill on scroll.
  * Wordmark left, section links + App hover dropdown centered, Connect on the right.
  */
 export function LandingHeader() {
@@ -54,101 +54,109 @@ export function LandingHeader() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,backdrop-filter,color] duration-300 ${
-        solid ? "bg-white/90 text-[#151619] shadow-[0_1px_0_rgb(0_0_0/0.06)] backdrop-blur-md" : "text-[#1C1C1C]"
+      className={`pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center transition-[padding] duration-300 ease-out ${
+        solid ? "px-3 pt-3 sm:px-5 sm:pt-4" : "px-0 pt-0"
       }`}
     >
       <div
-        className={`relative ${CONTAINER} flex items-center justify-between transition-[height] duration-300 ease-out ${
-          solid ? "h-14" : "h-[72px] sm:h-[82px]"
+        className={`pointer-events-auto w-full transition-[max-width,border-radius,background-color,box-shadow,backdrop-filter] duration-300 ease-out ${
+          solid
+            ? "max-w-[920px] rounded-full border border-[#E7E4DF]/80 bg-white/90 text-[#151619] shadow-[0_10px_40px_rgb(0_0_0/0.10)] backdrop-blur-md"
+            : `${CONTAINER} rounded-none bg-transparent text-[#1C1C1C] shadow-none`
         }`}
       >
-        <Link
-          href="/"
-          onClick={toTop}
-          className={`font-extrabold tracking-[-0.03em] transition-[font-size] duration-300 ease-out ${
-            solid ? "text-[18px]" : "text-[20px] sm:text-[22px]"
-          }`}
-          aria-label="neat home"
-        >
-          neat
-        </Link>
-        <nav
-          className={`absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 font-semibold transition-[font-size] duration-300 ease-out lg:flex ${
-            solid ? "text-[15px]" : "text-[16px]"
+        <div
+          className={`relative flex items-center justify-between transition-[height,padding] duration-300 ease-out ${
+            solid ? "h-12 px-4 sm:h-[52px] sm:px-5" : "h-[72px] sm:h-[82px]"
           }`}
         >
-          {SECTION_LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
-              {l.label}
-            </a>
-          ))}
-
-          <div className="group relative">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 opacity-90 transition-opacity hover:opacity-100"
-              aria-haspopup="menu"
-            >
-              App
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                aria-hidden
-                className="opacity-70 transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
-              >
-                <path
-                  d="M3 4.5 6 7.5 9 4.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <div className="pointer-events-none absolute top-full left-1/2 w-[220px] -translate-x-1/2 pt-3 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-              <div
-                role="menu"
-                className="overflow-hidden rounded-2xl border border-[#E7E4DF] bg-white py-1.5 shadow-[0_12px_40px_rgb(0_0_0/0.12)]"
-              >
-                {APP_LINKS.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    role="menuitem"
-                    className="flex flex-col gap-0.5 px-4 py-2.5 transition-colors hover:bg-[#F3F2EE]"
-                  >
-                    <span className="text-[14px] font-semibold text-[#151619]">{l.label}</span>
-                    <span className="text-[12px] font-medium text-[#8A847E]">{l.note}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <WalletButton appearance="landing" solid={solid} />
-          <button
-            type="button"
-            aria-label="Menu"
-            aria-expanded={menu}
-            onClick={() => setMenu((v) => !v)}
-            className={`grid place-items-center transition-[width,height] duration-300 ease-out lg:hidden ${
-              solid ? "size-8" : "size-10"
+          <Link
+            href="/"
+            onClick={toTop}
+            className={`font-extrabold tracking-[-0.03em] transition-[font-size] duration-300 ease-out ${
+              solid ? "text-[17px]" : "text-[20px] sm:text-[22px]"
+            }`}
+            aria-label="neat home"
+          >
+            neat
+          </Link>
+          <nav
+            className={`absolute left-1/2 hidden -translate-x-1/2 items-center font-semibold transition-[font-size,gap] duration-300 ease-out lg:flex ${
+              solid ? "gap-6 text-[14px]" : "gap-8 text-[16px]"
             }`}
           >
-            <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden>
-              <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
+            {SECTION_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="opacity-90 transition-opacity hover:opacity-100">
+                {l.label}
+              </a>
+            ))}
+
+            <div className="group relative">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 opacity-90 transition-opacity hover:opacity-100"
+                aria-haspopup="menu"
+              >
+                App
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  aria-hidden
+                  className="opacity-70 transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
+                >
+                  <path
+                    d="M3 4.5 6 7.5 9 4.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <div className="pointer-events-none absolute top-full left-1/2 w-[220px] -translate-x-1/2 pt-3 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                <div
+                  role="menu"
+                  className="overflow-hidden rounded-2xl border border-[#E7E4DF] bg-white py-1.5 shadow-[0_12px_40px_rgb(0_0_0/0.12)]"
+                >
+                  {APP_LINKS.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      role="menuitem"
+                      className="flex flex-col gap-0.5 px-4 py-2.5 transition-colors hover:bg-[#F3F2EE]"
+                    >
+                      <span className="text-[14px] font-semibold text-[#151619]">{l.label}</span>
+                      <span className="text-[12px] font-medium text-[#8A847E]">{l.note}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <WalletButton appearance="landing" solid={solid} />
+            <button
+              type="button"
+              aria-label="Menu"
+              aria-expanded={menu}
+              onClick={() => setMenu((v) => !v)}
+              className={`grid place-items-center transition-[width,height] duration-300 ease-out lg:hidden ${
+                solid ? "size-8" : "size-10"
+              }`}
+            >
+              <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden>
+                <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
       {menu && (
-        <div className="border-t border-black/5 bg-white px-5 pb-4 lg:hidden">
+        <div className="pointer-events-auto mt-2 w-full max-w-[920px] overflow-hidden rounded-[28px] border border-[#E7E4DF] bg-white/95 px-4 pb-3 text-[#151619] shadow-[0_12px_40px_rgb(0_0_0/0.12)] backdrop-blur-md lg:hidden">
           {SECTION_LINKS.map((l) => (
             <a
               key={l.href}
@@ -192,7 +200,7 @@ export function LandingHeader() {
                   onClick={closeMobile}
                   className="flex h-11 flex-col justify-center"
                 >
-                  <span className="text-[15px] font-semibold text-[#151619]">{l.label}</span>
+                  <span className="text-[15px] font-semibold">{l.label}</span>
                   <span className="text-[12px] text-[#8A847E]">{l.note}</span>
                 </Link>
               ))}

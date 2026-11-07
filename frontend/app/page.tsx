@@ -16,6 +16,12 @@ const BAR = "#CDC6F9"; // lavender lifted toward white: the hero staircase bars
 const FRAME_TX = "0xf0e13955a14b649507a9d06a611ac13df1b4e6ac5365c95aaa6d626a9b81bd59";
 const REPO = "https://github.com/Arnab-Afk/ethglobalmumbai";
 
+const BUILT_FOR = [
+  { name: "1inch Aqua", logo: "/sponsors/1inch.svg" },
+  { name: "Chainlink CRE", logo: "/sponsors/chainlink.svg" },
+  { name: "Ethereum Foundation", logo: "/sponsors/ethereum.svg" },
+] as const;
+
 const PRINCIPLES = [
   { t: "Never too high", d: "A fee above the market sends the trade to a cheaper venue, and LPs earn nothing." },
   { t: "Never too low", d: "A fee below what the market allows hands the difference to someone else." },
@@ -200,12 +206,19 @@ export default function LandingPage() {
 
       {/* ───────── Built for ───────── */}
       <section className="bg-[#F7F5F2]">
-        <div className={`${CONTAINER} flex flex-col gap-6 py-14 lg:flex-row lg:items-center lg:justify-between`}>
+        <div className={`${CONTAINER} flex flex-col gap-8 py-14 lg:flex-row lg:items-center lg:justify-between`}>
           <Eyebrow>Built at ETHGlobal Mumbai for</Eyebrow>
-          <ul className="flex flex-wrap items-center gap-x-10 gap-y-3 text-[22px] font-medium tracking-[-0.02em] text-[#151619]/60">
-            {["1inch Aqua", "Chainlink CRE", "Ethereum Foundation"].map((s, i) => (
-              <li key={s} className={`flex items-center gap-10 ${i ? "before:h-6 before:w-px before:bg-black/10" : ""}`}>
-                {s}
+          <ul className="flex flex-wrap items-center gap-y-4">
+            {BUILT_FOR.map((s, i) => (
+              <li
+                key={s.name}
+                className={`flex items-center gap-3 text-[18px] font-medium tracking-[-0.02em] text-[#151619]/70 sm:text-[20px] ${
+                  i ? "ml-6 border-l border-black/10 pl-6 sm:ml-8 sm:pl-8" : ""
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.logo} alt="" width={28} height={28} className="size-7 opacity-80 sm:size-8" />
+                <span>{s.name}</span>
               </li>
             ))}
           </ul>
