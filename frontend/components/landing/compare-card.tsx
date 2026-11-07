@@ -68,7 +68,7 @@ export function CompareCard() {
         <thead>
           <tr className="text-right font-mono text-[11px] tracking-[0.12em] text-[#8A847E] uppercase">
             <th className="pb-3 pl-3 text-left font-normal">Pool</th>
-            <th className="pb-3 font-normal">You receive</th>
+            <th className="pb-3 font-normal">Trader receives</th>
             <th className="pb-3 font-normal">LPs keep</th>
             <th className="pb-3 pr-3 font-normal">Fee</th>
           </tr>
@@ -110,8 +110,8 @@ export function CompareCard() {
         {t && !t.hairline.won
           ? "Too big to win: even at zero fee the venue pays more, so no pool takes this trade."
           : t
-            ? `On ${SIZES[tab]} WETH, neat pays ${usd(edge)} USDC more than the venue and LPs keep ${usd(t.hairline.revenue)}. A flat 0.30% fee would keep ${usd(t.flat30.revenue)}.`
-            : "Green beats the best venue. Same Sepolia replay as the dashboard."}
+            ? `On ${SIZES[tab]} WETH, a neat-powered pool pays ${usd(edge)} USDC more than the venue and LPs keep ${usd(t.hairline.revenue)}. A flat 0.30% fee would keep ${usd(t.flat30.revenue)}.`
+            : "Green beats the best venue. Same Sepolia replay LPs use on the dashboard."}
       </p>
     </div>
   );

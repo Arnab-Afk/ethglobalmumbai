@@ -125,7 +125,7 @@ export function FeeRuler() {
           style={{ left: at(p.hairline) }}
         />
         <div className="absolute top-0 max-w-[220px] pl-3 transition-all duration-500 ease-out" style={{ left: at(p.hairline) }}>
-          <div className="text-[12px] text-[#6B6560]">neat pays you</div>
+          <div className="text-[12px] text-[#6B6560]">pool pays the trader</div>
           <div className="text-[22px] font-medium tracking-[-0.02em] [font-variant-numeric:tabular-nums]">{usd(p.hairline)}</div>
           <div className="text-[12px] text-[#1F8A5B] [font-variant-numeric:tabular-nums]">
             +{usd(p.hairline - p.best)} over the best venue
@@ -180,9 +180,9 @@ function Label({ x, side, y, title, value }: { x: string; side: "left" | "right"
 }
 
 const STEPS = [
-  { title: "You name the trade", body: "Exact input. The size goes out privately over Anon-RPC." },
+  { title: "LP lists the pool", body: "Liquidity sits behind Aqua, a venue, or a wallet route. Traders never hunt for the brand." },
   { title: "The competition is priced", body: "We read what Uniswap and Sushi would pay for that exact size on mainnet." },
-  { title: "The fee is set last", body: "The contract charges the most it can while paying you just above that venue." },
-  { title: "You review, then fill", body: "WETH to USDC can fill on the Sepolia demo pool. Every other pair stops at the quote." },
+  { title: "The fee is set last", body: "The contract charges the most it can while still beating that venue for the routed trader." },
+  { title: "Wallet or aggregator fills", body: "MetaMask or 1inch picks the route. This demo can fill Demo WETH → USDC on Sepolia; other pairs stop at the quote." },
 ];
 

@@ -13,10 +13,10 @@ const SECTION_LINKS = [
 ];
 
 const APP_LINKS = [
-  { href: "/swap", label: "Swap", note: "Quote and Sepolia fill" },
+  { href: "/swap", label: "Quote preview", note: "Demo pricing for LPs" },
   { href: "/market", label: "Market", note: "CRE competitor curve" },
   { href: "/dashboard", label: "Dashboard", note: "LP revenue replay" },
-  { href: "/lab", label: "Lab", note: "Not on mainnet" },
+  { href: "/lab", label: "Lab", note: "Integrator surfaces" },
 ];
 
 /**
